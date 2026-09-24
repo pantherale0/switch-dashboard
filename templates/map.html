@@ -75,6 +75,10 @@
     cursor: grab;
     background: radial-gradient(circle, rgba(22, 27, 34, 0.2) 1px, transparent 1px);
     background-size: 20px 20px;
+    touch-action: none;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
   }
   .map-canvas-container:active { cursor: grabbing; }
 
@@ -83,6 +87,8 @@
     height: 100%;
     display: block;
     user-select: none;
+    touch-action: none;
+    -webkit-user-select: none;
   }
 
   /* Node UI styles */
@@ -98,35 +104,59 @@
   
   /* Color coding by node type */
   .node-internet .node-bg { stroke: #06b6d4; filter: drop-shadow(0 0 8px rgba(6, 182, 212, 0.4)); }
+  .node-ont .node-bg { stroke: #10b981; filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.45)); }
   .node-router .node-bg { stroke: #a855f7; filter: drop-shadow(0 0 6px rgba(168, 85, 247, 0.3)); }
+  .node-distribution .node-bg { stroke: #8b5cf6; filter: drop-shadow(0 0 6px rgba(139, 92, 246, 0.35)); }
+  .node-core .node-bg { stroke: #0284c7; filter: drop-shadow(0 0 6px rgba(2, 132, 199, 0.35)); }
+  .node-access .node-bg { stroke: #3b82f6; filter: drop-shadow(0 0 6px rgba(59, 130, 246, 0.3)); }
   .node-switch .node-bg { stroke: #3b82f6; filter: drop-shadow(0 0 6px rgba(59, 130, 246, 0.3)); }
+  .node-access_point .node-bg, .node-ap .node-bg { stroke: #f97316; filter: drop-shadow(0 0 8px rgba(249, 115, 22, 0.4)); }
   .node-unmanaged_switch .node-bg { stroke: #0284c7; filter: drop-shadow(0 0 6px rgba(2, 132, 199, 0.3)); }
   .node-repeater .node-bg { stroke: #f97316; filter: drop-shadow(0 0 6px rgba(249, 115, 22, 0.3)); }
   .node-client .node-bg { stroke: #10b981; filter: drop-shadow(0 0 4px rgba(16, 185, 129, 0.2)); }
+  .node-virtualisation_host .node-bg { stroke: #f97316; filter: drop-shadow(0 0 8px rgba(249, 115, 22, 0.35)); }
+  .node-virtual_machine .node-bg { stroke: #22c55e; filter: drop-shadow(0 0 5px rgba(34, 197, 94, 0.25)); }
+  .node-lxc_container .node-bg { stroke: #14b8a6; filter: drop-shadow(0 0 5px rgba(20, 184, 166, 0.25)); }
+  .node-phone .node-bg { stroke: #06b6d4; filter: drop-shadow(0 0 7px rgba(6, 182, 212, 0.35)); }
   
   /* Offline states */
-  .node-offline .node-bg { stroke: #6b7280 !important; filter: none !important; }
-  .node-offline .node-icon-svg { fill: #6b7280 !important; }
+  .node-offline .node-bg, .node-stopped .node-bg { stroke: #6b7280 !important; filter: none !important; }
+  .node-offline .node-icon-svg, .node-stopped .node-icon-svg { fill: #6b7280 !important; }
 
   .node:hover .node-bg {
     stroke-width: 2.5;
   }
   .node-internet:hover .node-bg { filter: drop-shadow(0 0 12px rgba(6, 182, 212, 0.7)); }
+  .node-ont:hover .node-bg { filter: drop-shadow(0 0 12px rgba(16, 185, 129, 0.75)); }
   .node-router:hover .node-bg { filter: drop-shadow(0 0 12px rgba(168, 85, 247, 0.6)); }
+  .node-distribution:hover .node-bg { filter: drop-shadow(0 0 12px rgba(139, 92, 246, 0.6)); }
+  .node-core:hover .node-bg { filter: drop-shadow(0 0 12px rgba(2, 132, 199, 0.6)); }
+  .node-access:hover .node-bg { filter: drop-shadow(0 0 12px rgba(59, 130, 246, 0.6)); }
   .node-switch:hover .node-bg { filter: drop-shadow(0 0 12px rgba(59, 130, 246, 0.6)); }
+  .node-access_point:hover .node-bg, .node-ap:hover .node-bg { filter: drop-shadow(0 0 12px rgba(249, 115, 22, 0.7)); }
   .node-repeater:hover .node-bg { filter: drop-shadow(0 0 12px rgba(249, 115, 22, 0.6)); }
   .node-client:hover .node-bg { filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.5)); }
+  .node-phone:hover .node-bg { filter: drop-shadow(0 0 12px rgba(6, 182, 212, 0.7)); }
 
   .node-icon-svg {
     fill: #b1bac4;
     transition: fill 0.3s;
   }
   .node-internet .node-icon-svg { fill: #06b6d4; }
+  .node-ont .node-icon-svg { fill: #34d399; }
   .node-router .node-icon-svg { fill: #c084fc; }
+  .node-distribution .node-icon-svg { fill: #c084fc; }
+  .node-core .node-icon-svg { fill: #38bdf8; }
+  .node-access .node-icon-svg { fill: #60a5fa; }
   .node-switch .node-icon-svg { fill: #60a5fa; }
+  .node-access_point .node-icon-svg, .node-ap .node-icon-svg { fill: #fb923c; }
   .node-unmanaged_switch .node-icon-svg { fill: #38bdf8; }
   .node-repeater .node-icon-svg { fill: #ff9d5c; }
   .node-client .node-icon-svg { fill: #34d399; }
+  .node-phone .node-icon-svg { fill: #22d3ee; }
+  .node-virtualisation_host .node-icon-svg { fill: #fb923c; }
+  .node-virtual_machine .node-icon-svg { fill: #4ade80; }
+  .node-lxc_container .node-icon-svg { fill: #2dd4bf; }
 
   .node-label {
     font-size: 11px;
@@ -168,6 +198,14 @@
     stroke: #4b5563; /* Subtle slate gray for clients */
     stroke-width: 1.5;
     stroke-dasharray: 4, 4; /* Dashed lines for client connections */
+  }
+  .link-type-virtual_child .link-line {
+    stroke: #64748b;
+    stroke-width: 1.5;
+    stroke-dasharray: 3, 5;
+  }
+  .link-type-physical_host .link-line {
+    stroke: #f97316;
   }
   .link-marching {
     fill: none;
@@ -216,6 +254,391 @@
     text-anchor: middle;
     alignment-baseline: middle;
   }
+
+  /* Dynamic Link Saturation Heat */
+  .link-saturated .link-line { stroke: #ef4444 !important; stroke-width: 3.5px !important; filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.7)); }
+  .link-saturated .link-marching { stroke: #fca5a5 !important; stroke-width: 2px !important; }
+  .link-moderate .link-line { stroke: #f59e0b !important; filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.5)); }
+  .link-moderate .link-marching { stroke: #fde68a !important; }
+
+  /* Semantic Port Role Badges */
+  .port-role-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .role-uplink { background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.4); }
+  .role-downlink { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4); }
+  .role-inter_switch { background: rgba(139, 92, 246, 0.2); color: #a78bfa; border: 1px solid rgba(139, 92, 246, 0.4); }
+  .role-ap_trunk { background: rgba(249, 115, 22, 0.2); color: #fb923c; border: 1px solid rgba(249, 115, 22, 0.4); }
+  .role-access { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
+  .role-unmanaged { background: rgba(6, 182, 212, 0.2); color: #22d3ee; border: 1px solid rgba(6, 182, 212, 0.4); }
+  .role-unused { background: rgba(107, 114, 128, 0.2); color: #9ca3af; border: 1px solid rgba(107, 114, 128, 0.4); }
+
+  /* ==========================================
+     PATH HIGHLIGHTING & ACTIVE CONDUIT STYLES
+     ========================================== */
+  .path-highlight-active #nodes-group .node {
+    opacity: 0.18;
+    transition: opacity 0.3s ease, filter 0.3s ease;
+  }
+  .path-highlight-active #nodes-group .node.in-path {
+    opacity: 1 !important;
+    filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.7));
+  }
+  .path-highlight-active #nodes-group .node.path-origin {
+    opacity: 1 !important;
+    filter: drop-shadow(0 0 16px rgba(56, 189, 248, 0.95)) !important;
+  }
+  .path-highlight-active #nodes-group .node.path-origin .node-bg {
+    stroke: #38bdf8 !important;
+    stroke-width: 2.5px !important;
+  }
+  .path-highlight-active #nodes-group .node.path-destination {
+    opacity: 1 !important;
+    filter: drop-shadow(0 0 16px rgba(16, 185, 129, 0.95)) !important;
+  }
+  .path-highlight-active #nodes-group .node.path-destination .node-bg {
+    stroke: #10b981 !important;
+    stroke-width: 2.5px !important;
+  }
+  .path-highlight-active #links-group .link-group {
+    opacity: 0.08;
+    transition: opacity 0.3s ease;
+  }
+  .path-highlight-active #links-group .link-group.in-path {
+    opacity: 1 !important;
+  }
+  .path-highlight-active #links-group .link-group.in-path .link-line {
+    stroke: #38bdf8 !important;
+    stroke-width: 4px !important;
+    stroke-dasharray: none !important;
+    filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.85));
+    transition: stroke 0.3s, stroke-width 0.3s;
+  }
+  .path-highlight-active #links-group .link-group.in-path .link-marching {
+    display: block !important;
+    stroke: #ffffff !important;
+    stroke-width: 2.5px !important;
+    opacity: 1 !important;
+    animation: march 2.5s linear infinite !important;
+    filter: drop-shadow(0 0 4px #38bdf8);
+  }
+
+  /* Floating Path Highlighting HUD */
+  .path-hud {
+    position: absolute;
+    top: 68px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 30;
+    background: rgba(13, 17, 23, 0.92);
+    border: 1px solid #38bdf8;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 16px rgba(56, 189, 248, 0.25);
+    border-radius: 30px;
+    padding: 6px 14px 6px 16px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .path-hud-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    color: #f0f6fc;
+  }
+  .path-hud-icon {
+    font-size: 14px;
+    color: #38bdf8;
+    filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.8));
+  }
+  .path-hud-title {
+    font-weight: 700;
+    color: #38bdf8;
+    text-transform: uppercase;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+  }
+  .path-hud-route {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #c9d1d9;
+    font-weight: 500;
+    max-width: 650px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .path-hud-route .hop-node {
+    color: #f0f6fc;
+    font-weight: 600;
+  }
+  .path-hud-route .hop-arrow {
+    color: #38bdf8;
+    margin: 0 5px;
+    font-weight: bold;
+  }
+  .path-hud-route .hop-port {
+    font-size: 10px;
+    color: #8b949e;
+    font-family: 'SF Mono', Monaco, monospace;
+    margin-left: 2px;
+  }
+  .path-hud-close {
+    background: rgba(48, 54, 61, 0.6);
+    border: none;
+    color: #8b949e;
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-left: 4px;
+  }
+  .path-hud-close:hover {
+    background: #da3637;
+    color: white;
+  }
+
+  /* Sidebar Route Stepper */
+  .route-stepper {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin-top: 10px;
+    padding-left: 6px;
+  }
+  .route-step {
+    display: flex;
+    align-items: flex-start;
+    position: relative;
+    padding-bottom: 14px;
+  }
+  .route-step:last-child {
+    padding-bottom: 0;
+  }
+  .route-step-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-right: 12px;
+    position: relative;
+  }
+  .route-step-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #38bdf8;
+    border: 2px solid #0d1117;
+    box-shadow: 0 0 8px rgba(56, 189, 248, 0.8);
+    z-index: 2;
+    flex-shrink: 0;
+  }
+  .route-step.step-origin .route-step-dot {
+    background: #38bdf8;
+    box-shadow: 0 0 10px rgba(56, 189, 248, 1);
+  }
+  .route-step.step-dest .route-step-dot {
+    background: #10b981;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 1);
+  }
+  .route-step.step-hop .route-step-dot {
+    background: #8b949e;
+    width: 10px;
+    height: 10px;
+  }
+  .route-step-line {
+    position: absolute;
+    top: 12px;
+    bottom: -2px;
+    width: 2px;
+    background: linear-gradient(180deg, rgba(56, 189, 248, 0.8), rgba(56, 189, 248, 0.3));
+    z-index: 1;
+  }
+  .route-step:last-child .route-step-line {
+    display: none;
+  }
+  .route-step-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .route-step-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+  }
+  .route-step-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: #f0f6fc;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+  }
+  .route-step-name:hover {
+    color: #38bdf8;
+    text-decoration: underline;
+  }
+  .route-step-sub {
+    font-size: 11px;
+    color: #8b949e;
+    margin-top: 1px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .route-hop-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-family: 'SF Mono', Monaco, monospace;
+    background: rgba(56, 189, 248, 0.15);
+    color: #38bdf8;
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    padding: 1px 5px;
+    border-radius: 4px;
+    margin-top: 4px;
+  }
+
+  /* UniFi Style Top Floating Toolbar */
+  .top-toolbar {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(22, 27, 34, 0.88);
+    border: 1px solid rgba(48, 54, 61, 0.8);
+    border-radius: 10px;
+    padding: 6px 10px;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+    z-index: 25;
+  }
+  .toolbar-pill-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .toolbar-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    color: #8b949e;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 5px 11px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .toolbar-btn:hover {
+    color: #f0f6fc;
+    background: rgba(56, 139, 253, 0.12);
+    border-color: rgba(56, 139, 253, 0.35);
+  }
+  .toolbar-btn.active {
+    color: #58a6ff;
+    background: rgba(56, 139, 253, 0.18);
+    border-color: #388bfd;
+    font-weight: 600;
+    box-shadow: 0 0 10px rgba(56, 139, 253, 0.2);
+  }
+  .toolbar-divider {
+    width: 1px;
+    height: 18px;
+    background: rgba(48, 54, 61, 0.8);
+    margin: 0 2px;
+  }
+
+  /* Compact UniFi Client Pills */
+  .node-client .node-bg {
+    fill: rgba(18, 24, 32, 0.94) !important;
+    stroke: rgba(56, 139, 253, 0.28) !important;
+    stroke-width: 1px !important;
+    rx: 14 !important; ry: 14 !important;
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.3));
+    transition: all 0.2s ease;
+  }
+  .node-client:hover .node-bg {
+    fill: rgba(26, 34, 46, 0.98) !important;
+    stroke: #58a6ff !important;
+    stroke-width: 1.5px !important;
+    filter: drop-shadow(0 0 10px rgba(88, 166, 255, 0.5)) !important;
+  }
+  .client-pill-label {
+    font-size: 10.5px;
+    font-weight: 500;
+    fill: #e6edf3;
+    pointer-events: none;
+    text-anchor: start;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  /* Per-Switch Collapsible Client Toggle Badge */
+  .client-toggle-badge {
+    cursor: pointer;
+    transition: transform 0.15s ease, filter 0.15s ease;
+  }
+  .client-toggle-badge:hover {
+    transform: scale(1.05);
+    filter: brightness(1.2);
+  }
+  .client-toggle-bg {
+    fill: rgba(22, 27, 34, 0.95);
+    stroke: rgba(88, 166, 255, 0.4);
+    stroke-width: 1;
+    rx: 9; ry: 9;
+  }
+  .client-toggle-badge:hover .client-toggle-bg {
+    fill: rgba(33, 38, 45, 0.98);
+    stroke: #58a6ff;
+    box-shadow: 0 0 8px rgba(88, 166, 255, 0.3);
+  }
+  .client-toggle-text {
+    font-size: 9.5px;
+    font-weight: 600;
+    fill: #8b949e;
+    text-anchor: middle;
+    alignment-baseline: middle;
+    pointer-events: none;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+  .client-toggle-badge:hover .client-toggle-text {
+    fill: #58a6ff;
+  }
+
+  /* Sleek Client Connecting Links */
+  .link-type-client .link-line {
+    stroke: rgba(100, 116, 139, 0.4) !important;
+    stroke-width: 1.2px !important;
+    stroke-dasharray: 3, 3 !important;
+  }
+  .link-type-client:hover .link-line {
+    stroke: #58a6ff !important;
+    stroke-width: 2px !important;
+    stroke-dasharray: none !important;
+  }
+  .link-type-client .link-marching {
+    display: none !important;
+  }
+
 
   /* Floating UI Panels */
   .sidebar {
@@ -450,6 +873,105 @@
     background: #f85149;
   }
 
+  /* Mobile & Touch Screen Responsive Styles */
+  .sidebar-backdrop {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .sidebar-backdrop.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  @media (max-width: 900px) {
+    .sidebar {
+      position: fixed;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      height: 100vh;
+      width: min(88vw, 360px);
+      z-index: 1000;
+      box-shadow: -8px 0 32px rgba(0, 0, 0, 0.7);
+      transform: translateX(0);
+    }
+    .sidebar.closed {
+      transform: translateX(100%);
+    }
+    .sidebar-backdrop {
+      display: block;
+    }
+    .close-sidebar-btn {
+      width: 32px;
+      height: 32px;
+      font-size: 20px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .header {
+      padding: 10px 14px;
+    }
+    .header h1 {
+      font-size: 16px;
+    }
+    .header .nav-links {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      gap: 6px;
+      max-width: 60vw;
+    }
+    .header .nav-links a {
+      padding: 5px 9px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .legend-bar {
+      display: none;
+    }
+    .top-toolbar {
+      top: 10px;
+      max-width: 94vw;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 4px 8px;
+      gap: 6px;
+    }
+    .top-toolbar::-webkit-scrollbar {
+      display: none;
+    }
+    .toolbar-btn {
+      padding: 6px 10px;
+      font-size: 11px;
+      white-space: nowrap;
+    }
+    .path-hud {
+      top: 58px;
+      max-width: calc(100vw - 20px);
+      padding: 5px 10px 5px 12px;
+    }
+    .path-hud-route {
+      max-width: calc(100vw - 110px);
+      font-size: 11px;
+    }
+    .map-controls {
+      bottom: 16px;
+      left: 16px;
+    }
+    .map-btn {
+      width: 42px;
+      height: 42px;
+      font-size: 18px;
+    }
+  }
 </style>
 </head>
 <body>
@@ -466,6 +988,7 @@
     </span>
     <a href="/">📊 Dashboard</a>
     <a href="/map" class="active">🕸️ Network Map</a>
+    <a href="/clients">📱 Clients</a>
     <a href="/scanner">🌐 Scanner</a>
     <a href="/config">&#9881; Config</a>
     <a href="/backups">💾 Backups</a>
@@ -481,6 +1004,54 @@
     <div class="legend-item"><span class="legend-color" style="background: #58a6ff;"></span> 2.5G</div>
     <div class="legend-item"><span class="legend-color" style="background: #3fb950;"></span> 1G</div>
     <div class="legend-item"><span class="legend-color" style="background: #f08a24;"></span> 100M</div>
+  </div>
+
+  <!-- UniFi Top Floating Toolbar -->
+  <div class="top-toolbar">
+    <div class="toolbar-pill-group">
+      <button class="toolbar-btn active" id="btn-mode-tree" onclick="setViewMode('tree')" title="Show backbone and side wings">
+        <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M22 11V3h-7v3H9V3H2v8h7V8h2v10h4v3h7v-8h-7v3h-2V8h2v3h7zM4 5h3v4H4V5zm13 0h3v4h-3V5zm0 10h3v4h-3v-4z"/></svg>
+        <span>Topology Tree</span>
+      </button>
+      <button class="toolbar-btn" id="btn-mode-infra" onclick="setViewMode('infra')" title="Show infrastructure backbone only">
+        <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14h-2v-4H6v-2h4V7h2v4h4v2h-4v4z"/></svg>
+        <span>Infrastructure</span>
+      </button>
+    </div>
+    
+    <div class="toolbar-divider"></div>
+    
+    <div class="toolbar-pill-group">
+      <button class="toolbar-btn" onclick="expandAllClients()" title="Expand all client wings">
+        <span>▾ Expand All</span>
+      </button>
+      <button class="toolbar-btn" onclick="collapseAllClients()" title="Collapse all client wings">
+        <span>▸ Collapse All</span>
+      </button>
+    </div>
+
+    <div class="toolbar-divider"></div>
+
+    <div class="toolbar-pill-group">
+      <button class="toolbar-btn" onclick="autoAlignLayout()" title="Auto-align network nodes in UniFi tree format">
+        <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
+        <span>Auto Align</span>
+      </button>
+      <button class="toolbar-btn" onclick="resetZoom()" title="Center view">
+        <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>
+        <span>Center</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Floating Path Highlighting HUD -->
+  <div id="path-highlight-hud" class="path-hud" style="display: none;">
+    <div class="path-hud-content">
+      <span class="path-hud-icon">⚡</span>
+      <span class="path-hud-title" id="path-hud-title">Active Route</span>
+      <span class="path-hud-route" id="path-hud-route"></span>
+      <button type="button" class="path-hud-close" onclick="clearPathHighlight()" title="Clear path highlight (Esc)">✕</button>
+    </div>
   </div>
 
   <!-- Zoom & Center Controls -->
@@ -503,6 +1074,9 @@
       </g>
     </svg>
   </div>
+
+  <!-- Mobile Sidebar Backdrop Overlay -->
+  <div id="sidebar-backdrop" class="sidebar-backdrop" onclick="toggleSidebar(false)"></div>
 
   <!-- Device Details Sidebar -->
   <div class="sidebar" id="sidebar">
@@ -569,6 +1143,81 @@
   
   let showClients = true;
   let showMarching = true;
+  let clientCountMap = {};
+  let collapsedSwitches = new Set();
+  let viewMode = 'tree';
+
+  function setViewMode(mode) {
+    viewMode = mode;
+    const btnTree = document.getElementById('btn-mode-tree');
+    const btnInfra = document.getElementById('btn-mode-infra');
+    if (btnTree) btnTree.classList.toggle('active', mode === 'tree');
+    if (btnInfra) btnInfra.classList.toggle('active', mode === 'infra');
+    if (mode === 'infra') {
+      showClients = false;
+    } else {
+      showClients = true;
+    }
+    const toggleEl = document.getElementById('toggle-clients');
+    if (toggleEl) toggleEl.checked = showClients;
+    processAndRender();
+  }
+
+  function toggleSwitchClients(switchId) {
+    if (collapsedSwitches.has(switchId)) {
+      collapsedSwitches.delete(switchId);
+    } else {
+      collapsedSwitches.add(switchId);
+    }
+    if (!showClients) {
+      showClients = true;
+      viewMode = 'tree';
+      const btnTree = document.getElementById('btn-mode-tree');
+      const btnInfra = document.getElementById('btn-mode-infra');
+      if (btnTree) btnTree.classList.add('active');
+      if (btnInfra) btnInfra.classList.remove('active');
+      const toggleEl = document.getElementById('toggle-clients');
+      if (toggleEl) toggleEl.checked = true;
+    }
+    processAndRender();
+  }
+
+  function expandAllClients() {
+    collapsedSwitches.clear();
+    showClients = true;
+    viewMode = 'tree';
+    const btnTree = document.getElementById('btn-mode-tree');
+    const btnInfra = document.getElementById('btn-mode-infra');
+    if (btnTree) btnTree.classList.add('active');
+    if (btnInfra) btnInfra.classList.remove('active');
+    const toggleEl = document.getElementById('toggle-clients');
+    if (toggleEl) toggleEl.checked = true;
+    processAndRender();
+  }
+
+  function collapseAllClients() {
+    rawNodes.forEach(n => {
+      if (n.type !== 'client') collapsedSwitches.add(n.id);
+    });
+    processAndRender();
+  }
+
+  async function autoAlignLayout() {
+    for (let key in positionCache) {
+      delete positionCache[key];
+    }
+    try {
+      await fetch('/api/config/settings', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ map_positions: {} })
+      });
+    } catch (e) {
+      console.error("Failed to clear map coordinates on server:", e);
+    }
+    processAndRender();
+    resetZoom();
+  }
   
   // Drag state
   let selectedNode = null;
@@ -581,6 +1230,13 @@
   let panY = 0;
   let zoomScale = 1;
   let canvasStartPan = { x: 0, y: 0 };
+
+  // Path Highlighting State
+  let treeParentMap = {};
+  let clientParentMap = {};
+  let activePathHighlightNodeId = null;
+  let activePathTargetNodeId = null;
+  let activePathData = null;
 
   // Persistent coordinates (mac or ip -> {x, y})
   const serverPositions = {{ map_positions|tojson }};
@@ -653,15 +1309,25 @@
   // SVG Icons markup
   const ICONS = {
     internet: `<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>`,
+    ont: `<path d="M4 6h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2zm0 2v8h16V8H4zm2 5h2v2H6v-2zm4 0h2v2h-2v-2zm4 0h2v2h-2v-2zm4 0h2v2h-2v-2zm-12-3h14v1H6v-1z"/>`,
     router: `<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>`,
+    distribution: `<path d="M19 13H5c-1.1 0-2 .9-2 2v4c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-4c0-1.1-.9-2-2-2zM9 19H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zM19 3H5c-1.1 0-2 .9-2 2v4c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 9H7V7h2v2zm4 0h-2V7h2v2zm4 0h-2V7h2v2z"/>`,
+    core: `<path d="M19 13H5c-1.1 0-2 .9-2 2v4c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-4c0-1.1-.9-2-2-2zM9 19H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zM19 3H5c-1.1 0-2 .9-2 2v4c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 9H7V7h2v2zm4 0h-2V7h2v2zm4 0h-2V7h2v2z"/>`,
+    access: `<path d="M19 13H5c-1.1 0-2 .9-2 2v4c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-4c0-1.1-.9-2-2-2zM9 19H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zM19 3H5c-1.1 0-2 .9-2 2v4c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 9H7V7h2v2zm4 0h-2V7h2v2zm4 0h-2V7h2v2z"/>`,
     switch: `<path d="M19 13H5c-1.1 0-2 .9-2 2v4c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-4c0-1.1-.9-2-2-2zM9 19H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zM19 3H5c-1.1 0-2 .9-2 2v4c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 9H7V7h2v2zm4 0h-2V7h2v2zm4 0h-2V7h2v2z"/>`,
+    access_point: `<path d="M12 3C6.48 3 2 7.48 2 13c0 2.76 1.12 5.26 2.93 7.07l1.41-1.41C4.95 17.27 4 15.24 4 13c0-4.41 3.59-8 8-8s8 3.59 8 8c0 2.24-.95 4.27-2.34 5.66l1.41 1.41C20.88 18.26 22 15.76 22 13c0-5.52-4.48-10-10-10zm0 4c-3.31 0-6 2.69-6 6 0 1.66.67 3.16 1.76 4.24l1.42-1.42C8.44 15.1 8 14.1 8 13c0-2.21 1.79-4 4-4s4 1.79 4 4c0 1.1-.44 2.1-1.18 2.82l1.42 1.42C17.33 16.16 18 14.66 18 13c0-3.31-2.69-6-6-6zm0 4c-1.1 0-2 .9-2 2 0 .55.22 1.05.59 1.41l1.41-1.41V13c0-.55-.45-1-1-1z"/>`,
+    ap: `<path d="M12 3C6.48 3 2 7.48 2 13c0 2.76 1.12 5.26 2.93 7.07l1.41-1.41C4.95 17.27 4 15.24 4 13c0-4.41 3.59-8 8-8s8 3.59 8 8c0 2.24-.95 4.27-2.34 5.66l1.41 1.41C20.88 18.26 22 15.76 22 13c0-5.52-4.48-10-10-10zm0 4c-3.31 0-6 2.69-6 6 0 1.66.67 3.16 1.76 4.24l1.42-1.42C8.44 15.1 8 14.1 8 13c0-2.21 1.79-4 4-4s4 1.79 4 4c0 1.1-.44 2.1-1.18 2.82l1.42 1.42C17.33 16.16 18 14.66 18 13c0-3.31-2.69-6-6-6zm0 4c-1.1 0-2 .9-2 2 0 .55.22 1.05.59 1.41l1.41-1.41V13c0-.55-.45-1-1-1z"/>`,
     unmanaged_switch: `<path d="M19 13H5c-1.1 0-2 .9-2 2v4c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-4c0-1.1-.9-2-2-2zM9 19H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zM19 3H5c-1.1 0-2 .9-2 2v4c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 9H7V7h2v2zm4 0h-2V7h2v2zm4 0h-2V7h2v2z"/>`,
+
     repeater: `<path d="M12 3C6.48 3 2 7.48 2 13c0 2.76 1.12 5.26 2.93 7.07l1.41-1.41C4.95 17.27 4 15.24 4 13c0-4.41 3.59-8 8-8s8 3.59 8 8c0 2.24-.95 4.27-2.34 5.66l1.41 1.41C20.88 18.26 22 15.76 22 13c0-5.52-4.48-10-10-10zm0 4c-3.31 0-6 2.69-6 6 0 1.66.67 3.16 1.76 4.24l1.42-1.42C8.44 15.1 8 14.1 8 13c0-2.21 1.79-4 4-4s4 1.79 4 4c0 1.1-.44 2.1-1.18 2.82l1.42 1.42C17.33 16.16 18 14.66 18 13c0-3.31-2.69-6-6-6zm0 4c-1.1 0-2 .9-2 2 0 .55.22 1.05.59 1.41l1.41-1.41V13c0-.55-.45-1-1-1z"/>`,
     other: `<path d="M12 3C6.48 3 2 7.48 2 13c0 2.76 1.12 5.26 2.93 7.07l1.41-1.41C4.95 17.27 4 15.24 4 13c0-4.41 3.59-8 8-8s8 3.59 8 8c0 2.24-.95 4.27-2.34 5.66l1.41 1.41C20.88 18.26 22 15.76 22 13c0-5.52-4.48-10-10-10zm0 4c-3.31 0-6 2.69-6 6 0 1.66.67 3.16 1.76 4.24l1.42-1.42C8.44 15.1 8 14.1 8 13c0-2.21 1.79-4 4-4s4 1.79 4 4c0 1.1-.44 2.1-1.18 2.82l1.42 1.42C17.33 16.16 18 14.66 18 13c0-3.31-2.69-6-6-6zm0 4c-1.1 0-2 .9-2 2 0 .55.22 1.05.59 1.41l1.41-1.41V13c0-.55-.45-1-1-1z"/>`,
     client: `<path d="M20 18c1.1 0 1.99-.9 1.99-2L22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z"/>`,
     laptop: `<path d="M20 18c1.1 0 1.99-.9 1.99-2L22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z"/>`,
     smartphone: `<path d="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z"/>`,
     server: `<path d="M2 20h20v-4H2v4zm2-3h2v2H4v-2zM2 4v4h20V4H2zm4 3H4V5h2v2zm-4 7h20v-4H2v4zm2-3h2v2H4v-2z"/>`,
+    virtualisation_host: `<path d="M4 2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-7v2h3a2 2 0 0 1 2 2v1h2v6h-6v-6h2v-1h-4v1h2v6H8v-6h2v-1H6v1h2v6H2v-6h2v-1a2 2 0 0 1 2-2h3v-2H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm0 2v5h16V4H4z"/>`,
+    virtual_machine: `<path d="M3 3h18a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-7v2h3v2H7v-2h3v-2H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm0 2v12h18V5H3zm4 2 4 4-4 4v-3l-2 2v-6l2 2V7zm10 0 2 2-2 2-2-2 2-2z"/>`,
+    lxc_container: `<path d="m12 2 9 5v10l-9 5-9-5V7l9-5zm0 2.3L5.4 8 12 11.7 18.6 8 12 4.3zM5 9.7v6.1l6 3.3V13L5 9.7zm8 9.4 6-3.3V9.7L13 13v6.1z"/>`,
     pc_desktop: `<path d="M21 2H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h7l-2 3v1h8v-1l-2-3h7c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H3V4h18v12z"/>`,
     sensore: `<path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2-.9-2-2-2zm0-10C7.58 4 4 7.58 4 12s3.58 8 8 8 8-3.58 8-8-7.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6z"/>`,
     smart_switch: `<path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 15H5v-2h7v2zm4-5H5v-2h11v2zm3-5H5V6h14v2z"/>`,
@@ -675,7 +1341,8 @@
     air_conditioner: `<path d="M20 4H4c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 10H4V6h16v8zm-2 4H6v2h12v-2z"/>`,
     dehumidifier: `<path d="M12 2C8.14 2 5 5.14 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.86-3.14-7-7-7zm0 18c-2.91 0-5.17-2.61-6.17-4.66.7-.49 1.58-.84 2.57-.84 1.77 0 3.1 1.09 4.3 2.19.8-.73 1.83-1.35 3.03-1.35.86 0 1.63.31 2.25.77C17.06 17.51 14.86 20 12 20z"/>`,
     three_d_printer: `<path d="M19 8h-1V3H6v5H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zM8 5h8v3H8V5zm10 12H6v-4h12v4zm2-4c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/>`,
-    dryer: `<path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-7-2c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>`
+    dryer: `<path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-7-2c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>`,
+    phone: `<path d="M19 2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 18H5V4h14v16zM7 6h10v6H7V6zm1 8h2v2H8v-2zm3 0h2v2h-2v-2zm3 0h2v2h-2v-2zm-6 3h2v2H8v-2zm3 0h2v2h-2v-2zm3 0h2v2h-2v-2z"/>`
   };
 
   // Fetch topology data
@@ -699,7 +1366,8 @@
           const activeEl = document.activeElement;
           const isInteracting = activeEl && (
             activeEl.id === 'inspect-host-input' || 
-            activeEl.id === 'inspect-type-select'
+            activeEl.id === 'inspect-type-select' ||
+            activeEl.id === 'inspect-mini-switch-checkbox'
           );
           if (!isInteracting) {
             renderDetailCard(selectedNode);
@@ -725,200 +1393,445 @@
     }
   }
 
-  // Auto-Layout: compute levels using BFS starting from the Router/first node
+  let mapBounds = { minX: 100, maxX: 1200, minY: 50, maxY: 800 };
+
+  // Auto-Layout: Hierarchical Subtree Contour Tidy Tree with isolated corridors
   function computeLayout(filteredNodes, filteredLinks) {
-    const adj = {};
-    const parentMap = {};
-    
-    // Initialize adjacency list
-    filteredNodes.forEach(node => {
-      adj[node.id] = [];
-    });
-    
-    filteredLinks.forEach(link => {
-      // client links are strictly parent-child (source -> target)
-      // uplinks and infra links are also directed source -> target
-      if (adj[link.source] && adj[link.target]) {
-        adj[link.source].push(link.target);
-        adj[link.target].push(link.source);
+    const isVirtualGuest = node => ['virtual_machine', 'lxc_container'].includes(node.type);
+    const isWingNode = node => node.type === 'client' || isVirtualGuest(node);
+
+    // 1. Separate infrastructure nodes and wing nodes
+    const infraNodes = filteredNodes.filter(n => !isWingNode(n));
+    const wingNodes = filteredNodes.filter(n => isWingNode(n));
+    const infraNodesMap = {};
+    infraNodes.forEach(n => { infraNodesMap[n.id] = n; });
+
+    // 2. Build undirected adjacency for infrastructure
+    const infraAdj = {};
+    infraNodes.forEach(n => { infraAdj[n.id] = []; });
+    filteredLinks.filter(l => !['client', 'virtual_child'].includes(l.type)).forEach(l => {
+      if (infraAdj[l.source] && infraAdj[l.target] && l.source !== l.target) {
+        if (!infraAdj[l.source].includes(l.target)) infraAdj[l.source].push(l.target);
+        if (!infraAdj[l.target].includes(l.source)) infraAdj[l.target].push(l.source);
       }
     });
 
-    // Find the Root (prefer Internet, then Router, then switches)
-    let root = null;
-    const internetNodes = filteredNodes.filter(n => n.type === 'internet');
-    if (internetNodes.length > 0) {
-      root = internetNodes[0].id;
-    } else {
-      const routers = filteredNodes.filter(n => n.type === 'router');
-      if (routers.length > 0) {
-        root = routers[0].id;
-      } else {
-        const switches = filteredNodes.filter(n => n.type === 'switch');
-        if (switches.length > 0) {
-          // Prefer Fritz!Box switch node if present
-          const fritz = switches.find(n => (n.model && n.model.toLowerCase() === 'fritzbox') || n.name.toLowerCase().includes('fritz'));
-          if (fritz) {
-            root = fritz.id;
-          } else {
-            root = switches[0].id;
-          }
-        } else if (filteredNodes.length > 0) {
-          root = filteredNodes[0].id;
-        }
-      }
-    }
-
-    const levels = {};
-    const queue = [];
-    const visited = new Set();
-
-    if (root) {
-      queue.push({ id: root, level: 0 });
-      visited.add(root);
-    }
-
-    while (queue.length > 0) {
-      const curr = queue.shift();
-      levels[curr.id] = curr.level;
-
-      const neighbors = adj[curr.id] || [];
-      neighbors.forEach(neighbor => {
-        if (!visited.has(neighbor)) {
-          visited.add(neighbor);
-          parentMap[neighbor] = curr.id;
-          queue.push({ id: neighbor, level: curr.level + 1 });
-        }
-      });
-    }
-
-    // Place unreached/orphaned nodes on level 1
-    filteredNodes.forEach(node => {
-      if (!(node.id in levels)) {
-        levels[node.id] = 1;
-      }
-    });
-
-    // Group nodes by level
-    const nodesByLevel = {};
-    filteredNodes.forEach(node => {
-      const lvl = levels[node.id];
-      if (!nodesByLevel[lvl]) nodesByLevel[lvl] = [];
-      nodesByLevel[lvl].push(node);
-    });
-
-    // Let's filter out clients first from BFS to layout switches/infrastructure beautifully.
-    // Then we cluster client nodes in local fans around their parent switch/AP.
-    const switchesAndInfraByLevel = {};
-    const clientNodes = [];
-    
-    filteredNodes.forEach(node => {
-      if (node.type === 'client') {
-        clientNodes.push(node);
-      } else {
-        const lvl = levels[node.id];
-        if (!switchesAndInfraByLevel[lvl]) switchesAndInfraByLevel[lvl] = [];
-        switchesAndInfraByLevel[lvl].push(node);
-      }
-    });
-
-    // Dimensions
-    const svgWidth = Math.max(canvasContainer.clientWidth, 900);
-    const svgHeight = Math.max(canvasContainer.clientHeight, 600);
-
-    const maxLevel = Object.keys(switchesAndInfraByLevel).reduce((a, b) => Math.max(a, parseInt(b)), 0);
-    const levelHeight = Math.max((svgHeight - 160) / (maxLevel + 1), 180);
-
-    // 1. Layout switches and gateways level by level
-    Object.keys(switchesAndInfraByLevel).forEach(lvl => {
-      const levelNodes = switchesAndInfraByLevel[lvl];
-      const count = levelNodes.length;
-      
-      levelNodes.forEach((node, idx) => {
-        // If already positioned in cache, retrieve it
-        if (positionCache[node.id]) {
-          node.x = positionCache[node.id].x;
-          node.y = positionCache[node.id].y;
-        } else {
-          // Center-distribute horizontally
-          node.x = (idx + 0.5) * (svgWidth / count);
-          node.y = 80 + parseInt(lvl) * levelHeight;
-          
-          // Add a minor jitter to avoid direct line overlaps
-          node.x += (idx % 2 === 0 ? 15 : -15);
-          
-          // Save in cache
-          positionCache[node.id] = { x: node.x, y: node.y };
-        }
-      });
-    });
-
-    // 2. Layout client nodes in beautiful clusters / fans under their parent switch/AP
+    // 3. Group wing nodes (clients and virtual guests) around their parent infra node
     const clientsByParent = {};
-    clientNodes.forEach(client => {
-      // Find parent of this client
-      let parentId = null;
-      filteredLinks.forEach(link => {
-        if (link.target === client.id) {
-          parentId = link.source;
+    clientParentMap = {};
+    wingNodes.forEach(client => {
+      let parentId = client.parent_host_id || null;
+      if (!parentId) {
+        for (let i = 0; i < filteredLinks.length; i++) {
+          const l = filteredLinks[i];
+          if (l.target === client.id && infraNodesMap[l.source]) {
+            parentId = l.source;
+            break;
+          }
         }
-      });
+      }
       if (parentId) {
+        clientParentMap[client.id] = parentId;
         if (!clientsByParent[parentId]) clientsByParent[parentId] = [];
         clientsByParent[parentId].push(client);
       }
     });
 
+    // 4. Find primary root (Internet > Router > Switch > first)
+    let primaryRoot = null;
+    const internetNode = infraNodes.find(n => n.type === 'internet');
+    if (internetNode) {
+      primaryRoot = internetNode.id;
+    } else {
+      const routerNode = infraNodes.find(n => n.type === 'router' || n.role === 'router');
+      if (routerNode) {
+        primaryRoot = routerNode.id;
+      } else {
+        const switchNode = infraNodes.find(n => n.type === 'switch');
+        primaryRoot = switchNode ? switchNode.id : (infraNodes[0] ? infraNodes[0].id : null);
+      }
+    }
+
+    // Role priority for ordering sibling branches (switches/routers central, APs/hosts fanning out)
+    function getRolePriority(node) {
+      if (!node) return 99;
+      const type = node.type || node.role || '';
+      if (type === 'internet') return 0;
+      if (type === 'ont') return 1;
+      if (type === 'router') return 2;
+      if (type === 'distribution') return 3;
+      if (type === 'core') return 4;
+      if (type === 'switch') return 5;
+      if (type === 'access') return 6;
+      if (type === 'access_point' || type === 'ap') return 7;
+      if (type === 'virtualisation_host') return 8;
+      if (type === 'unmanaged_switch') return 9;
+      if (type === 'phone') return 10;
+      return 20;
+    }
+
+    // 5. Build directed spanning forest and compute levels (depths)
+    const visited = new Set();
+    const treeChildren = {};
+    const treeParent = {};
+    treeParentMap = {};
+    const levels = {};
+    const roots = [];
+
+    infraNodes.forEach(n => { treeChildren[n.id] = []; });
+
+    function traverseTree(startId, startLvl) {
+      roots.push(startId);
+      visited.add(startId);
+      const queue = [{ id: startId, level: startLvl }];
+      while (queue.length > 0) {
+        const curr = queue.shift();
+        levels[curr.id] = curr.level;
+        const nbrs = infraAdj[curr.id] || [];
+        // Sort neighbors so switches/backbone stay on the left/center, APs & hosts fan outward
+        nbrs.sort((a, b) => {
+          const nA = infraNodesMap[a];
+          const nB = infraNodesMap[b];
+          const prioDiff = getRolePriority(nA) - getRolePriority(nB);
+          if (prioDiff !== 0) return prioDiff;
+          return (nA?.name || '').localeCompare(nB?.name || '');
+        });
+        nbrs.forEach(nbr => {
+          if (!visited.has(nbr)) {
+            visited.add(nbr);
+            treeChildren[curr.id].push(nbr);
+            treeParent[nbr] = curr.id;
+            treeParentMap[nbr] = curr.id;
+            queue.push({ id: nbr, level: curr.level + 1 });
+          }
+        });
+      }
+    }
+
+    if (primaryRoot) {
+      traverseTree(primaryRoot, 0);
+    }
+
+    // Catch any disconnected infrastructure components (multi-site or unlinked devices)
+    infraNodes.forEach(n => {
+      if (!visited.has(n.id)) {
+        const startLvl = (primaryRoot && infraNodesMap[primaryRoot]?.type === 'internet') ? 1 : 0;
+        traverseTree(n.id, startLvl);
+      }
+    });
+
+    // 5b. Subtree weighting & balanced backbone centering
+    const subtreeWeight = {};
+    function computeSubtreeWeights(nodeId) {
+      const ch = treeChildren[nodeId] || [];
+      let totalDescendants = 0;
+      let maxDepth = 0;
+      ch.forEach(c => {
+        computeSubtreeWeights(c);
+        const w = subtreeWeight[c] || { descendants: 0, depth: 0 };
+        totalDescendants += 1 + w.descendants;
+        if (1 + w.depth > maxDepth) maxDepth = 1 + w.depth;
+      });
+      const score = totalDescendants * 10 + maxDepth * 5;
+      subtreeWeight[nodeId] = { descendants: totalDescendants, depth: maxDepth, score: score };
+    }
+    roots.forEach(r => computeSubtreeWeights(r));
+
+    function arrangeChildrenBalanced(children) {
+      if (!children || children.length <= 1) return children;
+      // Sort children by subtree score descending (heaviest backbone trunk first)
+      const sorted = [...children].sort((a, b) => {
+        const sA = subtreeWeight[a]?.score || 0;
+        const sB = subtreeWeight[b]?.score || 0;
+        if (sB !== sA) return sB - sA;
+        const prioDiff = getRolePriority(infraNodesMap[a]) - getRolePriority(infraNodesMap[b]);
+        if (prioDiff !== 0) return prioDiff;
+        return (infraNodesMap[a]?.name || '').localeCompare(infraNodesMap[b]?.name || '');
+      });
+
+      // Place heaviest backbone trunk in the center, then alternate remaining leaves to flanks
+      const result = [];
+      sorted.forEach((childId, idx) => {
+        if (idx === 0) {
+          result.push(childId);
+        } else if (idx % 2 === 1) {
+          result.push(childId); // right flank
+        } else {
+          result.unshift(childId); // left flank
+        }
+      });
+      return result;
+    }
+
+    infraNodes.forEach(n => {
+      treeChildren[n.id] = arrangeChildrenBalanced(treeChildren[n.id]);
+    });
+
+    // 6. Geometry Constants (Optimized to eliminate dead space)
+    const itemsPerCol = 10;
+    const colSpacing = 144;
+    const rowSpacing = 32;
+    const clientOffsetX = 175;
+    const SIBLING_GAP = 36;
+    const COMPONENT_GAP = 60;
+    const verticalGap = 42;
+
+    // Calculate node horizontal & vertical footprint including client wings
+    const nodeSelf = {};
+    infraNodes.forEach(n => {
+      const clients = clientsByParent[n.id] || [];
+      if (clients.length === 0 || collapsedSwitches.has(n.id)) {
+        nodeSelf[n.id] = { left: 95, right: 95, above: 30, below: 30 };
+      } else {
+        const nl = Math.ceil(clients.length / 2);
+        const nr = Math.floor(clients.length / 2);
+        const colsL = Math.ceil(nl / itemsPerCol);
+        const colsR = Math.ceil(nr / itemsPerCol);
+        const wL = colsL > 0 ? (clientOffsetX + (colsL - 1) * colSpacing + 69 + 10) : 95;
+        const wR = colsR > 0 ? (clientOffsetX + (colsR - 1) * colSpacing + 69 + 10) : 95;
+        const rows = Math.min(itemsPerCol, Math.max(nl, nr));
+        const wingHalfHeight = Math.max(30, ((rows - 1) * rowSpacing + 28) / 2 + 10);
+        nodeSelf[n.id] = { left: wL, right: wR, above: wingHalfHeight, below: wingHalfHeight };
+      }
+    });
+
+    // 7. Dynamic Level Y coordinates (prevents vertical overlap between tiers)
+    const byLevel = {};
+    infraNodes.forEach(n => {
+      const lvl = levels[n.id] ?? 0;
+      if (!byLevel[lvl]) byLevel[lvl] = [];
+      byLevel[lvl].push(n.id);
+    });
+
+    const sortedLevels = Object.keys(byLevel).map(Number).sort((a, b) => a - b);
+    const levelYMap = {};
+    let curY = 80;
+
+    for (let i = 0; i < sortedLevels.length; i++) {
+      const lvl = sortedLevels[i];
+      const nodesAtLvl = byLevel[lvl];
+      const maxAbove = Math.max(...nodesAtLvl.map(id => nodeSelf[id]?.above || 30));
+      const maxBelow = Math.max(...nodesAtLvl.map(id => nodeSelf[id]?.below || 30));
+      if (i === 0) {
+        curY = 80 + maxAbove;
+      } else {
+        const prevLvl = sortedLevels[i - 1];
+        const prevBelow = Math.max(...byLevel[prevLvl].map(id => nodeSelf[id]?.below || 30));
+        curY += prevBelow + verticalGap + maxAbove;
+      }
+      levelYMap[lvl] = curY;
+    }
+
+    // 8. Bottom-Up Subtree Width & Contour Calculation
+    const subtreeOffsets = {};
+
+    function getSubtreeContour(u) {
+      const children = treeChildren[u] || [];
+      if (children.length === 0) {
+        return {
+          left: [-nodeSelf[u].left],
+          right: [nodeSelf[u].right],
+        };
+      }
+
+      const childContours = children.map(c => getSubtreeContour(c));
+      const childRelX = [0];
+
+      for (let i = 1; i < children.length; i++) {
+        const prevC = childContours[i - 1];
+        const currC = childContours[i];
+        const minSpacing = nodeSelf[children[i - 1]].right + SIBLING_GAP + nodeSelf[children[i]].left;
+        let overlapShift = 0;
+        const maxCheckDepth = Math.min(prevC.right.length, currC.left.length);
+        for (let d = 0; d < maxCheckDepth; d++) {
+          const depthShift = prevC.right[d] - currC.left[d] + SIBLING_GAP;
+          if (depthShift > overlapShift) overlapShift = depthShift;
+        }
+        const shift = Math.max(minSpacing, overlapShift);
+        childRelX.push(childRelX[i - 1] + shift);
+      }
+
+      let midX;
+      const scores = children.map(c => subtreeWeight[c]?.score || 0);
+      const maxScore = Math.max(...scores);
+      const trunkIdx = scores.indexOf(maxScore);
+      const otherScores = scores.filter((_, idx) => idx !== trunkIdx);
+      const secondMax = otherScores.length > 0 ? Math.max(...otherScores) : 0;
+      if (maxScore > 0 && maxScore >= secondMax * 2 && children.length > 1) {
+        midX = childRelX[trunkIdx];
+      } else {
+        midX = (childRelX[0] + childRelX[children.length - 1]) / 2;
+      }
+      const offsets = childRelX.map(x => x - midX);
+      subtreeOffsets[u] = offsets;
+
+      // Merge contours
+      const combLeft = [-nodeSelf[u].left];
+      const combRight = [nodeSelf[u].right];
+
+      let maxChildDepth = 0;
+      childContours.forEach(c => {
+        if (c.left.length > maxChildDepth) maxChildDepth = c.left.length;
+      });
+
+      for (let d = 0; d < maxChildDepth; d++) {
+        let dLeft = 0;
+        let dRight = 0;
+        let first = true;
+        for (let i = 0; i < children.length; i++) {
+          if (d < childContours[i].left.length) {
+            const curL = offsets[i] + childContours[i].left[d];
+            const curR = offsets[i] + childContours[i].right[d];
+            if (first || curL < dLeft) dLeft = curL;
+            if (first || curR > dRight) dRight = curR;
+            first = false;
+          }
+        }
+        combLeft.push(dLeft);
+        combRight.push(dRight);
+      }
+
+      return { left: combLeft, right: combRight };
+    }
+
+    // 9. Position Forest Roots Side-by-Side
+    const rootContours = roots.map(r => getSubtreeContour(r));
+    const rootRelX = [0];
+
+    for (let j = 1; j < roots.length; j++) {
+      const prevC = rootContours[j - 1];
+      const currC = rootContours[j];
+      const minSpacing = nodeSelf[roots[j - 1]].right + COMPONENT_GAP + nodeSelf[roots[j]].left;
+      let overlapShift = 0;
+      const maxCheckDepth = Math.min(prevC.right.length, currC.left.length);
+      for (let d = 0; d < maxCheckDepth; d++) {
+        const depthShift = prevC.right[d] - currC.left[d] + COMPONENT_GAP;
+        if (depthShift > overlapShift) overlapShift = depthShift;
+      }
+      const shift = Math.max(minSpacing, overlapShift);
+      rootRelX.push(rootRelX[j - 1] + shift);
+    }
+
+    // Center roots in viewport
+    const containerWidth = canvasContainer ? canvasContainer.clientWidth : 1200;
+    const spineX = Math.max(containerWidth / 2, 700);
+    const totalRootSpan = rootRelX[roots.length - 1] - rootRelX[0];
+    const startX = spineX - totalRootSpan / 2;
+    const rootX = rootRelX.map(rx => startX + rx);
+
+    // 10. Top-Down Coordinate Assignment for Infrastructure Nodes
+    function assignCoords(u, currentX) {
+      const node = infraNodesMap[u];
+      if (!node) return;
+
+      if (node.type !== 'virtualisation_host' && positionCache[node.id]) {
+        node.x = positionCache[node.id].x;
+        node.y = positionCache[node.id].y;
+      } else {
+        node.x = currentX;
+        node.y = levelYMap[levels[u]] || 100;
+      }
+
+      const children = treeChildren[u] || [];
+      const offsets = subtreeOffsets[u] || [];
+      children.forEach((childId, idx) => {
+        assignCoords(childId, currentX + (offsets[idx] || 0));
+      });
+    }
+
+    roots.forEach((rootId, idx) => {
+      assignCoords(rootId, rootX[idx]);
+    });
+
+    // Ensure all infra nodes have coordinates
+    infraNodes.forEach((node, idx) => {
+      if (node.x === undefined || isNaN(node.x)) {
+        node.x = 200 + (idx % 4) * 250;
+        node.y = 100 + Math.floor(idx / 4) * 160;
+      }
+    });
+
+    // 11. Layout Client & Virtual Guest Wings around their parent
     Object.keys(clientsByParent).forEach(parentId => {
-      const parentNode = filteredNodes.find(n => n.id === parentId);
+      const parentNode = infraNodesMap[parentId];
       if (!parentNode) return;
 
       const clients = clientsByParent[parentId];
-      const count = clients.length;
-      clients.forEach((client, idx) => {
-        if (positionCache[client.id]) {
+      clients.sort((a, b) => {
+        const pA = String(a.parent_port || a.last_seen_port || '');
+        const pB = String(b.parent_port || b.last_seen_port || '');
+        if (pA !== pB) return pA.localeCompare(pB, undefined, { numeric: true });
+        return (a.name || a.host || '').localeCompare(b.name || b.host || '');
+      });
+
+      const px = parentNode.x;
+      const py = parentNode.y;
+
+      const leftClients = [];
+      const rightClients = [];
+
+      clients.forEach((c, idx) => {
+        if (idx % 2 === 0) leftClients.push(c);
+        else rightClients.push(c);
+      });
+
+      const leftRows = Math.min(itemsPerCol, leftClients.length);
+      const rightRows = Math.min(itemsPerCol, rightClients.length);
+
+      leftClients.forEach((client, i) => {
+        if (!isVirtualGuest(client) && positionCache[client.id]) {
           client.x = positionCache[client.id].x;
           client.y = positionCache[client.id].y;
         } else {
-          // Concentric staggered rings layout to avoid overlapping
-          const clientsPerRing = 4;
-          const ring = Math.floor(idx / clientsPerRing);
-          const idxInRing = idx % clientsPerRing;
-          
-          const clientsInThisRing = Math.min(clientsPerRing, count - ring * clientsPerRing);
-          const radius = 120 + ring * 95;
-          
-          const startAngle = Math.PI * 0.05; // ~9 degrees
-          const endAngle = Math.PI * 0.95;   // ~171 degrees
-          
-          let angle;
-          if (clientsInThisRing === 1) {
-            angle = Math.PI / 2;
-          } else {
-            angle = startAngle + idxInRing * (endAngle - startAngle) / (clientsInThisRing - 1);
-          }
-          
-          // Stagger alternate rings
-          if (ring % 2 === 1) {
-            angle += 0.15;
-          }
-          
-          client.x = parentNode.x + radius * Math.cos(angle);
-          client.y = parentNode.y + radius * Math.sin(angle);
+          const col = Math.floor(i / itemsPerCol);
+          const row = i % itemsPerCol;
+          client.x = px - clientOffsetX - col * colSpacing;
+          client.y = py + (row - (leftRows - 1) / 2) * rowSpacing;
+        }
+      });
 
-          positionCache[client.id] = { x: client.x, y: client.y };
+      rightClients.forEach((client, i) => {
+        if (!isVirtualGuest(client) && positionCache[client.id]) {
+          client.x = positionCache[client.id].x;
+          client.y = positionCache[client.id].y;
+        } else {
+          const col = Math.floor(i / itemsPerCol);
+          const row = i % itemsPerCol;
+          client.x = px + clientOffsetX + col * colSpacing;
+          client.y = py + (row - (rightRows - 1) / 2) * rowSpacing;
         }
       });
     });
 
-    // Ensure all nodes have valid x and y coordinates, preventing overlapping at (0,0)
-    filteredNodes.forEach((node, idx) => {
-      if (node.x === undefined || node.y === undefined || isNaN(node.x) || isNaN(node.y)) {
-        node.x = 120 + (idx % 5) * 180;
-        node.y = 80 + Math.floor(idx / 5) * 120;
-        positionCache[node.id] = { x: node.x, y: node.y };
-      }
+    // 12. Compute overall map bounding box
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    filteredNodes.forEach(n => {
+      const hw = isWingNode(n) ? 75 : (nodeSelf[n.id]?.left || 90);
+      const hh = isWingNode(n) ? 16 : (nodeSelf[n.id]?.above || 35);
+      if (n.x - hw < minX) minX = n.x - hw;
+      if (n.x + hw > maxX) maxX = n.x + hw;
+      if (n.y - hh < minY) minY = n.y - hh;
+      if (n.y + hh > maxY) maxY = n.y + hh;
     });
+
+    // If map protrudes past x = 80 on the left, shift all nodes rightward so nothing is cut off
+    if (minX < 80) {
+      const shiftX = 80 - minX;
+      filteredNodes.forEach(n => {
+        if (!positionCache[n.id]) {
+          n.x += shiftX;
+        }
+      });
+      maxX += shiftX;
+      minX = 80;
+    }
+
+    mapBounds = {
+      minX: Math.floor(minX),
+      maxX: Math.ceil(maxX),
+      minY: Math.floor(minY),
+      maxY: Math.ceil(maxY)
+    };
 
     // Assemble nodes map
     nodes = {};
@@ -929,13 +1842,33 @@
 
   // Draw links and nodes
   function processAndRender() {
-    // 1. Filter elements based on client toggle
+    const isWingNodeType = type => type === 'client' || type === 'virtual_machine' || type === 'lxc_container';
+    const isWingLinkType = type => type === 'client' || type === 'virtual_child';
+
+    // 1. Build client count map for all switches/routers
+    clientCountMap = {};
+    rawLinks.forEach(link => {
+      if (link.type === 'client') {
+        clientCountMap[link.source] = (clientCountMap[link.source] || 0) + 1;
+      }
+    });
+
+    // 2. Filter elements based on client toggle and per-switch collapsed state
     let filteredNodes = rawNodes;
     let filteredLinks = rawLinks;
     
     if (!showClients) {
-      filteredNodes = rawNodes.filter(n => n.type !== 'client');
-      filteredLinks = rawLinks.filter(l => l.type !== 'client');
+      filteredNodes = rawNodes.filter(n => !isWingNodeType(n.type));
+      filteredLinks = rawLinks.filter(l => !isWingLinkType(l.type));
+    } else if (collapsedSwitches.size > 0) {
+      const hiddenWingNodeIds = new Set();
+      rawLinks.forEach(l => {
+        if (isWingLinkType(l.type) && collapsedSwitches.has(l.source)) {
+          hiddenWingNodeIds.add(l.target);
+        }
+      });
+      filteredNodes = rawNodes.filter(n => !hiddenWingNodeIds.has(n.id));
+      filteredLinks = rawLinks.filter(l => !hiddenWingNodeIds.has(l.target));
     }
 
     // Compute node coordinates
@@ -946,6 +1879,231 @@
 
     // Render nodes
     renderNodes(filteredNodes);
+
+    // Retain active path highlight if set
+    if (activePathHighlightNodeId) {
+      highlightConnectionPath(activePathHighlightNodeId, activePathTargetNodeId);
+    }
+  }
+
+  // ==========================================
+  // PATH HIGHLIGHTING & CONNECTION FLOW ENGINE
+  // ==========================================
+  function assemblePathData(nodeIdsList) {
+    const nodeIdsSet = new Set(nodeIdsList);
+    const linkKeysSet = new Set();
+    const hops = [];
+
+    for (let i = 0; i < nodeIdsList.length - 1; i++) {
+      const fromId = nodeIdsList[i];
+      const toId = nodeIdsList[i + 1];
+      const fromNode = rawNodes.find(n => n.id === fromId);
+      const toNode = rawNodes.find(n => n.id === toId);
+
+      // Look for connecting link
+      const link = rawLinks.find(l => 
+        (l.source === fromId && l.target === toId) ||
+        (l.source === toId && l.target === fromId)
+      );
+
+      if (link) {
+        linkKeysSet.add(`${link.source}->${link.target}`);
+        linkKeysSet.add(`${link.target}->${link.source}`);
+      }
+
+      hops.push({
+        from: fromNode,
+        to: toNode,
+        link: link
+      });
+    }
+
+    return {
+      nodeIds: nodeIdsSet,
+      linkKeys: linkKeysSet,
+      hops: hops,
+      orderedNodeIds: nodeIdsList
+    };
+  }
+
+  function getPathToRoot(nodeId) {
+    if (!nodeId) return null;
+    const pathList = [];
+    let curr = nodeId;
+    const visited = new Set();
+    while (curr && !visited.has(curr)) {
+      visited.add(curr);
+      pathList.push(curr);
+      curr = clientParentMap[curr] || treeParentMap[curr];
+    }
+    return assemblePathData(pathList);
+  }
+
+  function findPathBetween(startId, endId) {
+    if (!startId || !endId || startId === endId) return getPathToRoot(startId);
+
+    // Trace startId to root
+    const pathToRootA = [];
+    let curr = startId;
+    const visitedA = new Set();
+    while (curr && !visitedA.has(curr)) {
+      visitedA.add(curr);
+      pathToRootA.push(curr);
+      curr = clientParentMap[curr] || treeParentMap[curr];
+    }
+
+    // Trace endId to root
+    const pathToRootB = [];
+    curr = endId;
+    const visitedB = new Set();
+    while (curr && !visitedB.has(curr)) {
+      visitedB.add(curr);
+      pathToRootB.push(curr);
+      curr = clientParentMap[curr] || treeParentMap[curr];
+    }
+
+    // Find lowest common ancestor
+    let lca = null;
+    for (let id of pathToRootB) {
+      if (visitedA.has(id)) {
+        lca = id;
+        break;
+      }
+    }
+
+    if (!lca) {
+      return getPathToRoot(startId);
+    }
+
+    const indexLcaA = pathToRootA.indexOf(lca);
+    const pathA = pathToRootA.slice(0, indexLcaA + 1);
+
+    const indexLcaB = pathToRootB.indexOf(lca);
+    const pathB = pathToRootB.slice(0, indexLcaB).reverse();
+
+    const fullPathNodeIds = [...pathA, ...pathB];
+    return assemblePathData(fullPathNodeIds);
+  }
+
+  function highlightConnectionPath(nodeId, targetNodeId = null) {
+    if (!nodeId) {
+      clearPathHighlight();
+      return;
+    }
+
+    let pathData;
+    if (targetNodeId && targetNodeId !== nodeId) {
+      pathData = findPathBetween(nodeId, targetNodeId);
+    } else {
+      pathData = getPathToRoot(nodeId);
+    }
+
+    if (!pathData || pathData.orderedNodeIds.length === 0) return;
+
+    activePathHighlightNodeId = nodeId;
+    activePathTargetNodeId = targetNodeId;
+    activePathData = pathData;
+
+    // 1. Activate class on viewport
+    viewport.classList.add('path-highlight-active');
+
+    // 2. Update nodes in DOM
+    const nodeEls = document.querySelectorAll('#nodes-group .node');
+    nodeEls.forEach(el => {
+      const id = el.id.replace('node-', '');
+      if (id === nodeId) {
+        el.classList.add('path-origin', 'in-path');
+        el.classList.remove('path-destination');
+      } else if (targetNodeId && id === targetNodeId) {
+        el.classList.add('path-destination', 'in-path');
+        el.classList.remove('path-origin');
+      } else if (pathData.nodeIds.has(id)) {
+        el.classList.add('in-path');
+        el.classList.remove('path-origin', 'path-destination');
+      } else {
+        el.classList.remove('in-path', 'path-origin', 'path-destination');
+      }
+    });
+
+    // 3. Update links in DOM
+    const linkEls = document.querySelectorAll('#links-group .link-group');
+    linkEls.forEach(el => {
+      const key1 = `${el.dataset.source}->${el.dataset.target}`;
+      const key2 = `${el.dataset.target}->${el.dataset.source}`;
+      if (pathData.linkKeys.has(key1) || pathData.linkKeys.has(key2)) {
+        el.classList.add('in-path');
+      } else {
+        el.classList.remove('in-path');
+      }
+    });
+
+    // 4. Update HUD
+    renderPathHud(nodeId, targetNodeId, pathData);
+  }
+
+  function clearPathHighlight() {
+    activePathHighlightNodeId = null;
+    activePathTargetNodeId = null;
+    activePathData = null;
+
+    viewport.classList.remove('path-highlight-active');
+
+    document.querySelectorAll('#nodes-group .node').forEach(el => {
+      el.classList.remove('in-path', 'path-origin', 'path-destination');
+    });
+
+    document.querySelectorAll('#links-group .link-group').forEach(el => {
+      el.classList.remove('in-path');
+    });
+
+    const hud = document.getElementById('path-highlight-hud');
+    if (hud) hud.style.display = 'none';
+
+    if (selectedNode) {
+      renderDetailCard(selectedNode);
+    }
+  }
+
+  function renderPathHud(nodeId, targetNodeId, pathData) {
+    const hud = document.getElementById('path-highlight-hud');
+    if (!hud) return;
+
+    const originNode = rawNodes.find(n => n.id === nodeId);
+    if (!originNode) {
+      hud.style.display = 'none';
+      return;
+    }
+
+    const titleEl = document.getElementById('path-hud-title');
+    const routeEl = document.getElementById('path-hud-route');
+
+    const hopCount = pathData.hops.length;
+    if (targetNodeId && targetNodeId !== nodeId) {
+      const destNode = rawNodes.find(n => n.id === targetNodeId);
+      titleEl.textContent = `Point-to-Point Path (${hopCount} hop${hopCount === 1 ? '' : 's'})`;
+    } else {
+      titleEl.textContent = `Path to Gateway (${hopCount} hop${hopCount === 1 ? '' : 's'})`;
+    }
+
+    let routeHtml = '';
+    pathData.orderedNodeIds.forEach((id, idx) => {
+      const n = rawNodes.find(node => node.id === id);
+      if (!n) return;
+      const name = n.name || n.host || formatMacAddress(n.mac) || id;
+      routeHtml += `<span class="hop-node">${name}</span>`;
+      if (idx < pathData.orderedNodeIds.length - 1) {
+        const hop = pathData.hops[idx];
+        let portBadge = '';
+        if (hop && hop.link) {
+          const p = hop.link.source_port || hop.link.target_port;
+          if (p && p !== 'unknown') portBadge = `<span class="hop-port">[P${p}]</span>`;
+        }
+        routeHtml += `<span class="hop-arrow">➔</span>${portBadge} `;
+      }
+    });
+
+    routeEl.innerHTML = routeHtml;
+    hud.style.display = 'block';
   }
 
   function renderLinks(filteredLinks) {
@@ -957,49 +2115,128 @@
       const targetNode = nodes[link.target];
       if (!sourceNode || !targetNode) return;
 
-      // Draw a smooth S-curve Bezier path between nodes
+      const isClientLink = link.type === 'client';
+      const isWingLink = isClientLink || link.type === 'virtual_child';
       const x1 = sourceNode.x;
       const y1 = sourceNode.y;
       const x2 = targetNode.x;
       const y2 = targetNode.y;
 
-      const midY = (y1 + y2) / 2;
-      const pathData = `M ${x1} ${y1} C ${x1} ${midY}, ${x2} ${midY}, ${x2} ${y2}`;
+      let sx, sy, cx, cy, pathData;
+
+      if (isWingLink) {
+        // Horizontal branching curve from parent switch into the side wing
+        if (x2 < x1) {
+          // Left Wing
+          sx = x1 - 90;
+          sy = y1;
+          cx = x2 + 69;
+          cy = y2;
+        } else {
+          // Right Wing
+          sx = x1 + 90;
+          sy = y1;
+          cx = x2 - 69;
+          cy = y2;
+        }
+        const midX = (sx + cx) / 2;
+        pathData = `M ${sx} ${sy} C ${midX} ${sy}, ${midX} ${cy}, ${cx} ${cy}`;
+      } else {
+        const dy = y2 - y1;
+        if (Math.abs(dy) < 25) {
+          // Same-tier horizontal arch
+          const archH = Math.min(80, Math.abs(x2 - x1) * 0.25 + 30);
+          sx = x1;
+          sy = y1 - 26;
+          cx = x2;
+          cy = y2 - 26;
+          pathData = `M ${sx} ${sy} C ${sx} ${sy - archH}, ${cx} ${cy - archH}, ${cx} ${cy}`;
+        } else if (dy > 0) {
+          // Top to bottom
+          sx = x1;
+          sy = y1 + 26;
+          cx = x2;
+          cy = y2 - 26;
+          const midY = (sy + cy) / 2;
+          pathData = `M ${sx} ${sy} C ${sx} ${midY}, ${cx} ${midY}, ${cx} ${cy}`;
+        } else {
+          // Bottom to top
+          sx = x1;
+          sy = y1 - 26;
+          cx = x2;
+          cy = y2 + 26;
+          const midY = (sy + cy) / 2;
+          pathData = `M ${sx} ${sy} C ${sx} ${midY}, ${cx} ${midY}, ${cx} ${cy}`;
+        }
+      }
 
       const speedClass = `link-${(link.speed || '').toLowerCase().replace('/', '').replace('.', '_')}`;
-      
+      let satClass = '';
+      const utilPct = link.utilization_pct || 0;
+      if (utilPct >= 80) satClass = 'link-saturated';
+      else if (utilPct >= 50) satClass = 'link-moderate';
+
+      const typeClass = `link-type-${link.type || 'infra'}`;
+
       const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-      g.setAttribute('class', `link-group ${speedClass}`);
+      g.setAttribute('class', `link-group ${typeClass} ${speedClass} ${satClass}`.trim());
       g.setAttribute('id', `link-group-${idx}`);
+      g.dataset.source = link.source;
+      g.dataset.target = link.target;
 
       // Transparent thick background path for easier hovering
       const bgPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       bgPath.setAttribute('d', pathData);
       bgPath.setAttribute('class', 'link-bg');
       
-      // The visible line
+      // Visible line
       const linePath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       linePath.setAttribute('d', pathData);
       linePath.setAttribute('class', 'link-line');
 
-      // The marching dashes indicator
+      g.appendChild(bgPath);
+      g.appendChild(linePath);
+
+      // Marching dashes path (visible on backbone, or when highlighted on client wings)
       const marchPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       marchPath.setAttribute('d', pathData);
       marchPath.setAttribute('class', 'link-marching');
-      if (!showMarching) marchPath.style.display = 'none';
+      
+      const tx = link.tx_bps || 0;
+      const rx = link.rx_bps || 0;
+      const throughput = Math.max(tx, rx);
+      if (throughput > 0) {
+        const mbps = throughput / 1000000;
+        const dur = Math.max(1.2, Math.min(15.0, 16.0 - Math.log10(Math.max(1, mbps) + 1) * 4.5));
+        marchPath.style.animationDuration = `${dur.toFixed(1)}s`;
+        if (rx > tx) {
+          marchPath.style.animationDirection = 'reverse';
+        }
+      } else {
+        marchPath.style.animationDuration = '25s';
+      }
 
-      g.appendChild(bgPath);
-      g.appendChild(linePath);
+      if (isWingLink || !showMarching) marchPath.style.display = 'none';
       g.appendChild(marchPath);
 
-      // Render port speed label badge at 25% and 75% along the Bezier curve path
-      if (link.source_port && link.source_port !== 'unknown') {
-        const pt = getBezierPoint(0.25, x1, y1, x2, y2);
-        g.appendChild(createPortBadge(pt.x, pt.y - 8, link.source_port.replace('Port ', 'P'), 'source-badge'));
-      }
-      if (link.target_port && link.target_port !== 'unknown') {
-        const pt = getBezierPoint(0.75, x1, y1, x2, y2);
-        g.appendChild(createPortBadge(pt.x, pt.y + 8, link.target_port.replace('Port ', 'P'), 'target-badge'));
+      // Port badges strictly on backbone infrastructure links
+      if (!isWingLink) {
+
+        // Port badges at 25% and 75% along the curve
+        if (link.source_port && link.source_port !== 'unknown') {
+          const pt = getBezierPoint(0.25, sx, sy, cx, cy);
+          g.appendChild(createPortBadge(pt.x, pt.y - 8, formatPortBadge(link.source_port), 'source-badge'));
+        }
+        if (link.target_port && link.target_port !== 'unknown') {
+          const pt = getBezierPoint(0.75, sx, sy, cx, cy);
+          g.appendChild(createPortBadge(pt.x, pt.y + 8, formatPortBadge(link.target_port), 'target-badge'));
+        }
+
+        // Live throughput HUD badge at midpoint if active traffic
+        if (throughput >= 50000) {
+          const midPt = getBezierPoint(0.5, sx, sy, cx, cy);
+          g.appendChild(createTrafficBadge(midPt.x, midPt.y, formatTraffic(throughput)));
+        }
       }
 
       // Tooltip triggers
@@ -1009,6 +2246,34 @@
 
       container.appendChild(g);
     });
+  }
+
+  function createTrafficBadge(x, y, text) {
+    const badge = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    badge.setAttribute('transform', `translate(${x - 22}, ${y - 6})`);
+    badge.style.pointerEvents = 'none';
+    badge.setAttribute('class', 'traffic-badge-group');
+
+    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    rect.setAttribute('width', '44');
+    rect.setAttribute('height', '12');
+    rect.setAttribute('rx', '3');
+    rect.setAttribute('ry', '3');
+    rect.setAttribute('fill', 'rgba(13, 17, 23, 0.9)');
+    rect.setAttribute('stroke', '#388bfd');
+    rect.setAttribute('stroke-width', '0.75');
+
+    const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    txt.setAttribute('x', '22');
+    txt.setAttribute('y', '6');
+    txt.setAttribute('class', 'port-badge-text');
+    txt.setAttribute('fill', '#58a6ff');
+    txt.style.fontSize = '7.5px';
+    txt.textContent = text;
+
+    badge.appendChild(rect);
+    badge.appendChild(txt);
+    return badge;
   }
 
   // Cubic Bezier curve calculator
@@ -1066,7 +2331,11 @@
       if (node.type === 'switch' && node.model && node.model.toLowerCase() === 'fritzbox') {
         typeClass = 'node-router';
       }
+      if (node.type === 'virtual_machine' || node.type === 'lxc_container') {
+        typeClass = 'node-client';
+      }
       const statusClass = `node-${node.status}`;
+      const isClient = node.type === 'client' || node.type === 'virtual_machine' || node.type === 'lxc_container';
       
       const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
       g.setAttribute('class', `node ${typeClass} ${statusClass}`);
@@ -1076,111 +2345,239 @@
       // Hover highlight ring container
       const highlightRing = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
       highlightRing.setAttribute('class', 'highlight-ring');
-      highlightRing.setAttribute('r', '36');
+      highlightRing.setAttribute('r', isClient ? '22' : '36');
       highlightRing.setAttribute('cx', '0');
       highlightRing.setAttribute('cy', '0');
       highlightRing.style.display = 'none';
       highlightRing.setAttribute('id', `highlight-${node.id}`);
       g.appendChild(highlightRing);
 
-      // Glassmorphism card rectangle or circle
-      let nodeShape;
-      const isClient = node.type === 'client';
-      let sublabelVal = '';
-      if (node.type === 'switch') sublabelVal = node.ip || '';
-      else if (node.type === 'unmanaged_switch') sublabelVal = `Unmanaged (Port ${node.parent_port})`;
-      else if (node.type === 'internet') sublabelVal = 'WAN External';
-      else sublabelVal = node.mac || '';
-      const textLen = Math.max((node.name || '').length, sublabelVal.length);
-      // Auto width: base of 150px for clients, 160px for others, expanding if text is long
-      const nodeWidth = Math.max(isClient ? 150 : 160, textLen * 7.5 + 35);
-      const nodeHeight = isClient ? 44 : 52;
+      if (isClient) {
+        // ==========================================
+        // COMPACT UNIFI CLIENT PILL (138px x 28px)
+        // ==========================================
+        const pillWidth = 138;
+        const pillHeight = 28;
 
-      nodeShape = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-      nodeShape.setAttribute('x', -nodeWidth / 2);
-      nodeShape.setAttribute('y', -nodeHeight / 2);
-      nodeShape.setAttribute('width', nodeWidth);
-      nodeShape.setAttribute('height', nodeHeight);
-      nodeShape.setAttribute('class', 'node-bg');
-      g.appendChild(nodeShape);
+        const nodeShape = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        nodeShape.setAttribute('x', -pillWidth / 2);
+        nodeShape.setAttribute('y', -pillHeight / 2);
+        nodeShape.setAttribute('width', pillWidth);
+        nodeShape.setAttribute('height', pillHeight);
+        nodeShape.setAttribute('class', 'node-bg');
+        g.appendChild(nodeShape);
 
-      // Icon placeholder
-      const iconGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-      iconGroup.setAttribute('transform', `translate(${-nodeWidth/2 + 10}, ${-12})`);
-      
-      const iconWrapper = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      iconWrapper.setAttribute('width', '24');
-      iconWrapper.setAttribute('height', '24');
-      iconWrapper.setAttribute('viewBox', '0 0 24 24');
-      
-      let iconMarkup = ICONS.other;
-      if (node.type === 'client') {
+        // Icon (16x16)
+        const iconGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        iconGroup.setAttribute('transform', `translate(${-pillWidth / 2 + 8}, -8)`);
+        
+        const iconWrapper = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        iconWrapper.setAttribute('width', '16');
+        iconWrapper.setAttribute('height', '16');
+        iconWrapper.setAttribute('viewBox', '0 0 24 24');
+        
         const dType = node.device_type || 'laptop';
-        iconMarkup = ICONS[dType] || ICONS.laptop || ICONS.client;
-      } else if (node.type === 'switch' && node.model && node.model.toLowerCase() === 'fritzbox') {
-        iconMarkup = ICONS.router;
+        let iconMarkup = ICONS[dType] || ICONS.laptop || ICONS.client;
+        if (!iconMarkup.trim().startsWith('<')) {
+          iconWrapper.innerHTML = `<path d="${iconMarkup}" class="node-icon-svg" fill="#34d399"/>`;
+        } else {
+          iconWrapper.innerHTML = iconMarkup;
+          Array.from(iconWrapper.children).forEach(child => {
+            child.classList.add('node-icon-svg');
+            if (!child.getAttribute('fill')) child.setAttribute('fill', '#34d399');
+          });
+        }
+        iconGroup.appendChild(iconWrapper);
+        g.appendChild(iconGroup);
+
+        // Client Label Text
+        const labelText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        labelText.setAttribute('x', -pillWidth / 2 + 28);
+        labelText.setAttribute('y', 3.5);
+        labelText.setAttribute('class', 'client-pill-label');
+        
+        let displayName = node.name || node.host || formatMacAddress(node.mac);
+        if (displayName.length > 13) {
+          displayName = displayName.substring(0, 11) + '…';
+        }
+        labelText.textContent = displayName;
+        g.appendChild(labelText);
+
+        // Status indicator dot
+        const statusDot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        statusDot.setAttribute('cx', pillWidth / 2 - 10);
+        statusDot.setAttribute('cy', 0);
+        statusDot.setAttribute('r', '3');
+        statusDot.setAttribute('fill', node.status === 'online' ? '#3fb950' : '#f85149');
+        g.appendChild(statusDot);
+
+        // Native SVG Title Tooltip for Client
+        const titleEl = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+        const cName = node.name || node.host || formatMacAddress(node.mac);
+        const cPort = (node.parent_port || node.last_seen_port) ? ` (Port ${node.parent_port || node.last_seen_port})` : '';
+        const cIp = node.ip ? ` • ${node.ip}` : '';
+        const cMac = node.mac ? ` • ${formatMacAddress(node.mac)}` : '';
+        titleEl.textContent = `${cName}${cIp}${cMac}${cPort}`;
+        g.appendChild(titleEl);
+
       } else {
-        iconMarkup = ICONS[node.type] || ICONS.other;
+        // ==========================================
+        // INFRASTRUCTURE / SWITCH CARD (180px x 52px)
+        // ==========================================
+        const nodeWidth = 180;
+        const nodeHeight = 52;
+
+        let sublabelVal = '';
+        if (node.type === 'switch' || node.type === 'router' || node.type === 'distribution' || node.type === 'core' || node.type === 'access') {
+          sublabelVal = node.ip || (node.mac ? formatMacAddress(node.mac) : '');
+        } else if (node.type === 'access_point' || node.type === 'ap') {
+          sublabelVal = node.ip || (node.mac ? formatMacAddress(node.mac) : 'Access Point');
+        } else if (node.type === 'ont') {
+          sublabelVal = `ONT (${node.speed || 'WAN'})`;
+        } else if (node.type === 'unmanaged_switch') {
+          sublabelVal = `Unmanaged (${formatPortDisplay(node.parent_port)})`;
+        } else if (node.type === 'phone') {
+          sublabelVal = `Phone (${formatPortDisplay(node.parent_port)})`;
+        } else if (node.type === 'internet') {
+          sublabelVal = 'Cloud WAN';
+        } else {
+          sublabelVal = node.mac || '';
+        }
+
+        const nodeShape = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        nodeShape.setAttribute('x', -nodeWidth / 2);
+        nodeShape.setAttribute('y', -nodeHeight / 2);
+        nodeShape.setAttribute('width', nodeWidth);
+        nodeShape.setAttribute('height', nodeHeight);
+        nodeShape.setAttribute('class', 'node-bg');
+        g.appendChild(nodeShape);
+
+        // Icon placeholder
+        const iconGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        iconGroup.setAttribute('transform', `translate(${-nodeWidth / 2 + 10}, ${-12})`);
+        
+        const iconWrapper = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        iconWrapper.setAttribute('width', '24');
+        iconWrapper.setAttribute('height', '24');
+        iconWrapper.setAttribute('viewBox', '0 0 24 24');
+        
+        let iconMarkup = ICONS.other;
+        if (node.type === 'access_point' || node.type === 'ap') {
+          iconMarkup = ICONS.access_point || ICONS.repeater;
+        } else if (node.type === 'switch' && node.model && node.model.toLowerCase() === 'fritzbox') {
+          iconMarkup = ICONS.router;
+        } else if (node.type === 'distribution' || node.type === 'core' || node.type === 'access') {
+          iconMarkup = ICONS.switch;
+        } else {
+          iconMarkup = ICONS[node.type] || ICONS.other;
+        }
+        
+        if (!iconMarkup.trim().startsWith('<')) {
+          iconWrapper.innerHTML = `<path d="${iconMarkup}" class="node-icon-svg" fill="currentColor"/>`;
+        } else {
+          iconWrapper.innerHTML = iconMarkup;
+          Array.from(iconWrapper.children).forEach(child => {
+            child.classList.add('node-icon-svg');
+            if (!child.getAttribute('fill')) child.setAttribute('fill', 'currentColor');
+          });
+        }
+        iconGroup.appendChild(iconWrapper);
+        g.appendChild(iconGroup);
+
+        // Main Text Label
+        const labelText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        labelText.setAttribute('x', '16');
+        labelText.setAttribute('y', '-3');
+        labelText.setAttribute('class', 'node-label');
+        
+        let displayName = node.name || '';
+        if (displayName.length > 20) {
+          displayName = displayName.substring(0, 18) + '...';
+        }
+        labelText.textContent = displayName;
+        g.appendChild(labelText);
+
+        // Sub-label (IP or MAC)
+        const subLabelText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        subLabelText.setAttribute('x', '16');
+        subLabelText.setAttribute('y', '12');
+        subLabelText.setAttribute('class', 'node-sublabel');
+        if (node.type === 'switch') {
+          subLabelText.textContent = node.ip;
+        } else if (node.type === 'ont') {
+          subLabelText.textContent = `ONT (${node.speed || 'WAN'})`;
+        } else if (node.type === 'unmanaged_switch') {
+          subLabelText.textContent = `Unmanaged (${formatPortDisplay(node.parent_port)})`;
+        } else if (node.type === 'phone') {
+          subLabelText.textContent = `Phone (${formatPortDisplay(node.parent_port)})`;
+        } else if (node.type === 'internet') {
+          subLabelText.textContent = 'Cloud WAN';
+        } else {
+          subLabelText.textContent = formatMacAddress(node.mac);
+        }
+        g.appendChild(subLabelText);
+
+        // Status indicator dot
+        const statusDot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        statusDot.setAttribute('cx', nodeWidth / 2 - 12);
+        statusDot.setAttribute('cy', -nodeHeight / 2 + 12);
+        statusDot.setAttribute('r', '3.5');
+        statusDot.setAttribute('fill', node.status === 'online' ? '#3fb950' : '#f85149');
+        g.appendChild(statusDot);
+
+        // Native SVG Title Tooltip for Switch/Infra Node
+        const titleEl = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+        titleEl.textContent = `${node.name || ''} (${node.ip || formatMacAddress(node.mac)})`;
+        g.appendChild(titleEl);
+
+        // Per-Switch Collapsible Client Toggle Badge
+        const clientCount = clientCountMap[node.id] || node.client_count || 0;
+        if (clientCount > 0) {
+          const isCollapsed = collapsedSwitches.has(node.id) || !showClients;
+          const badgeG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+          badgeG.setAttribute('class', 'client-toggle-badge');
+          badgeG.setAttribute('transform', `translate(0, ${nodeHeight / 2 + 12})`);
+          
+          const badgeWidth = 98;
+          const badgeHeight = 20;
+          
+          const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+          bg.setAttribute('x', -badgeWidth / 2);
+          bg.setAttribute('y', -badgeHeight / 2);
+          bg.setAttribute('width', badgeWidth);
+          bg.setAttribute('height', badgeHeight);
+          bg.setAttribute('class', 'client-toggle-bg');
+          
+          const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          txt.setAttribute('x', 0);
+          txt.setAttribute('y', 3.5);
+          txt.setAttribute('class', 'client-toggle-text');
+          txt.textContent = isCollapsed ? `👥 ${clientCount} clients ▸` : `👥 ${clientCount} clients ▾`;
+          
+          badgeG.appendChild(bg);
+          badgeG.appendChild(txt);
+          
+          badgeG.addEventListener('touchstart', (e) => {
+            e.stopPropagation();
+          });
+          badgeG.addEventListener('touchend', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            toggleSwitchClients(node.id);
+          });
+          badgeG.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleSwitchClients(node.id);
+          });
+          
+          g.appendChild(badgeG);
+        }
       }
-      
-      // If the markup doesn't start with a tag (like <path), wrap it in one
-      if (!iconMarkup.trim().startsWith('<')) {
-        iconWrapper.innerHTML = `<path d="${iconMarkup}" class="node-icon-svg" fill="currentColor"/>`;
-      } else {
-        iconWrapper.innerHTML = iconMarkup;
-        // Add class and fill to child nodes
-        Array.from(iconWrapper.children).forEach(child => {
-          child.classList.add('node-icon-svg');
-          if (!child.getAttribute('fill')) {
-            child.setAttribute('fill', 'currentColor');
-          }
-        });
-      }
 
-      iconGroup.appendChild(iconWrapper);
-      g.appendChild(iconGroup);
-
-      // Main Text Label (x=19 centers text inside the remaining card space)
-      const labelText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      labelText.setAttribute('x', '19');
-      labelText.setAttribute('y', '-2');
-      labelText.setAttribute('class', 'node-label');
-      
-      // Expand truncation threshold to 26 characters due to auto width
-      let displayName = node.name || '';
-      if (displayName.length > 26) {
-        displayName = displayName.substring(0, 23) + '...';
-      }
-      labelText.textContent = displayName;
-      g.appendChild(labelText);
-
-      // Sub-label (IP or MAC) (x=19 centers text inside remaining card space)
-      const subLabelText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      subLabelText.setAttribute('x', '19');
-      subLabelText.setAttribute('y', '12');
-      subLabelText.setAttribute('class', 'node-sublabel');
-      if (node.type === 'switch') {
-        subLabelText.textContent = node.ip;
-      } else if (node.type === 'unmanaged_switch') {
-        subLabelText.textContent = `Unmanaged (Port ${node.parent_port})`;
-      } else if (node.type === 'internet') {
-        subLabelText.textContent = 'WAN External';
-      } else {
-        subLabelText.textContent = formatMacAddress(node.mac);
-      }
-      g.appendChild(subLabelText);
-
-      // Small Active Status indicator dot
-      const statusDot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-      statusDot.setAttribute('cx', nodeWidth / 2 - 10);
-      statusDot.setAttribute('cy', -nodeHeight / 2 + 10);
-      statusDot.setAttribute('r', '3.5');
-      statusDot.setAttribute('fill', node.status === 'online' ? '#3fb950' : '#f85149');
-      g.appendChild(statusDot);
-
-      // Mouse drag and click handlers
+      // Mouse & Touch drag and click handlers
       g.addEventListener('mousedown', (e) => startDragNode(e, node));
-      g.addEventListener('click', (e) => selectNode(node));
+      g.addEventListener('click', (e) => selectNode(node, e.shiftKey));
+      g.addEventListener('touchstart', (e) => handleNodeTouchStart(e, node), { passive: false });
 
       container.appendChild(g);
     });
@@ -1194,6 +2591,26 @@
       return cleaned.match(/.{2}/g).join(':');
     }
     return mac;
+  }
+
+  function formatPortDisplay(port) {
+    if (port === null || port === undefined || port === '') return '';
+    const s = String(port).trim();
+    if (/^\d+$/.test(s)) return `Port ${parseInt(s, 10)}`;
+    const m = s.match(/^(?:port|p|lan)[\s\-_:.]*(\d+)$/i);
+    if (m) return `Port ${parseInt(m[1], 10)}`;
+    return s;
+  }
+
+  function formatPortBadge(port) {
+    if (port === null || port === undefined || port === '') return '';
+    const s = String(port).trim();
+    if (/^\d+$/.test(s)) return `P${parseInt(s, 10)}`;
+    const m = s.match(/^(?:port|p|lan)[\s\-_:.]*(\d+)$/i);
+    if (m) return `P${parseInt(m[1], 10)}`;
+    const vm = s.match(/^vlan[\s\-_:.]*(\d+)$/i);
+    if (vm) return `VLAN ${parseInt(vm[1], 10)}`;
+    return s;
   }
 
   // ==========================================
@@ -1259,11 +2676,99 @@
   }
 
   // ==========================================
-  // ZOOM & PAN CANVAS
+  // TOUCH DRAG & TAP FOR NODES
   // ==========================================
+  let touchNodeState = null;
+
+  function handleNodeTouchStart(e, node) {
+    if (e.touches.length !== 1) {
+      touchNodeState = null;
+      return;
+    }
+    const t = e.touches[0];
+    touchNodeState = {
+      node: node,
+      startX: t.clientX,
+      startY: t.clientY,
+      nodeX: node.x,
+      nodeY: node.y,
+      moved: false,
+      startTime: Date.now()
+    };
+  }
+
+  function handleNodeTouchMove(e) {
+    if (!touchNodeState) return;
+    if (e.touches.length !== 1) {
+      if (touchNodeState.moved) {
+        stopDragNode();
+      }
+      touchNodeState = null;
+      return;
+    }
+    const t = e.touches[0];
+    const dx = t.clientX - touchNodeState.startX;
+    const dy = t.clientY - touchNodeState.startY;
+
+    if (!touchNodeState.moved && Math.hypot(dx, dy) > 8) {
+      touchNodeState.moved = true;
+      draggedNode = touchNodeState.node;
+      dragOffset.x = (touchNodeState.startX / zoomScale) - touchNodeState.node.x;
+      dragOffset.y = (touchNodeState.startY / zoomScale) - touchNodeState.node.y;
+    }
+
+    if (touchNodeState.moved && draggedNode) {
+      e.preventDefault();
+      const mouseX = t.clientX;
+      const mouseY = t.clientY;
+      const newX = (mouseX / zoomScale) - dragOffset.x;
+      const newY = (mouseY / zoomScale) - dragOffset.y;
+      draggedNode.x = newX;
+      draggedNode.y = newY;
+      positionCache[draggedNode.id] = { x: newX, y: newY };
+      const nodeEl = document.getElementById(`node-${draggedNode.id}`);
+      if (nodeEl) nodeEl.setAttribute('transform', `translate(${newX}, ${newY})`);
+      processAndRender();
+    }
+  }
+
+  async function handleNodeTouchEnd(e) {
+    if (!touchNodeState) return;
+    const state = touchNodeState;
+    touchNodeState = null;
+
+    if (state.moved) {
+      e.preventDefault();
+      await stopDragNode();
+    } else {
+      // Tap on node: select & inspect
+      e.preventDefault();
+      selectNode(state.node);
+    }
+  }
+
+  function handleNodeTouchCancel() {
+    if (touchNodeState && touchNodeState.moved) {
+      stopDragNode();
+    }
+    touchNodeState = null;
+  }
+
+  document.addEventListener('touchmove', handleNodeTouchMove, { passive: false });
+  document.addEventListener('touchend', handleNodeTouchEnd);
+  document.addEventListener('touchcancel', handleNodeTouchCancel);
+
+  // ==========================================
+  // ZOOM & PAN CANVAS (MOUSE & TOUCH)
+  // ==========================================
+  let panMoved = false;
+  let canvasStartPos = { x: 0, y: 0 };
+
   canvasContainer.addEventListener('mousedown', (e) => {
-    if (e.target === svg || e.target.tagName === 'path' || e.target.classList.contains('link-bg')) {
+    if (e.target === svg || e.target.id === 'map-svg' || e.target.tagName === 'svg' || e.target.classList.contains('link-bg') || e.target === viewport) {
       isDraggingCanvas = true;
+      panMoved = false;
+      canvasStartPos = { x: e.clientX, y: e.clientY };
       canvasStartPan.x = e.clientX - panX;
       canvasStartPan.y = e.clientY - panY;
       document.addEventListener('mousemove', panCanvas);
@@ -1273,6 +2778,9 @@
 
   function panCanvas(e) {
     if (!isDraggingCanvas) return;
+    if (Math.hypot(e.clientX - canvasStartPos.x, e.clientY - canvasStartPos.y) > 4) {
+      panMoved = true;
+    }
     panX = e.clientX - canvasStartPan.x;
     panY = e.clientY - canvasStartPan.y;
     updateViewportTransform();
@@ -1282,23 +2790,163 @@
     isDraggingCanvas = false;
     document.removeEventListener('mousemove', panCanvas);
     document.removeEventListener('mouseup', stopPanCanvas);
+    if (!panMoved) {
+      clearPathHighlight();
+    }
   }
+
+  // Touch Gestures on Canvas: 1-Finger Pan, 2-Finger Pinch Zoom, Double-Tap
+  let isTouchPanning = false;
+  let isTouchPinching = false;
+  let touchPanMoved = false;
+  let touchPanStart = { x: 0, y: 0 };
+  let initialPinchDist = 0;
+  let initialPinchZoom = 1;
+  let initialPinchMid = { x: 0, y: 0 };
+  let initialPinchPan = { x: 0, y: 0 };
+  let lastCanvasTapTime = 0;
+  let lastCanvasTapPos = { x: 0, y: 0 };
+
+  canvasContainer.addEventListener('touchstart', (e) => {
+    if (e.target.closest('.node') || e.target.closest('.map-controls') || e.target.closest('.top-toolbar') || e.target.closest('.path-hud') || e.target.closest('.legend-bar')) {
+      return;
+    }
+
+    if (e.touches.length === 1) {
+      isTouchPanning = true;
+      touchPanMoved = false;
+      touchPanStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      canvasStartPan.x = e.touches[0].clientX - panX;
+      canvasStartPan.y = e.touches[0].clientY - panY;
+    } else if (e.touches.length === 2) {
+      isTouchPanning = false;
+      isTouchPinching = true;
+      touchNodeState = null;
+      e.preventDefault();
+      
+      const t1 = e.touches[0];
+      const t2 = e.touches[1];
+      initialPinchDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+      initialPinchZoom = zoomScale;
+      initialPinchMid = { x: (t1.clientX + t2.clientX) / 2, y: (t1.clientY + t2.clientY) / 2 };
+      initialPinchPan = { x: panX, y: panY };
+    }
+  }, { passive: false });
+
+  canvasContainer.addEventListener('touchmove', (e) => {
+    if (touchNodeState && touchNodeState.moved) return;
+    if (e.target.closest('.map-controls') || e.target.closest('.top-toolbar') || e.target.closest('.path-hud')) return;
+
+    if (isTouchPinching && e.touches.length === 2) {
+      e.preventDefault();
+      const t1 = e.touches[0];
+      const t2 = e.touches[1];
+      const currentDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+      const currentMid = { x: (t1.clientX + t2.clientX) / 2, y: (t1.clientY + t2.clientY) / 2 };
+
+      if (initialPinchDist > 0) {
+        const factor = currentDist / initialPinchDist;
+        const newScale = Math.min(Math.max(initialPinchZoom * factor, 0.15), 4);
+
+        const rect = canvasContainer.getBoundingClientRect();
+        const cx = initialPinchMid.x - rect.left;
+        const cy = initialPinchMid.y - rect.top;
+
+        let px = cx - (cx - initialPinchPan.x) * (newScale / initialPinchZoom);
+        let py = cy - (cy - initialPinchPan.y) * (newScale / initialPinchZoom);
+
+        px += (currentMid.x - initialPinchMid.x);
+        py += (currentMid.y - initialPinchMid.y);
+
+        panX = px;
+        panY = py;
+        zoomScale = newScale;
+        updateViewportTransform();
+      }
+    } else if (isTouchPanning && e.touches.length === 1) {
+      const dist = Math.hypot(e.touches[0].clientX - touchPanStart.x, e.touches[0].clientY - touchPanStart.y);
+      if (dist > 6) touchPanMoved = true;
+      if (touchPanMoved) {
+        e.preventDefault();
+        panX = e.touches[0].clientX - canvasStartPan.x;
+        panY = e.touches[0].clientY - canvasStartPan.y;
+        updateViewportTransform();
+      }
+    }
+  }, { passive: false });
+
+  canvasContainer.addEventListener('touchend', (e) => {
+    if (isTouchPinching) {
+      if (e.touches.length < 2) {
+        isTouchPinching = false;
+        if (e.touches.length === 1) {
+          isTouchPanning = true;
+          touchPanMoved = true;
+          canvasStartPan.x = e.touches[0].clientX - panX;
+          canvasStartPan.y = e.touches[0].clientY - panY;
+        }
+      }
+    } else if (isTouchPanning) {
+      if (e.touches.length === 0) {
+        isTouchPanning = false;
+        if (!touchPanMoved && !touchNodeState) {
+          const now = Date.now();
+          const changedTouch = e.changedTouches[0];
+          if (now - lastCanvasTapTime < 320 && Math.hypot(changedTouch.clientX - lastCanvasTapPos.x, changedTouch.clientY - lastCanvasTapPos.y) < 30) {
+            // Double tap zoom
+            if (zoomScale > 1.3) {
+              resetZoom();
+            } else {
+              zoom(1.6, changedTouch.clientX, changedTouch.clientY);
+            }
+            lastCanvasTapTime = 0;
+          } else {
+            lastCanvasTapTime = now;
+            lastCanvasTapPos = { x: changedTouch.clientX, y: changedTouch.clientY };
+            clearPathHighlight();
+            if (window.innerWidth <= 900) {
+              toggleSidebar(false);
+            }
+          }
+        }
+      }
+    }
+  });
+
+  canvasContainer.addEventListener('touchcancel', () => {
+    isTouchPanning = false;
+    isTouchPinching = false;
+  });
+
+  // Clear path highlight on Escape key
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      if (document.activeElement && ['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+        document.activeElement.blur();
+        return;
+      }
+      clearPathHighlight();
+      if (window.innerWidth <= 900) {
+        toggleSidebar(false);
+      }
+    }
+  });
 
   svg.addEventListener('wheel', (e) => {
     e.preventDefault();
     const zoomFactor = e.deltaY < 0 ? 1.15 : 0.85;
-    zoom(zoomFactor);
-  });
+    zoom(zoomFactor, e.clientX, e.clientY);
+  }, { passive: false });
 
-  function zoom(factor) {
+  function zoom(factor, centerX = null, centerY = null) {
     const newScale = Math.min(Math.max(zoomScale * factor, 0.15), 4);
     
-    // Zoom centered on the middle of the viewport
-    const containerWidth = canvasContainer.clientWidth;
-    const containerHeight = canvasContainer.clientHeight;
+    const containerRect = canvasContainer.getBoundingClientRect();
+    const cx = centerX !== null ? (centerX - containerRect.left) : (canvasContainer.clientWidth / 2);
+    const cy = centerY !== null ? (centerY - containerRect.top) : (canvasContainer.clientHeight / 2);
     
-    panX = containerWidth / 2 - (containerWidth / 2 - panX) * (newScale / zoomScale);
-    panY = containerHeight / 2 - (containerHeight / 2 - panY) * (newScale / zoomScale);
+    panX = cx - (cx - panX) * (newScale / zoomScale);
+    panY = cy - (cy - panY) * (newScale / zoomScale);
     
     zoomScale = newScale;
     updateViewportTransform();
@@ -1306,9 +2954,17 @@
 
   function resetZoom() {
     const containerWidth = canvasContainer.clientWidth;
-    panX = Math.max(20, (containerWidth - 960) / 2);
-    panY = 30;
-    zoomScale = 1;
+    const containerHeight = canvasContainer.clientHeight;
+    const mapWidth = Math.max(mapBounds.maxX - mapBounds.minX, 400);
+    const mapHeight = Math.max(mapBounds.maxY - mapBounds.minY, 300);
+
+    const scaleX = (containerWidth - 80) / mapWidth;
+    const scaleY = (containerHeight - 100) / mapHeight;
+    zoomScale = Math.min(Math.max(Math.min(scaleX, scaleY, 1.0), 0.25), 1.1);
+
+    const midX = (mapBounds.minX + mapBounds.maxX) / 2;
+    panX = containerWidth / 2 - midX * zoomScale;
+    panY = Math.max(30, (containerHeight - mapHeight * zoomScale) / 3);
     updateViewportTransform();
   }
 
@@ -1334,16 +2990,29 @@
 
   function toggleSidebar(open) {
     const sidebar = document.getElementById('sidebar');
+    const backdrop = document.getElementById('sidebar-backdrop');
     if (open) {
       sidebar.classList.remove('closed');
+      if (backdrop && window.innerWidth <= 900) {
+        backdrop.classList.add('active');
+      }
     } else {
       sidebar.classList.add('closed');
+      if (backdrop) {
+        backdrop.classList.remove('active');
+      }
     }
   }
 
-  function selectNode(node) {
+  function selectNode(node, shiftKey = false) {
+    if (!node) return;
     selectedNode = node;
     toggleSidebar(true);
+    if (shiftKey && activePathHighlightNodeId && activePathHighlightNodeId !== node.id) {
+      highlightConnectionPath(activePathHighlightNodeId, node.id);
+    } else {
+      highlightConnectionPath(node.id);
+    }
     renderDetailCard(node);
   }
 
@@ -1353,7 +3022,12 @@
     let iconSvg = ICONS.client;
     
     if (node.type === 'internet') { avatarColor = '#06b6d4'; iconSvg = ICONS.internet; }
+    else if (node.type === 'ont') { avatarColor = '#10b981'; iconSvg = ICONS.ont; }
     else if (node.type === 'router') { avatarColor = '#a855f7'; iconSvg = ICONS.router; }
+    else if (node.type === 'distribution') { avatarColor = '#8b5cf6'; iconSvg = ICONS.switch; }
+    else if (node.type === 'core') { avatarColor = '#0284c7'; iconSvg = ICONS.switch; }
+    else if (node.type === 'access') { avatarColor = '#3b82f6'; iconSvg = ICONS.switch; }
+    else if (node.type === 'access_point' || node.type === 'ap') { avatarColor = '#f97316'; iconSvg = ICONS.access_point || ICONS.repeater; }
     else if (node.type === 'switch') {
       if (node.model && node.model.toLowerCase() === 'fritzbox') {
         avatarColor = '#a855f7';
@@ -1364,6 +3038,7 @@
       }
     }
     else if (node.type === 'unmanaged_switch') { avatarColor = '#0284c7'; iconSvg = ICONS.unmanaged_switch; }
+    else if (node.type === 'phone') { avatarColor = '#06b6d4'; iconSvg = ICONS.phone; }
     else if (node.type === 'repeater') { avatarColor = '#f97316'; iconSvg = ICONS.repeater; }
     else if (node.type === 'client') {
       const dType = node.device_type || 'laptop';
@@ -1377,6 +3052,8 @@
       iconContent = `<path d="${iconContent}"/>`;
     }
     
+    const roleTitle = (node.type === 'ont') ? 'OPTICAL NETWORK TERMINAL (ONT)' : (node.type === 'internet' ? 'INTERNET CLOUD' : (node.role ? node.role.toUpperCase() : (node.type === 'unmanaged_switch' ? 'UNMANAGED SWITCH' : (node.type === 'phone' ? 'VOIP DESK PHONE' : (node.model && node.model.toLowerCase() === 'fritzbox' ? 'ROUTER / GATEWAY' : String(node.type || 'device').toUpperCase())))));
+
     let html = `
       <div class="detail-avatar-container">
         <div class="detail-avatar" style="border-color: ${avatarColor}; color: ${avatarColor};">
@@ -1384,16 +3061,17 @@
         </div>
         <div class="detail-title">
           <h3>${node.name}</h3>
-          <p style="color: ${avatarColor};">${node.type === 'unmanaged_switch' ? 'UNMANAGED SWITCH' : (node.type === 'internet' ? 'INTERNET WAN' : (node.model && node.model.toLowerCase() === 'fritzbox' ? 'ROUTER / GATEWAY' : node.type.toUpperCase()))}</p>
+          <p style="color: ${avatarColor};">${roleTitle}</p>
         </div>
       </div>
     `;
 
-    if (node.type === 'switch') {
+    const isSwitchLike = ['switch', 'router', 'distribution', 'core', 'access', 'virtualisation_host'].includes(node.type);
+    if (isSwitchLike) {
       html += `
         <div class="detail-item">
           <div class="label">IP Address</div>
-          <div class="value mono">${node.ip}</div>
+          <div class="value mono">${node.ip || 'N/A'}</div>
         </div>
         <div class="detail-item">
           <div class="label">MAC Address</div>
@@ -1401,16 +3079,183 @@
         </div>
         <div class="detail-item">
           <div class="label">Hardware Model</div>
-          <div class="value">${node.model || 'Generic Model'}</div>
+          <div class="value">${(node.model && node.model !== 'generic_switch') ? node.model : (node.type === 'virtualisation_host' ? 'Proxmox VE' : (node.type === 'switch' ? 'Managed Switch' : (node.type === 'router' ? 'Router' : (node.type === 'access_point' ? 'Access Point' : (node.type === 'ont' ? 'ONT' : 'Standard Device')))))}</div>
         </div>
         <div class="detail-item">
           <div class="label">Status</div>
           <div class="value" style="color: ${node.status === 'online' ? '#3fb950' : '#f85149'}">
-            ${node.status.toUpperCase()}
+            ${(node.status || 'unknown').toUpperCase()}
           </div>
         </div>
+      `;
+
+      if (node.type === 'virtualisation_host') {
+        const hostInterfaces = (node.interfaces || []).filter(i => i.name || i.mac);
+        html += `
+          <div class="detail-item">
+            <div class="label">Cluster</div>
+            <div class="value">${node.cluster_name || 'Standalone Proxmox'}</div>
+          </div>
+          <div class="detail-item">
+            <div class="label">Guests on Host</div>
+            <div class="value">${node.child_count || 0}</div>
+          </div>
+          <div class="detail-item">
+            <div class="label">Resource Usage</div>
+            <div class="value">CPU ${((node.cpu || 0) * 100).toFixed(1)}% / Memory ${formatResourceBytes(node.memory || 0)} of ${formatResourceBytes(node.max_memory || 0)}</div>
+          </div>
+        `;
+        if (hostInterfaces.length > 0) {
+          html += `
+            <div style="border-top: 1px solid rgba(48, 54, 61, 0.4); margin-top: 12px; padding-top: 10px;">
+              <h3 style="font-size: 11px; text-transform: uppercase; color: #8b949e; letter-spacing: 0.5px; margin-bottom: 8px; font-weight: 600;">Host Interfaces</h3>
+              <div style="display: flex; flex-direction: column; gap: 4px;">
+          `;
+          hostInterfaces.forEach(i => {
+            html += `
+              <div class="port-row-detail">
+                <span class="port-num-badge">${i.name || 'Interface'}</span>
+                <span class="port-status-indicator ${i.active ? 'status-up' : 'status-down'}">${i.active ? 'UP' : 'DOWN'}</span>
+                <span class="port-speed-detail mono">${formatMacAddress(i.mac) || 'MAC unreported'}</span>
+              </div>
+            `;
+          });
+          html += `</div></div>`;
+        }
+      }
+
+      // Port Roster & Flow Table
+      if (node.ports && node.ports.length > 0) {
+        html += `
+          <div style="border-top: 1px solid rgba(48, 54, 61, 0.4); margin-top: 12px; padding-top: 10px;">
+            <h3 style="font-size: 11px; text-transform: uppercase; color: #8b949e; letter-spacing: 0.5px; margin-bottom: 8px; font-weight: 600;">Port Roster & Flow</h3>
+            <div style="max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px;">
+        `;
+        node.ports.forEach(p => {
+          const isUp = String(p.link_status || p.link || p.status || '').toLowerCase().includes('up');
+          const role = p.role || (isUp ? 'access' : 'unused');
+          const roleClass = `role-${role}`;
+          const portLabel = p.name || (p.port ? ('Port ' + p.port) : (p.port_id ? ('Port ' + p.port_id) : 'Port'));
+          const tx = (p.telemetry && p.telemetry.tx_bps) || p.speed_tx_bps || 0;
+          const rx = (p.telemetry && p.telemetry.rx_bps) || p.speed_rx_bps || 0;
+          html += `
+            <div class="port-row-detail">
+              <span class="port-num-badge">${portLabel}</span>
+              <span class="port-status-indicator ${isUp ? 'status-up' : 'status-down'}">${isUp ? 'UP' : 'DOWN'}</span>
+              <span class="port-speed-detail">${p.speed || 'N/A'}</span>
+              <span class="role-badge ${roleClass}">${role}</span>
+              <span class="port-traffic-detail">Tx: ${formatTraffic(tx)} / Rx: ${formatTraffic(rx)}</span>
+            </div>
+          `;
+        });
+        html += `
+            </div>
+          </div>
+        `;
+      }
+
+      // Connected Clients Grouped by Port (UniFi Port Accordion)
+      const switchClients = rawNodes.filter(n => {
+        if (n.type !== 'client') return false;
+        return rawLinks.some(l => l.source === node.id && l.target === n.id);
+      });
+
+      if (switchClients.length > 0) {
+        const clientsByPort = {};
+        switchClients.forEach(client => {
+          const link = rawLinks.find(l => l.source === node.id && l.target === client.id);
+          const portId = (link && link.source_port) || client.parent_port || client.last_seen_port || 'Unknown';
+          if (!clientsByPort[portId]) clientsByPort[portId] = [];
+          clientsByPort[portId].push(client);
+        });
+
+        const isCurrentlyCollapsed = collapsedSwitches.has(node.id) || !showClients;
+        html += `
+          <div style="border-top: 1px solid rgba(48, 54, 61, 0.4); margin-top: 12px; padding-top: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <h3 style="font-size: 11px; text-transform: uppercase; color: #8b949e; letter-spacing: 0.5px; font-weight: 600;">
+                Connected Clients (${switchClients.length})
+              </h3>
+              <button type="button" onclick="toggleSwitchClients('${node.id}')" style="background: rgba(56, 139, 253, 0.15); border: 1px solid rgba(56, 139, 253, 0.4); color: #58a6ff; font-size: 10px; padding: 2px 8px; border-radius: 12px; cursor: pointer;">
+                ${isCurrentlyCollapsed ? 'Show on Map ▾' : 'Hide on Map ▸'}
+              </button>
+            </div>
+            <div style="max-height: 240px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px;">
+        `;
+
+        const sortedPorts = Object.keys(clientsByPort).sort((a, b) => {
+          const numA = parseInt(String(a).replace(/\D/g, ''), 10) || 999;
+          const numB = parseInt(String(b).replace(/\D/g, ''), 10) || 999;
+          return numA - numB;
+        });
+
+        sortedPorts.forEach(port => {
+          const pClients = clientsByPort[port];
+          const portLabel = formatPortDisplay(port);
+          html += `
+            <div style="background: rgba(13, 17, 23, 0.6); border: 1px solid rgba(48, 54, 61, 0.5); border-radius: 6px; padding: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 11px; font-weight: 600; color: #58a6ff;">
+                <span>${portLabel}</span>
+                <span style="color: #8b949e; font-size: 10px;">${pClients.length} ${pClients.length === 1 ? 'device' : 'devices'}</span>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 4px;">
+          `;
+          pClients.forEach(c => {
+            const dType = c.device_type || 'laptop';
+            const cIcon = ICONS[dType] || ICONS.client;
+            const cName = c.name || c.host || formatMacAddress(c.mac);
+            const iconSvgMarkup = cIcon.startsWith('<') ? cIcon : `<path d="${cIcon}"/>`;
+            html += `
+              <div onclick="selectNode(rawNodes.find(n => n.id === '${c.id}'))" style="display: flex; align-items: center; justify-content: space-between; padding: 4px 6px; background: rgba(22, 27, 34, 0.5); border-radius: 4px; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#21262d'" onmouseout="this.style.background='rgba(22, 27, 34, 0.5)'">
+                <div style="display: flex; align-items: center; gap: 6px; overflow: hidden;">
+                  <svg viewBox="0 0 24 24" width="13" height="13" style="fill: #34d399; flex-shrink: 0;">${iconSvgMarkup}</svg>
+                  <span style="font-size: 11px; color: #e1e4e8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 130px;">${cName}</span>
+                </div>
+                <span style="font-size: 9px; font-family: monospace; color: #8b949e;">${c.ip || formatMacAddress(c.mac).slice(-8)}</span>
+              </div>
+            `;
+          });
+          html += `
+              </div>
+            </div>
+          `;
+        });
+
+        html += `
+            </div>
+          </div>
+        `;
+      }
+
+      html += `
         <div class="control-row" style="margin-top: 14px;">
-          <a href="/config" class="map-btn" style="width: auto; height: auto; padding: 6px 12px; font-size: 11px; text-decoration: none;">Configure Switch</a>
+          <a href="/config" class="map-btn" style="width: auto; height: auto; padding: 6px 12px; font-size: 11px; text-decoration: none;">Configure Device</a>
+        </div>
+      `;
+    } else if (node.type === 'access_point') {
+      html += `
+        <div class="detail-item">
+          <div class="label">IP Address</div>
+          <div class="value mono">${node.ip || 'N/A'}</div>
+        </div>
+        <div class="detail-item">
+          <div class="label">Parent Switch</div>
+          <div class="value">${node.parent_ip}</div>
+        </div>
+        <div class="detail-item">
+          <div class="label">Parent Port</div>
+          <div class="value">${formatPortDisplay(node.parent_port)}</div>
+        </div>
+        <div class="detail-item">
+          <div class="label">Wireless Clients</div>
+          <div class="value">${node.client_count || 0} active</div>
+        </div>
+        ${node.vendor ? `<div class="detail-item"><div class="label">Vendor</div><div class="value">${node.vendor}</div></div>` : ''}
+        <div class="detail-item">
+          <div class="label">Status</div>
+          <div class="value" style="color: ${node.status === 'online' ? '#3fb950' : '#f85149'}">
+            ${(node.status || 'unknown').toUpperCase()}
+          </div>
         </div>
       `;
     } else if (node.type === 'unmanaged_switch') {
@@ -1421,26 +3266,248 @@
         </div>
         <div class="detail-item">
           <div class="label">Parent Port</div>
-          <div class="value">Port ${node.parent_port}</div>
+          <div class="value">${formatPortDisplay(node.parent_port)}</div>
         </div>
         <div class="detail-item">
           <div class="label">Status</div>
           <div class="value" style="color: ${node.status === 'online' ? '#3fb950' : '#f85149'}">
-            ${node.status.toUpperCase()}
+            ${(node.status || 'unknown').toUpperCase()}
           </div>
         </div>
       `;
-    } else if (node.type === 'internet') {
+    } else if (node.type === 'phone') {
       html += `
         <div class="detail-item">
-          <div class="label">Connection Type</div>
-          <div class="value">WAN External (ONT)</div>
+          <div class="label">Parent Switch</div>
+          <div class="value">${node.parent_ip || 'N/A'}</div>
+        </div>
+        <div class="detail-item">
+          <div class="label">Parent Port</div>
+          <div class="value">${formatPortDisplay(node.parent_port)}</div>
+        </div>
+        ${node.passthrough_port ? `
+        <div class="detail-item">
+          <div class="label">Passthrough Port</div>
+          <div class="value mono">${node.passthrough_port}</div>
+        </div>` : ''}
+        ${node.ip ? `
+        <div class="detail-item">
+          <div class="label">IP Address</div>
+          <div class="value mono" style="color: #58a6ff; font-weight: 500;">
+            ${node.ip}
+            <button onclick="navigator.clipboard.writeText('${node.ip}')" title="Copy IP" style="background: none; border: none; color: #8b949e; cursor: pointer; margin-left: 6px; padding: 0 4px; font-size: 11px;">📋</button>
+          </div>
+        </div>` : ''}
+        ${node.hostname ? `
+        <div class="detail-item">
+          <div class="label">Discovered Hostname</div>
+          <div class="value" style="color: #f0f6fc; font-weight: 500;">
+            <span class="badge" style="background: rgba(56, 139, 253, 0.15); color: #58a6ff; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-family: monospace;">${node.hostname}</span>
+          </div>
+        </div>` : ''}
+        <div class="detail-item">
+          <div class="label">MAC Address</div>
+          <div class="value mono">${formattedMac}</div>
+        </div>
+        ${node.vendor ? `<div class="detail-item"><div class="label">Vendor</div><div class="value">${node.vendor}</div></div>` : ''}
+        <div class="detail-item">
+          <div class="label">Host Nickname</div>
+          <div class="value" style="margin-top: 4px;">
+            <input type="text" id="inspect-host-input" value="${node.name || ''}" 
+                   placeholder="${node.hostname || 'Enter device nickname...'}" 
+                   onblur="updateClientHost('${node.mac || node.id}', this.value)"
+                   style="width: 100%; background: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 6px 10px; color: #e1e4e8; font-size: 12px; outline: none; transition: border-color 0.2s;"
+                   onfocus="this.style.borderColor='#58a6ff'" 
+                   onblur="this.style.borderColor='#30363d'">
+          </div>
+        </div>
+        <div class="detail-item" style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed rgba(48, 54, 61, 0.4);">
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 12px; color: #f0f6fc;">
+            <input type="checkbox" id="inspect-mini-switch-checkbox" ${node.is_mini_switch ? 'checked' : ''} 
+                   onchange="updateClientPassthrough('${node.mac || node.id}', this.checked)"
+                   style="cursor: pointer; width: 14px; height: 14px; accent-color: #58a6ff;">
+            <span style="font-weight: 500;">Ethernet Passthrough</span>
+          </label>
+          <div style="font-size: 11px; color: #8b949e; margin-top: 4px; margin-left: 22px; line-height: 1.4;">
+            Uncheck to return this device to a standard client without passthrough routing.
+          </div>
         </div>
         <div class="detail-item">
           <div class="label">Status</div>
           <div class="value" style="color: ${node.status === 'online' ? '#3fb950' : '#f85149'}">
-            ${node.status.toUpperCase()}
+            ${(node.status || 'unknown').toUpperCase()}
           </div>
+        </div>
+      `;
+    } else if (node.type === 'ont') {
+      const rxBps = node.rx_bps || 0;
+      const txBps = node.tx_bps || 0;
+      const rxBytes = node.rx_bytes || 0;
+      const txBytes = node.tx_bytes || 0;
+      const downSpeed = node.speed_down || node.speed || '1G';
+      const upSpeed = node.speed_up || node.speed || '300M';
+      const utilDown = node.utilization_down_pct || 0;
+      const utilUp = node.utilization_up_pct || 0;
+      const downColor = utilDown >= 80 ? '#ef4444' : (utilDown >= 50 ? '#f59e0b' : '#34d399');
+      const upColor = utilUp >= 80 ? '#ef4444' : (utilUp >= 50 ? '#f59e0b' : '#38bdf8');
+
+      html += `
+        <div class="detail-item">
+          <div class="label">Downstream Device</div>
+          <div class="value" style="color: #34d399; font-weight: 500;">${node.parent_ip || 'N/A'}${node.parent_port ? ' : Port ' + formatPortDisplay(node.parent_port) : ''}</div>
+        </div>
+        <div class="detail-item">
+          <div class="label">Provisioned PON Speed</div>
+          <div class="value mono">${downSpeed} &darr; / ${upSpeed} &uarr;</div>
+        </div>
+        <div class="detail-item">
+          <div class="label">Telemetry Source</div>
+          <div class="value mono" style="font-size: 11px;">${node.stats_device_ip || node.parent_ip || 'N/A'} : Port ${node.stats_port || node.parent_port || 'WAN'}</div>
+        </div>
+        <div class="detail-item">
+          <div class="label">Status</div>
+          <div class="value" style="color: ${node.status === 'online' ? '#3fb950' : '#f85149'}">
+            ${(node.status || 'unknown').toUpperCase()}
+          </div>
+        </div>
+
+        <div style="border-top: 1px solid rgba(48, 54, 61, 0.5); margin-top: 12px; padding-top: 10px;">
+          <h4 style="font-size: 11px; text-transform: uppercase; color: #8b949e; letter-spacing: 0.5px; margin-bottom: 8px;">Live WAN Throughput</h4>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div>
+              <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 2px;">
+                <span style="color: #34d399;">Download (${downSpeed})</span>
+                <span class="mono" style="color: ${downColor}; font-weight: 600;">${formatTraffic(rxBps)} (${utilDown.toFixed(1)}%)</span>
+              </div>
+              <div style="background: rgba(48, 54, 61, 0.5); height: 5px; border-radius: 3px; overflow: hidden;">
+                <div style="background: ${downColor}; width: ${Math.min(utilDown, 100)}%; height: 100%; transition: width 0.3s;"></div>
+              </div>
+            </div>
+
+            <div>
+              <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 2px;">
+                <span style="color: #38bdf8;">Upload (${upSpeed})</span>
+                <span class="mono" style="color: ${upColor}; font-weight: 600;">${formatTraffic(txBps)} (${utilUp.toFixed(1)}%)</span>
+              </div>
+              <div style="background: rgba(48, 54, 61, 0.5); height: 5px; border-radius: 3px; overflow: hidden;">
+                <div style="background: ${upColor}; width: ${Math.min(utilUp, 100)}%; height: 100%; transition: width 0.3s;"></div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 11px; color: #8b949e; border-top: 1px dashed rgba(48, 54, 61, 0.4); padding-top: 6px;">
+            <span>Total Down: <strong class="mono" style="color: #f0f6fc;">${formatResourceBytes(rxBytes)}</strong></span>
+            <span>Total Up: <strong class="mono" style="color: #f0f6fc;">${formatResourceBytes(txBytes)}</strong></span>
+          </div>
+        </div>
+
+        <div style="margin-top: 14px; display: flex; gap: 8px;">
+          <a href="/config" class="action-btn-sm" style="flex: 1; text-align: center; justify-content: center; text-decoration: none;">
+            ⚙️ Edit in Settings
+          </a>
+        </div>
+      `;
+    } else if (node.type === 'internet') {
+      const ontNodes = rawNodes.filter(n => n.type === 'ont');
+      let totalRxBps = 0;
+      let totalTxBps = 0;
+      let totalRxBytes = 0;
+      let totalTxBytes = 0;
+      ontNodes.forEach(o => {
+        totalRxBps += (o.rx_bps || 0);
+        totalTxBps += (o.tx_bps || 0);
+        totalRxBytes += (o.rx_bytes || 0);
+        totalTxBytes += (o.tx_bytes || 0);
+      });
+
+      html += `
+        <div class="detail-item">
+          <div class="label">Network Cloud</div>
+          <div class="value" style="color: #06b6d4; font-weight: 500;">External WAN</div>
+        </div>
+        <div class="detail-item">
+          <div class="label">Connected ONTs</div>
+          <div class="value">${ontNodes.length} Optical Terminal${ontNodes.length === 1 ? '' : 's'}</div>
+        </div>
+        <div class="detail-item">
+          <div class="label">Status</div>
+          <div class="value" style="color: #3fb950">ONLINE</div>
+        </div>
+
+        <div style="border-top: 1px solid rgba(48, 54, 61, 0.5); margin-top: 12px; padding-top: 10px;">
+          <h4 style="font-size: 11px; text-transform: uppercase; color: #8b949e; letter-spacing: 0.5px; margin-bottom: 8px;">Total WAN Traffic</h4>
+          <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;">
+            <span>Total Download:</span>
+            <span class="mono" style="color: #34d399; font-weight: 600;">${formatTraffic(totalRxBps)}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 8px;">
+            <span>Total Upload:</span>
+            <span class="mono" style="color: #38bdf8; font-weight: 600;">${formatTraffic(totalTxBps)}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 11px; color: #8b949e; border-top: 1px dashed rgba(48, 54, 61, 0.4); padding-top: 4px;">
+            <span>Inbound Bytes:</span>
+            <span class="mono" style="color: #f0f6fc;">${formatResourceBytes(totalRxBytes)}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 11px; color: #8b949e;">
+            <span>Outbound Bytes:</span>
+            <span class="mono" style="color: #f0f6fc;">${formatResourceBytes(totalTxBytes)}</span>
+          </div>
+        </div>
+
+        <div style="margin-top: 14px; display: flex; gap: 8px;">
+          <a href="/config" class="action-btn-sm" style="flex: 1; text-align: center; justify-content: center; text-decoration: none;">
+            + Manage ONTs
+          </a>
+        </div>
+      `;
+    } else if (node.type === 'virtual_machine' || node.type === 'lxc_container') {
+      const isLxc = node.type === 'lxc_container';
+      const ips = (node.ips || []).filter(ip => !ip.includes(':')).join(', ') || (node.ips || []).join(', ') || 'N/A';
+      const txBps = node.tx_bps || node.speed_tx_bps || 0;
+      const rxBps = node.rx_bps || node.speed_rx_bps || 0;
+      const txBytes = Math.max(0, node.tx_bytes || node.cum_tx || node.netout || 0);
+      const rxBytes = Math.max(0, node.rx_bytes || node.cum_rx || node.netin || 0);
+      const cpuUsage = node.cpu ? `${(node.cpu * 100).toFixed(1)}%` : '0%';
+      const memUsage = node.memory ? `${formatResourceBytes(node.memory)} / ${formatResourceBytes(node.max_memory || 0)}` : '0 B';
+
+      html += `
+        <div class="detail-item">
+          <div class="label">Guest Type</div>
+          <div class="value">${isLxc ? 'LXC Container' : 'QEMU Virtual Machine'}</div>
+        </div>
+        <div class="detail-item">
+          <div class="label">VMID</div>
+          <div class="value mono">${node.native_id || 'N/A'}</div>
+        </div>
+        <div class="detail-item">
+          <div class="label">Proxmox Node</div>
+          <div class="value">${node.node || 'Cluster'}</div>
+        </div>
+        <div class="detail-item">
+          <div class="label">Status</div>
+          <div class="value" style="color: ${node.status === 'online' || node.status === 'running' ? '#3fb950' : '#f85149'}">
+            ${(node.status || 'unknown').toUpperCase()}
+          </div>
+        </div>
+        <div class="detail-item">
+          <div class="label">IP Address</div>
+          <div class="value mono">${ips}</div>
+        </div>
+        <div class="detail-item">
+          <div class="label">MAC Address</div>
+          <div class="value mono">${formattedMac}</div>
+        </div>
+        <div class="detail-item">
+          <div class="label">Resource Usage</div>
+          <div class="value">CPU ${cpuUsage} &middot; RAM ${memUsage}</div>
+        </div>
+        <div class="detail-item">
+          <div class="label">Network Throughput</div>
+          <div class="value mono">TX: <span style="color:#58a6ff">${formatTraffic(txBps)}</span> / RX: <span style="color:#3fb950">${formatTraffic(rxBps)}</span></div>
+        </div>
+        <div class="detail-item">
+          <div class="label">Total Network Traffic</div>
+          <div class="value mono">TX: <span style="color:#58a6ff">${formatResourceBytes(txBytes)}</span> / RX: <span style="color:#3fb950">${formatResourceBytes(rxBytes)}</span></div>
         </div>
       `;
     } else {
@@ -1452,9 +3519,24 @@
         <div class="detail-item">
           <div class="label">Status</div>
           <div class="value" style="color: ${node.status === 'online' ? '#3fb950' : '#f85149'}">
-            ${node.status.toUpperCase()}
+            ${(node.status || 'unknown').toUpperCase()}
           </div>
         </div>
+        ${node.ip ? `
+        <div class="detail-item">
+          <div class="label">IP Address</div>
+          <div class="value mono" style="color: #58a6ff; font-weight: 500;">
+            ${node.ip}
+            <button onclick="navigator.clipboard.writeText('${node.ip}')" title="Copy IP" style="background: none; border: none; color: #8b949e; cursor: pointer; margin-left: 6px; padding: 0 4px; font-size: 11px;">📋</button>
+          </div>
+        </div>` : ''}
+        ${node.hostname ? `
+        <div class="detail-item">
+          <div class="label">Discovered Hostname</div>
+          <div class="value" style="color: #f0f6fc; font-weight: 500;">
+            <span class="badge" style="background: rgba(56, 139, 253, 0.15); color: #58a6ff; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-family: monospace;">${node.hostname}</span>
+          </div>
+        </div>` : ''}
       `;
       if (node.vendor) {
         html += `
@@ -1486,7 +3568,8 @@
           air_conditioner: { label: "Air Conditioner" },
           dehumidifier: { label: "Dehumidifier" },
           three_d_printer: { label: "3D Printer" },
-          dryer: { label: "Dryer" }
+          dryer: { label: "Dryer" },
+          phone: { label: "Desk Phone" }
         };
         
         for (const [key, val] of Object.entries(typesToRender)) {
@@ -1499,7 +3582,7 @@
             <div class="label">Host Nickname</div>
             <div class="value" style="margin-top: 4px;">
               <input type="text" id="inspect-host-input" value="${node.host || ''}" 
-                     placeholder="Enter device nickname..." 
+                     placeholder="${node.hostname || 'Enter device nickname...'}" 
                      onblur="updateClientHost('${node.id}', this.value)"
                      style="width: 100%; background: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 6px 10px; color: #e1e4e8; font-size: 12px; outline: none; transition: border-color 0.2s;"
                      onfocus="this.style.borderColor='#58a6ff'" 
@@ -1517,6 +3600,19 @@
               </select>
             </div>
           </div>
+          ${node.device_type === 'phone' ? `
+          <div class="detail-item" style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed rgba(48, 54, 61, 0.4);">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 12px; color: #f0f6fc;">
+              <input type="checkbox" id="inspect-mini-switch-checkbox" ${node.is_mini_switch ? 'checked' : ''} 
+                     onchange="updateClientPassthrough('${node.id}', this.checked)"
+                     style="cursor: pointer; width: 14px; height: 14px; accent-color: #58a6ff;">
+              <span style="font-weight: 500;">Ethernet Passthrough</span>
+            </label>
+            <div style="font-size: 11px; color: #8b949e; margin-top: 4px; margin-left: 22px; line-height: 1.4;">
+              Allows downstream switches or devices to route connections through this phone's PC passthrough port.
+            </div>
+          </div>
+          ` : ''}
           <div class="detail-item">
             <div class="label">Last Location</div>
             <div class="value">${node.last_seen_ip}:${node.last_seen_port}</div>
@@ -1525,13 +3621,108 @@
             <div class="label">Last Active</div>
             <div class="value">${lastSeenStr}</div>
           </div>
-          <div class="control-row" style="margin-top: 18px;">
+          <div class="control-row" style="margin-top: 18px; display: flex; flex-direction: column; gap: 8px;">
+            <a href="/clients?search=${encodeURIComponent(node.mac || node.id)}" class="map-btn" style="width: 100%; background: #238636; border-color: #2ea043; height: auto; padding: 8px 12px; text-decoration: none; text-align: center; color: white; display: flex; align-items: center; justify-content: center; gap: 6px;" onmouseover="this.style.background='#2ea043'" onmouseout="this.style.background='#238636'">
+              View Device Details
+            </a>
             <button type="button" onclick="forgetClient('${node.id}')" class="map-btn" style="width: 100%; background: #da3637; border-color: #f85149; height: auto; padding: 8px 12px;" onmouseover="this.style.background='#f85149'" onmouseout="this.style.background='#da3637'">
               Forget Device
             </button>
           </div>
         `;
       }
+    }
+
+    // Path Highlighting Stepper Card
+    if (activePathData && activePathData.orderedNodeIds && activePathData.orderedNodeIds.includes(node.id) && activePathData.orderedNodeIds.length > 1) {
+      const isOrigin = activePathData.orderedNodeIds[0] === node.id;
+      const isDestination = activePathData.orderedNodeIds[activePathData.orderedNodeIds.length - 1] === node.id;
+      const isPtp = !!activePathTargetNodeId;
+      const hopCount = activePathData.hops.length;
+
+      let stepperHtml = `
+        <div style="border-top: 1px solid rgba(48, 54, 61, 0.4); margin-top: 14px; padding-top: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h3 style="font-size: 11px; text-transform: uppercase; color: #38bdf8; letter-spacing: 0.5px; font-weight: 700; display: flex; align-items: center; gap: 5px;">
+              <span>⚡</span> ${isPtp ? 'Point-to-Point Path' : 'Connection Path to Gateway'}
+            </h3>
+            <span style="font-size: 10px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 10px; padding: 1px 8px; font-weight: 600;">
+              ${hopCount} hop${hopCount === 1 ? '' : 's'}
+            </span>
+          </div>
+
+          <div class="route-stepper">
+      `;
+
+      activePathData.orderedNodeIds.forEach((nId, idx) => {
+        const stepNode = rawNodes.find(n => n.id === nId);
+        if (!stepNode) return;
+        const stepName = stepNode.name || stepNode.host || formatMacAddress(stepNode.mac) || stepNode.id;
+        const isStepOrigin = idx === 0;
+        const isStepDest = idx === activePathData.orderedNodeIds.length - 1;
+        const stepClass = isStepOrigin ? 'step-origin' : (isStepDest ? 'step-dest' : 'step-hop');
+        
+        const hop = activePathData.hops[idx - 1];
+        let linkDetailHtml = '';
+        if (hop && hop.link) {
+          const p = hop.link.source_port || hop.link.target_port;
+          const spd = hop.link.speed || '';
+          linkDetailHtml = `<div class="route-hop-badge">${p && p !== 'unknown' ? `Port ${p}` : 'Direct Link'}${spd ? ` · ${spd}` : ''}</div>`;
+        }
+
+        const roleText = stepNode.type === 'ont' ? 'Optical Terminal' : (stepNode.type === 'internet' ? 'WAN Gateway' : (stepNode.role || stepNode.type || 'Device'));
+
+        stepperHtml += `
+          <div class="route-step ${stepClass}">
+            <div class="route-step-indicator">
+              <div class="route-step-dot"></div>
+              ${!isStepDest ? '<div class="route-step-line"></div>' : ''}
+            </div>
+            <div class="route-step-content">
+              <div class="route-step-header">
+                <span class="route-step-name" onclick="selectNode(rawNodes.find(n => n.id === '${stepNode.id}'))" title="Click to view details">${stepName}</span>
+                <span style="font-size: 10px; color: ${isStepOrigin ? '#38bdf8' : (isStepDest ? '#10b981' : '#8b949e')}; font-weight: 600;">
+                  ${isStepOrigin ? 'SOURCE' : (isStepDest ? (isPtp ? 'TARGET' : 'GATEWAY') : `HOP ${idx}`)}
+                </span>
+              </div>
+              <div class="route-step-sub">
+                <span>${roleText}</span>
+                ${stepNode.ip ? `<span class="mono" style="color: #6e7681;">${stepNode.ip}</span>` : ''}
+              </div>
+              ${linkDetailHtml}
+            </div>
+          </div>
+        `;
+      });
+
+      stepperHtml += `
+          </div>
+
+          <div style="margin-top: 12px; display: flex; gap: 8px;">
+            <button type="button" onclick="clearPathHighlight()" class="map-btn" style="flex: 1; padding: 6px 10px; font-size: 11px; height: auto; background: rgba(48, 54, 61, 0.5); border-color: rgba(48, 54, 61, 0.8); color: #c9d1d9;">
+              Clear Highlighting
+            </button>
+            ${isPtp ? `
+              <button type="button" onclick="highlightConnectionPath('${node.id}')" class="map-btn" style="flex: 1; padding: 6px 10px; font-size: 11px; height: auto; background: rgba(56, 189, 248, 0.15); border-color: #38bdf8; color: #38bdf8;">
+                Trace to Gateway
+              </button>
+            ` : ''}
+          </div>
+          <div style="font-size: 10px; color: #8b949e; margin-top: 8px; text-align: center;">
+            💡 <em>Shift+click</em> any device on the map to trace point-to-point path.
+          </div>
+        </div>
+      `;
+
+      html += stepperHtml;
+    } else if (node.type !== 'internet') {
+      html += `
+        <div style="border-top: 1px solid rgba(48, 54, 61, 0.4); margin-top: 14px; padding-top: 10px;">
+          <button type="button" onclick="highlightConnectionPath('${node.id}'); renderDetailCard(selectedNode);" class="map-btn" style="width: 100%; padding: 6px 12px; font-size: 11px; height: auto; background: rgba(56, 189, 248, 0.15); border-color: #38bdf8; color: #38bdf8; display: flex; align-items: center; justify-content: center; gap: 6px;">
+            <span>⚡</span> Highlight Connection Path
+          </button>
+        </div>
+      `;
     }
 
     // Find links connected to this node
@@ -1584,15 +3775,38 @@
     else if (link.speed.includes('100M')) speedColor = '#f08a24';
 
     let trafficHtml = '';
-    if (link.tx_bps || link.rx_bps) {
+    if (link.tx_bps || link.rx_bps || link.tx_bytes || link.rx_bytes || link.utilization_pct !== undefined) {
+      const util = link.utilization_pct || 0;
+      const barColor = util >= 80 ? '#ef4444' : (util >= 50 ? '#f59e0b' : '#3fb950');
+      let bytesHtml = '';
+      if (link.tx_bytes || link.rx_bytes) {
+        bytesHtml = `
+          <div class="row" style="margin-top: 4px; border-top: 1px dashed rgba(48, 54, 61, 0.4); padding-top: 4px;">
+            <span>TX Bytes:</span>
+            <span class="val blue mono">${formatResourceBytes(link.tx_bytes || 0)}</span>
+          </div>
+          <div class="row">
+            <span>RX Bytes:</span>
+            <span class="val green mono">${formatResourceBytes(link.rx_bytes || 0)}</span>
+          </div>
+        `;
+      }
       trafficHtml = `
         <div class="row" style="margin-top: 4px; border-top: 1px dashed rgba(48, 54, 61, 0.4); padding-top: 4px;">
           <span>TX Speed:</span>
-          <span class="val blue">${formatTraffic(link.tx_bps)}</span>
+          <span class="val blue">${formatTraffic(link.tx_bps || 0)}</span>
         </div>
         <div class="row">
           <span>RX Speed:</span>
-          <span class="val green">${formatTraffic(link.rx_bps)}</span>
+          <span class="val green">${formatTraffic(link.rx_bps || 0)}</span>
+        </div>
+        ${bytesHtml}
+        <div class="row" style="margin-top: 4px;">
+          <span>Utilization:</span>
+          <span class="val" style="color: ${barColor}">${util.toFixed(1)}%</span>
+        </div>
+        <div style="background: rgba(48, 54, 61, 0.5); height: 4px; border-radius: 2px; margin-top: 4px; overflow: hidden;">
+          <div style="background: ${barColor}; width: ${Math.min(util, 100)}%; height: 100%;"></div>
         </div>
       `;
     }
@@ -1636,6 +3850,15 @@
     return bps + ' bps';
   }
 
+  function formatResourceBytes(bytes) {
+    const value = Number(bytes) || 0;
+    if (value >= 1099511627776) return `${(value / 1099511627776).toFixed(1)} TiB`;
+    if (value >= 1073741824) return `${(value / 1073741824).toFixed(1)} GiB`;
+    if (value >= 1048576) return `${(value / 1048576).toFixed(1)} MiB`;
+    if (value >= 1024) return `${(value / 1024).toFixed(1)} KiB`;
+    return `${value} B`;
+  }
+
   // ==========================================
   // SEARCH & HIGHLIGHT
   // ==========================================
@@ -1653,7 +3876,10 @@
       return (n.name && n.name.toLowerCase().includes(q)) ||
              (n.mac && n.mac.toLowerCase().includes(q.replace(/:/g, ''))) ||
              (n.ip && n.ip.toLowerCase().includes(q)) ||
-             (n.vendor && n.vendor.toLowerCase().includes(q));
+             (n.vendor && n.vendor.toLowerCase().includes(q)) ||
+             (n.native_id && String(n.native_id).toLowerCase().includes(q)) ||
+             (n.node && n.node.toLowerCase().includes(q)) ||
+             (n.cluster_name && n.cluster_name.toLowerCase().includes(q));
     });
 
     if (matches.length === 0) {
@@ -1666,7 +3892,7 @@
     matches.slice(0, 5).forEach(node => {
       html += `
         <div class="search-suggestion-item" onclick="triggerDeviceHighlight('${node.id}')">
-          <span>${node.name} <span style="font-size:10px; color:#8b949e; margin-left:6px;">(${node.type === 'switch' ? node.ip : (node.type === 'unmanaged_switch' ? 'Port ' + node.parent_port : formatMacAddress(node.mac))})</span></span>
+          <span>${node.name} <span style="font-size:10px; color:#8b949e; margin-left:6px;">(${node.type === 'switch' ? node.ip : (node.type === 'ont' ? (node.speed || 'ONT') : (node.type === 'unmanaged_switch' || node.type === 'phone' ? formatPortDisplay(node.parent_port) : (node.type === 'internet' ? 'WAN' : formatMacAddress(node.mac))))})</span></span>
           <span class="type">${node.type}</span>
         </div>
       `;
@@ -1755,6 +3981,22 @@
     }
   }
 
+  async function updateClientPassthrough(mac, isMiniSwitch) {
+    try {
+      await fetch('/api/clients/update_passthrough', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ mac: mac, is_mini_switch: isMiniSwitch })
+      });
+      if (selectedNode && (selectedNode.id === mac || selectedNode.mac === mac)) {
+        selectedNode.is_mini_switch = isMiniSwitch;
+      }
+      fetchTopology();
+    } catch (e) {
+      console.error("Failed to update client passthrough setting:", e);
+    }
+  }
+
   async function forgetClient(mac) {
     if (!confirm("Are you sure you want to forget and remove this client device?")) {
       return;
@@ -1796,7 +4038,8 @@
       const activeEl = document.activeElement;
       const isInteracting = activeEl && (
         activeEl.id === 'inspect-host-input' || 
-        activeEl.id === 'inspect-type-select'
+        activeEl.id === 'inspect-type-select' ||
+        activeEl.id === 'inspect-mini-switch-checkbox'
       );
       
       if (isInteracting) {

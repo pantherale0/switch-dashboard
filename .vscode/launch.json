@@ -1,0 +1,105 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Python: Switch Dashboard (app.py)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/app.py",
+      "console": "integratedTerminal",
+      "justMyCode": true,
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "DASHBOARD_DATA_DIR": "${workspaceFolder}",
+        "PYTHONPATH": "${workspaceFolder}",
+        "PYTHONUNBUFFERED": "1"
+      }
+    },
+    {
+      "name": "Python: Flask Run (Module)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "flask",
+      "args": [
+        "--app",
+        "switch_dashboard.web:create_app()",
+        "run",
+        "--host=0.0.0.0",
+        "--port=8080",
+        "--debug"
+      ],
+      "console": "integratedTerminal",
+      "justMyCode": true,
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "DASHBOARD_DATA_DIR": "${workspaceFolder}",
+        "PYTHONPATH": "${workspaceFolder}",
+        "FLASK_ENV": "development",
+        "PYTHONUNBUFFERED": "1"
+      }
+    },
+    {
+      "name": "Python: Pytest Current File",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": [
+        "${file}",
+        "-v"
+      ],
+      "console": "integratedTerminal",
+      "justMyCode": true,
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      }
+    },
+    {
+      "name": "Python: Pytest All Tests",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": [
+        "tests",
+        "-v"
+      ],
+      "console": "integratedTerminal",
+      "justMyCode": true,
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      }
+    },
+    {
+      "name": "Python: Run Housekeeper Maintenance Cycle",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "-c",
+      "args": [
+        "from switch_dashboard.storage import get_db, Housekeeper; print(Housekeeper(get_db()).run_once())"
+      ],
+      "console": "integratedTerminal",
+      "justMyCode": true,
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "DASHBOARD_DATA_DIR": "${workspaceFolder}",
+        "PYTHONPATH": "${workspaceFolder}"
+      }
+    },
+    {
+      "name": "Python: Attach to Running Process",
+      "type": "debugpy",
+      "request": "attach",
+      "connect": {
+        "host": "localhost",
+        "port": 5678
+      },
+      "pathMappings": [
+        {
+          "localRoot": "${workspaceFolder}",
+          "remoteRoot": "/app"
+        }
+      ]
+    }
+  ]
+}

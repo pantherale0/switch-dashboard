@@ -581,6 +581,7 @@
     </span>
     <a href="/" class="active">📊 Dashboard</a>
     <a href="/map">🕸️ Network Map</a>
+    <a href="/clients">📱 Clients</a>
     <a href="/scanner">🌐 Scanner</a>
     <a href="/config">&#9881; Config</a>
     <a href="/backups">💾 Backups</a>
@@ -602,6 +603,29 @@
   <span style="display: flex; align-items: center; gap: 6px;">
     <svg viewBox="0 0 24 24" style="width: 12px; height: 12px; fill: #8b949e; margin-right: 2px; display: inline-block; vertical-align: middle;"><path d="M 4,5 h 3 v 3 h 10 v -3 h 3 v 14 h -16 z" /></svg> Fiber (SFP+)
   </span>
+</div>
+<div class="dashboard-toolbar" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;">
+  <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+    <input type="text" id="device-filter-input" placeholder="🔍 Search devices / IP..." oninput="onDeviceFilterChange(this.value)" style="background: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 6px 12px; color: #e1e4e8; font-size: 12px; width: 220px; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='#58a6ff'" onblur="this.style.borderColor='#30363d'">
+    <button id="active-ports-btn" onclick="toggleActivePortsOnly()" style="background: #21262d; border: 1px solid #30363d; border-radius: 6px; padding: 6px 12px; color: #c9d1d9; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;" title="Hide inactive (down/disabled) ports in tables">
+      <span id="active-ports-dot" style="width: 8px; height: 8px; border-radius: 50%; background: #57606a;"></span>
+      <span>Active Ports Only</span>
+    </button>
+    <button id="collapse-all-btn" onclick="toggleAllCards()" style="background: #21262d; border: 1px solid #30363d; border-radius: 6px; padding: 6px 12px; color: #c9d1d9; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;" title="Toggle expand/collapse all cards">
+      <span>⊟ Toggle All Cards</span>
+    </button>
+  </div>
+  <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+    <label style="font-size: 12px; color: #8b949e; font-weight: 500; display: flex; align-items: center; gap: 6px;">
+      Layout:
+      <select id="grid-columns-select" onchange="changeGridColumns(this.value)" style="background: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 5px 10px; color: #c9d1d9; font-size: 12px; cursor: pointer; outline: none;">
+        <option value="auto">Auto Grid</option>
+        <option value="1">1 Column (Full Width)</option>
+        <option value="2">2 Columns</option>
+        <option value="3">3 Columns</option>
+      </select>
+    </label>
+  </div>
 </div>
 <div id="app" class="loading">Loading dashboard</div>
 <div class="footer">
@@ -855,18 +879,24 @@ const COLUMN_DEFS = {
       if (p.interface) parts.push(p.interface);
       return parts.length > 0 ? parts.join(' / ') : '';
     },
-    render: (p, sw) => p.port
+    render: (p, sw) => {
+      const isRouter = (sw.role === 'router' || sw.device_type === 'router');
+      if (isRouter && p.interface && p.interface !== p.port) {
+        return `<span style="font-weight:600;">${p.interface}</span><span style="display:block;font-size:10px;color:#8b949e;">Port ${p.port}</span>`;
+      }
+      return p.port;
+    }
   },
   status: {
     label: 'Status',
     thStyle: 'width:145px',
     render: (p, sw) => {
-      const status = (p.status || 'unknown').toLowerCase();
+      const status = (p.status || p.link || 'unknown').toLowerCase();
       // DHCP Snooping port trust badges
       let trustBadgeHtml = '';
       if (sw.dhcp_snooping && sw.dhcp_snooping.enabled) {
         const portsMap = sw.dhcp_snooping.ports || {};
-        const cleanPortName = p.port.split('/')[0];
+        const cleanPortName = String(p.port || '').split('/')[0];
         const trustState = portsMap[p.port] || portsMap[cleanPortName];
         if (trustState === 'Trusted') {
           trustBadgeHtml = `<span class="trust-badge trusted" title="DHCP Snooping: Trusted Port">Trusted</span>`;
@@ -883,7 +913,7 @@ const COLUMN_DEFS = {
       return `
         <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start;">
           <div style="display: flex; align-items: center; gap: 6px;">
-            <span class="status-badge ${status}" onclick="openGraph('${sw.ip}','${p.port}','${sw.name}','Port ${p.port}', ${p.cum_tx || p.tx_bytes || 0}, ${p.cum_rx || p.rx_bytes || 0})"><span class="status-dot ${status}"></span>${status.toUpperCase()}</span>
+            <span class="status-badge ${status}" onclick="openGraph('${sw.ip}','${p.port}','${sw.name}','Port ${p.port}', ${Math.max(0, p.cum_tx || p.tx_bytes || 0)}, ${Math.max(0, p.cum_rx || p.rx_bytes || 0)})"><span class="status-dot ${status}"></span>${status.toUpperCase()}</span>
             ${trustBadgeHtml}
           </div>
           <div style="font-size: 10px; color: #8b949e; padding-left: 4px; font-weight: 500;">${duplexText}</div>
@@ -923,8 +953,8 @@ const COLUMN_DEFS = {
     tdClass: 'mono',
     tdTitle: 'TX / RX bytes formatted',
     render: (p, sw) => {
-      const cumTx = p.cum_tx || p.tx_bytes || 0;
-      const cumRx = p.cum_rx || p.rx_bytes || 0;
+      const cumTx = Math.max(0, p.cum_tx !== undefined && p.cum_tx !== null ? p.cum_tx : (p.tx_bytes || 0));
+      const cumRx = Math.max(0, p.cum_rx !== undefined && p.cum_rx !== null ? p.cum_rx : (p.rx_bytes || 0));
       return `TX ${formatBytes(cumTx)}<br>RX ${formatBytes(cumRx)}`;
     }
   },
@@ -1286,7 +1316,7 @@ function renderMacTable(ip) {
   if (filters.mac || filters.host || filters.vendor || filters.type || filters.port || filters.vlan) {
     rows = rows.filter(r => {
       const matchMac = !filters.mac || (r.mac || '').toLowerCase().includes(filters.mac);
-      const matchHost = !filters.host || (r.host || '').toLowerCase().includes(filters.host);
+      const matchHost = !filters.host || (r.host || '').toLowerCase().includes(filters.host) || (r.hostname || '').toLowerCase().includes(filters.host) || (r.ip || '').toLowerCase().includes(filters.host);
       const matchVendor = !filters.vendor || (r.vendor || '').toLowerCase().includes(filters.vendor);
       const matchType = !filters.type || (r.type || '').toLowerCase().includes(filters.type);
       const matchPort = !filters.port || (r.port || '').toString().toLowerCase().includes(filters.port);
@@ -1326,14 +1356,19 @@ function renderMacTable(ip) {
 
   tbody.innerHTML = rows.map(r => {
     const vendorHtml = r.vendor ? r.vendor : `<a href="/config#vendor-editor-card" style="color: #8b949e; text-decoration: underline;" title="Edit custom vendor list">Unknown</a>`;
+    const ipBadge = r.ip ? `<span style="display: inline-block; font-size: 10px; font-family: monospace; color: #58a6ff; background: rgba(56, 139, 253, 0.1); padding: 1px 5px; border-radius: 3px;" title="IP Address">${r.ip}</span>` : '';
+    const discoveredBadge = (r.hostname && r.hostname !== r.host) ? `<span style="display: inline-block; font-size: 10px; color: #8b949e;" title="Discovered Hostname: ${r.hostname}">(${r.hostname})</span>` : '';
     const hostInputHtml = `
-      <input type="text" value="${r.host || ''}" 
-             placeholder="Enter nickname..." 
-             onfocus="pausePolling()" 
-             onblur="saveHost(this, '${r.mac}')" 
-             style="width: 100%; max-width: 100%; background: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 4px 8px; color: #e1e4e8; font-size: 11px; outline: none; transition: border-color 0.2s;" 
-             onfocus="this.style.borderColor='#58a6ff'" 
-             onblur="this.style.borderColor='#30363d'">
+      <div style="display: flex; flex-direction: column; gap: 3px;">
+        <input type="text" value="${r.host || ''}" 
+               placeholder="${r.hostname || 'Enter nickname...'}" 
+               onfocus="pausePolling()" 
+               onblur="saveHost(this, '${r.mac}')" 
+               style="width: 100%; max-width: 100%; background: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 4px 8px; color: #e1e4e8; font-size: 11px; outline: none; transition: border-color 0.2s;" 
+               onfocus="this.style.borderColor='#58a6ff'" 
+               onblur="this.style.borderColor='#30363d'">
+        ${(ipBadge || discoveredBadge) ? `<div style="display: flex; align-items: center; flex-wrap: wrap; gap: 4px; line-height: 1;">${ipBadge}${discoveredBadge}</div>` : ''}
+      </div>
     `;
     return `
       <tr style="border-bottom: 1px solid #21262d; transition: background 0.15s;" onmouseover="this.style.background='#1c2128'" onmouseout="this.style.background='transparent'">
@@ -1392,11 +1427,15 @@ async function saveNote(input) {
 
 function formatBytes(n) {
   if (n === undefined || n === null) return '';
-  if (n >= 1e12) return (n / 1e12).toFixed(1) + ' TB';
-  if (n >= 1e9) return (n / 1e9).toFixed(1) + ' GB';
-  if (n >= 1e6) return (n / 1e6).toFixed(1) + ' MB';
-  if (n >= 1e3) return (n / 1e3).toFixed(1) + ' KB';
-  return n + ' B';
+  const num = Number(n);
+  if (isNaN(num)) return '';
+  const abs = Math.abs(num);
+  const sign = num < 0 ? '-' : '';
+  if (abs >= 1e12) return sign + (abs / 1e12).toFixed(1) + ' TB';
+  if (abs >= 1e9) return sign + (abs / 1e9).toFixed(1) + ' GB';
+  if (abs >= 1e6) return sign + (abs / 1e6).toFixed(1) + ' MB';
+  if (abs >= 1e3) return sign + (abs / 1e3).toFixed(1) + ' KB';
+  return sign + abs + ' B';
 }
 
 function formatBps(n, unit) {
@@ -1444,7 +1483,388 @@ function formatTime(ts) {
   return d.toLocaleTimeString();
 }
 
+function formatSeconds(sec) {
+  if (!sec) return '0s';
+  const d = Math.floor(sec / 86400);
+  const h = Math.floor((sec % 86400) / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  if (d > 0) return `${d}d ${h}h`;
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+
+/* ---- Layout & Controls State ---- */
+let lastSwitchesData = [];
+let currentDeviceFilter = '';
+
+function applyGridColumns(cols) {
+  if (!cols) cols = localStorage.getItem('grid_columns_pref') || 'auto';
+  const sel = document.getElementById('grid-columns-select');
+  if (sel && sel.value !== cols) sel.value = cols;
+  
+  if (cols === '1') {
+    document.documentElement.style.setProperty('--grid-columns', '1fr');
+  } else if (cols === '2') {
+    document.documentElement.style.setProperty('--grid-columns', 'repeat(2, minmax(0, 1fr))');
+  } else if (cols === '3') {
+    document.documentElement.style.setProperty('--grid-columns', 'repeat(3, minmax(0, 1fr))');
+  } else {
+    document.documentElement.style.setProperty('--grid-columns', 'repeat(auto-fit, minmax(600px, 1fr))');
+  }
+}
+
+function changeGridColumns(cols) {
+  try {
+    localStorage.setItem('grid_columns_pref', cols);
+  } catch (e) {}
+  applyGridColumns(cols);
+}
+
+let activePortsOnly = false;
+try {
+  activePortsOnly = localStorage.getItem('active_ports_only') === 'true';
+} catch (e) {}
+
+function getActivePortsOnlyState() {
+  return activePortsOnly;
+}
+
+function toggleActivePortsOnly() {
+  activePortsOnly = !activePortsOnly;
+  try {
+    localStorage.setItem('active_ports_only', activePortsOnly ? 'true' : 'false');
+  } catch (e) {}
+  updateActivePortsButton();
+  renderDashboardData();
+}
+
+function updateActivePortsButton() {
+  const btn = document.getElementById('active-ports-btn');
+  const dot = document.getElementById('active-ports-dot');
+  if (btn && dot) {
+    if (activePortsOnly) {
+      btn.style.borderColor = '#388bfd';
+      btn.style.color = '#58a6ff';
+      btn.style.background = 'rgba(56, 139, 253, 0.15)';
+      dot.style.background = '#3fb950';
+    } else {
+      btn.style.borderColor = '#30363d';
+      btn.style.color = '#c9d1d9';
+      btn.style.background = '#21262d';
+      dot.style.background = '#57606a';
+    }
+  }
+}
+
+let cardCollapsedStates = {};
+try {
+  const stored = localStorage.getItem('cardCollapsedStates');
+  if (stored) cardCollapsedStates = JSON.parse(stored);
+} catch (e) {}
+
+function getCardCollapsedState(ip) {
+  return !!cardCollapsedStates[ip];
+}
+
+function toggleCardCollapse(ip) {
+  cardCollapsedStates[ip] = !cardCollapsedStates[ip];
+  try {
+    localStorage.setItem('cardCollapsedStates', JSON.stringify(cardCollapsedStates));
+  } catch (e) {}
+  
+  const body = document.querySelector(`.card-body-${CSS.escape(ip)}`);
+  const chevron = document.querySelector(`.card-chevron-${CSS.escape(ip)}`);
+  const summary = document.querySelector(`.card-collapsed-summary-${CSS.escape(ip)}`);
+  if (body) {
+    body.style.display = cardCollapsedStates[ip] ? 'none' : 'block';
+  }
+  if (chevron) {
+    chevron.style.transform = cardCollapsedStates[ip] ? 'rotate(-90deg)' : 'rotate(0deg)';
+  }
+  if (summary) {
+    summary.style.display = cardCollapsedStates[ip] ? 'inline-block' : 'none';
+  }
+}
+
+function toggleAllCards() {
+  const anyOpen = lastSwitchesData.some(sw => !cardCollapsedStates[sw.ip]);
+  const targetState = anyOpen;
+  lastSwitchesData.forEach(sw => {
+    cardCollapsedStates[sw.ip] = targetState;
+  });
+  try {
+    localStorage.setItem('cardCollapsedStates', JSON.stringify(cardCollapsedStates));
+  } catch (e) {}
+  renderDashboardData();
+}
+
+let wirelessTableStates = {};
+try {
+  const stored = localStorage.getItem('wirelessTableStates');
+  if (stored) wirelessTableStates = JSON.parse(stored);
+} catch (e) {}
+
+function getWirelessState(ip) {
+  if (!wirelessTableStates[ip]) {
+    wirelessTableStates[ip] = { expanded: false };
+  }
+  return wirelessTableStates[ip];
+}
+
+function toggleWirelessTable(ip) {
+  const state = getWirelessState(ip);
+  state.expanded = !state.expanded;
+  try {
+    localStorage.setItem('wirelessTableStates', JSON.stringify(wirelessTableStates));
+  } catch (e) {}
+  
+  const content = document.querySelector(`.wireless-content-${CSS.escape(ip)}`);
+  const arrow = document.querySelector(`.wireless-toggle-arrow-${CSS.escape(ip)}`);
+  if (content && arrow) {
+    content.style.display = state.expanded ? 'block' : 'none';
+    arrow.style.transform = state.expanded ? 'rotate(90deg)' : 'rotate(0deg)';
+  }
+}
+
+let guestsTableStates = {};
+try {
+  const stored = localStorage.getItem('guestsTableStates');
+  if (stored) guestsTableStates = JSON.parse(stored);
+} catch (e) {}
+
+function getGuestsState(ip) {
+  if (!guestsTableStates[ip]) {
+    guestsTableStates[ip] = { expanded: true };
+  }
+  return guestsTableStates[ip];
+}
+
+function toggleGuestsTable(ip) {
+  const state = getGuestsState(ip);
+  state.expanded = !state.expanded;
+  try {
+    localStorage.setItem('guestsTableStates', JSON.stringify(guestsTableStates));
+  } catch (e) {}
+  
+  const content = document.querySelector(`.guests-content-${CSS.escape(ip)}`);
+  const arrow = document.querySelector(`.guests-toggle-arrow-${CSS.escape(ip)}`);
+  if (content && arrow) {
+    content.style.display = state.expanded ? 'block' : 'none';
+    arrow.style.transform = state.expanded ? 'rotate(90deg)' : 'rotate(0deg)';
+  }
+}
+
+function onDeviceFilterChange(query) {
+  currentDeviceFilter = (query || '').trim();
+  renderDashboardData();
+}
+
+function clearDeviceFilter() {
+  currentDeviceFilter = '';
+  const input = document.getElementById('device-filter-input');
+  if (input) input.value = '';
+  renderDashboardData();
+}
+
+/* ---- Virtualisation Host Card (Proxmox) ---- */
+function renderVirtualisationCard(sw) {
+  const nodes = sw.cluster_nodes || [];
+  const guests = sw.child_devices || [];
+  const nodeCount = sw.node_count || nodes.length || 1;
+  const onlineNodeCount = sw.online_node_count !== undefined ? sw.online_node_count : nodes.filter(n => n.status === 'online').length;
+  const guestCount = sw.guest_count !== undefined ? sw.guest_count : guests.length;
+  const isCardCollapsed = getCardCollapsedState(sw.ip);
+  const displayCardBody = isCardCollapsed ? 'none' : 'block';
+  const cardChevronRotate = isCardCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
+
+  const nodeMetersHtml = nodes.map(node => {
+    const isOnline = (node.status === 'online');
+    const cpuPct = Math.min(100, Math.max(0, (node.cpu || 0) * 100)).toFixed(1);
+    const memUsed = node.memory || 0;
+    const memMax = node.max_memory || 0;
+    const memPct = memMax > 0 ? Math.min(100, Math.max(0, (memUsed / memMax) * 100)).toFixed(1) : 0;
+    const uptimeStr = node.uptime ? formatSeconds(node.uptime) : '0s';
+    const cpuBarColor = cpuPct > 85 ? '#f85149' : (cpuPct > 70 ? '#f08a24' : '#3fb950');
+    const memBarColor = memPct > 85 ? '#f85149' : (memPct > 70 ? '#f08a24' : '#58a6ff');
+
+    return `
+      <div style="background: #0d1117; border: 1px solid #30363d; border-radius: 8px; padding: 12px 14px; flex: 1; min-width: 260px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="status-dot ${isOnline ? 'up' : 'down'}"></span>
+            <span style="font-weight: 600; color: #e1e4e8; font-size: 13px;">${node.name}</span>
+            ${node.local ? '<span style="font-size: 9px; background: rgba(56, 139, 253, 0.2); color: #58a6ff; padding: 1px 5px; border-radius: 4px; font-weight: 600;">LOCAL</span>' : ''}
+          </div>
+          <span style="font-size: 10px; color: #8b949e;">Up ${uptimeStr}</span>
+        </div>
+        <div style="font-size: 10px; color: #8b949e; margin-bottom: 8px; font-family: 'SF Mono', Monaco, monospace; display: flex; gap: 10px; flex-wrap: wrap;">
+          ${node.ip ? `<span>IP: <strong style="color: #c9d1d9;">${node.ip}</strong></span>` : ''}
+          ${node.mac ? `<span>MAC: <strong style="color: #8b949e;">${node.mac}</strong></span>` : ''}
+        </div>
+        <!-- CPU Meter -->
+        <div style="margin-bottom: 8px;">
+          <div style="display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 3px;">
+            <span style="color: #8b949e; font-weight: 600;">CPU USAGE</span>
+            <span style="color: #e1e4e8; font-weight: 600; font-family: 'SF Mono', Monaco, monospace;">${cpuPct}%</span>
+          </div>
+          <div style="height: 6px; background: #21262d; border-radius: 3px; overflow: hidden; border: 1px solid #30363d;">
+            <div style="height: 100%; width: ${cpuPct}%; background: ${cpuBarColor}; border-radius: 3px; transition: width 0.3s;"></div>
+          </div>
+        </div>
+        <!-- RAM Meter -->
+        <div>
+          <div style="display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 3px;">
+            <span style="color: #8b949e; font-weight: 600;">MEMORY</span>
+            <span style="color: #e1e4e8; font-weight: 600; font-family: 'SF Mono', Monaco, monospace;">${formatBytes(memUsed)} / ${formatBytes(memMax)} (${memPct}%)</span>
+          </div>
+          <div style="height: 6px; background: #21262d; border-radius: 3px; overflow: hidden; border: 1px solid #30363d;">
+            <div style="height: 100%; width: ${memPct}%; background: ${memBarColor}; border-radius: 3px; transition: width 0.3s;"></div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  const guestState = getGuestsState(sw.ip);
+  const isGuestsExpanded = guestState.expanded;
+  const guestsDisplayStyle = isGuestsExpanded ? 'block' : 'none';
+  const guestsArrowTransform = isGuestsExpanded ? 'rotate(90deg)' : 'rotate(0deg)';
+
+  const guestRows = guests.map(g => {
+    const isRunning = (g.status === 'online' || g.status === 'running');
+    const kindBadge = g.kind === 'lxc'
+      ? '<span style="background: rgba(163, 113, 247, 0.2); color: #d2a8ff; border: 1px solid rgba(163, 113, 247, 0.4); padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 700;">LXC</span>'
+      : '<span style="background: rgba(56, 139, 253, 0.2); color: #58a6ff; border: 1px solid rgba(56, 139, 253, 0.4); padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 700;">VM</span>';
+    const cumTx = Math.max(0, g.cum_tx !== undefined && g.cum_tx !== null ? g.cum_tx : (g.tx_bytes || g.netout || 0));
+    const cumRx = Math.max(0, g.cum_rx !== undefined && g.cum_rx !== null ? g.cum_rx : (g.rx_bytes || g.netin || 0));
+    const speedTx = g.speed_tx_bps || 0;
+    const speedRx = g.speed_rx_bps || 0;
+    const safeGuestName = String(g.name || `Guest ${g.native_id}`).replace(/'/g, "\\'");
+    const openGraphCall = `openGraph('${sw.ip}','${g.native_id}','${sw.name} - ${safeGuestName}','Guest ${g.native_id}',${cumTx},${cumRx})`;
+    const statusBadge = `<span class="status-badge ${isRunning ? 'up' : 'down'}" style="cursor: pointer;" onclick="${openGraphCall}" title="Click to view guest network bandwidth graph"><span class="status-dot ${isRunning ? 'up' : 'down'}"></span>${(g.status || 'stopped').toUpperCase()}</span>`;
+    const cpuStr = g.cpu ? (g.cpu * 100).toFixed(1) + '%' : '0%';
+    const ramStr = g.memory ? formatBytes(g.memory) : '0 B';
+    const ipList = (g.ips || []).filter(ip => !ip.includes(':')).join(', ') || '-';
+    const macList = (g.macs || []).join(', ') || '-';
+
+    return `
+      <tr style="border-bottom: 1px solid #21262d; font-size: 11px; transition: background 0.15s;" onmouseover="this.style.background='#1c2128'" onmouseout="this.style.background='transparent'">
+        <td style="padding: 8px 12px; font-weight: 600; color: #58a6ff; font-family: 'SF Mono', Monaco, monospace; width: 60px; cursor: pointer;" onclick="${openGraphCall}" title="Click to view guest network bandwidth graph">${g.native_id || '-'}</td>
+        <td style="padding: 8px 12px; font-weight: 600; color: #e1e4e8; cursor: pointer;" onclick="${openGraphCall}" title="Click to view guest network bandwidth graph">${g.name}</td>
+        <td style="padding: 8px 12px; width: 60px;">${kindBadge}</td>
+        <td style="padding: 8px 12px; color: #8b949e; width: 110px;">${g.node || '-'}</td>
+        <td style="padding: 8px 12px; width: 100px;">${statusBadge}</td>
+        <td style="padding: 8px 12px; font-family: 'SF Mono', Monaco, monospace; color: #c9d1d9;">${ipList}</td>
+        <td style="padding: 8px 12px; font-family: 'SF Mono', Monaco, monospace; color: #8b949e;">${macList}</td>
+        <td style="padding: 8px 12px; font-family: 'SF Mono', Monaco, monospace; color: #c9d1d9; width: 120px; cursor: pointer;" onclick="${openGraphCall}" title="Click to view guest network bandwidth graph">
+          ${isRunning ? `TX ${formatBytes(cumTx)}<br>RX ${formatBytes(cumRx)}` : '<span style="color:#57606a">-</span>'}
+        </td>
+        <td style="padding: 8px 12px; font-family: 'SF Mono', Monaco, monospace; color: #c9d1d9; width: 110px; cursor: pointer;" onclick="${openGraphCall}" title="Click to view guest network bandwidth graph">
+          ${isRunning ? `TX ${formatBps(speedTx, speedUnit)}<br>RX ${formatBps(speedRx, speedUnit)}` : '<span style="color:#57606a">-</span>'}
+        </td>
+        <td style="padding: 8px 12px; color: #b1bac4; font-family: 'SF Mono', Monaco, monospace; text-align: right; width: 140px;">
+          ${isRunning ? `<span style="color:#56d364">CPU ${cpuStr}</span> &middot; <span style="color:#58a6ff">${ramStr}</span>` : '<span style="color:#57606a">Offline</span>'}
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  const errorBlock = sw.error ? `<div class="error-card">Error: ${sw.error}</div>` : '';
+  const summaryBadge = `<span class="card-collapsed-summary-${sw.ip}" style="display: ${isCardCollapsed ? 'inline-block' : 'none'}; font-size: 11px; color: #8b949e; background: #0d1117; padding: 2px 8px; border-radius: 12px; border: 1px solid #30363d;">${onlineNodeCount}/${nodeCount} Nodes &middot; ${guestCount} Guests</span>`;
+
+  return `
+    <div class="switch-card" data-switch-ip="${sw.ip}">
+      <div class="switch-header">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <svg viewBox="0 0 24 24" style="width: 26px; height: 26px; fill: #e1e4e8; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));">
+            <path d="M4 1h16a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1zm0 8h16a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1zm0 8h16a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1zM6 4h2V3H6v1zm0 8h2v-1H6v1zm0 8h2v-1H6v1zm11-8h2v-1h-2v1zm0 8h2v-1h-2v1zm0-16h2V3h-2v1z"/>
+          </svg>
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <h2>${sw.name}</h2>
+              ${summaryBadge}
+            </div>
+            <span style="font-size:12px;color:#b1bac4;display:flex;align-items:center;gap:8px;">
+              <a href="https://${sw.ip}:8006/" target="_blank" style="color:#58a6ff;text-decoration:none" title="Open Proxmox VE Web UI">${sw.ip}:8006</a>
+              <span style="color:#30363d">|</span>
+              <span style="color: #3fb950; font-weight: 600;">Proxmox Cluster</span>
+            </span>
+          </div>
+        </div>
+        
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div class="meta" style="text-align: right;">
+            <div>${(sw.model && sw.model !== 'generic_switch') ? sw.model : 'Proxmox VE'}</div>
+            <div style="color: #58a6ff; font-weight: 600;">${onlineNodeCount}/${nodeCount} Nodes Online</div>
+          </div>
+          <button onclick="toggleCardCollapse('${sw.ip}')" style="background: #21262d; border: 1px solid #30363d; border-radius: 6px; color: #8b949e; cursor: pointer; padding: 4px 8px; display: inline-flex; align-items: center; gap: 4px; font-size: 11px; transition: all 0.2s;" title="Collapse / Expand card">
+            <span class="card-chevron-${sw.ip}" style="display: inline-block; transition: transform 0.2s; transform: ${cardChevronRotate}; font-size: 9px;">&#9660;</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="card-body-${sw.ip}" style="display: ${displayCardBody};">
+        <div class="device-bar">
+          <span><span class="label">Cluster:</span> <span class="value" style="color: #58a6ff; font-weight: 600;">${sw.cluster_name || sw.name}</span></span>
+          <span><span class="label">Release:</span> <span class="value">${sw.firmware || 'PVE'}</span></span>
+          <span><span class="label">Uptime:</span> <span class="value">${sw.uptime || '-'}</span></span>
+          <span><span class="label">Nodes:</span> <span class="value" style="color: #3fb950; font-weight: 600;">${onlineNodeCount}/${nodeCount} Online</span></span>
+          <span><span class="label">Guests:</span> <span class="value" style="color: #d2a8ff; font-weight: 600;">${guestCount} VMs &amp; LXCs</span></span>
+        </div>
+
+        <!-- Cluster Nodes Telemetry -->
+        <div style="padding: 16px 20px; background: rgba(13, 17, 23, 0.4); border-bottom: 1px solid #30363d;">
+          <h4 style="font-size: 11px; font-weight: 600; color: #8b949e; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 12px 0;">Cluster Nodes (${nodes.length})</h4>
+          <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+            ${nodeMetersHtml || '<div style="color: #8b949e; font-size: 12px;">No node telemetry available</div>'}
+          </div>
+        </div>
+
+        <!-- Collapsible Virtual Machines & Containers Drawer -->
+        <div class="guests-section" style="padding: 12px 20px; background: rgba(22, 27, 34, 0.2);">
+          <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;" onclick="toggleGuestsTable('${sw.ip}')">
+            <h4 style="font-size: 12px; font-weight: 600; color: #8b949e; display: flex; align-items: center; gap: 6px; margin: 0;">
+              <span class="guests-toggle-arrow-${sw.ip}" style="display: inline-block; transition: transform 0.2s; transform: ${guestsArrowTransform}; font-size: 10px;">&gt;</span>
+              <span>🖥️ Virtual Machines &amp; Containers (<span style="color: #e1e4e8;">${guests.length} guests</span>)</span>
+            </h4>
+          </div>
+          <div class="guests-content-${sw.ip}" style="display: ${guestsDisplayStyle}; margin-top: 12px;">
+            <div style="border: 1px solid #30363d; border-radius: 8px; background: #0d1117; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);">
+              <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                <thead>
+                  <tr style="background: #161b22; border-bottom: 1px solid #30363d; font-size: 10px; color: #8b949e; text-transform: uppercase;">
+                    <th style="padding: 8px 12px; width: 60px;">VMID</th>
+                    <th style="padding: 8px 12px;">Name</th>
+                    <th style="padding: 8px 12px; width: 60px;">Type</th>
+                    <th style="padding: 8px 12px; width: 110px;">Node</th>
+                    <th style="padding: 8px 12px; width: 100px;">Status</th>
+                    <th style="padding: 8px 12px;">IP Address</th>
+                    <th style="padding: 8px 12px;">MAC Address</th>
+                    <th style="padding: 8px 12px; width: 120px;">Traffic (Bytes)</th>
+                    <th style="padding: 8px 12px; width: 110px;">Rate</th>
+                    <th style="padding: 8px 12px; text-align: right; width: 140px;">Resources</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${guestRows || '<tr><td colspan="10" style="padding: 16px; text-align: center; color: #8b949e;">No guest VMs or containers detected</td></tr>'}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        ${errorBlock}
+        <div class="last-update">Last update: ${formatTime(sw.timestamp)}</div>
+      </div>
+    </div>
+  `;
+}
+
 function renderSwitch(sw) {
+  if (sw.protocol === 'proxmox' || sw.device_type === 'virtualisation_host' || sw.role === 'virtualisation_host') {
+    return renderVirtualisationCard(sw);
+  }
+
   const renderMacTh = (colId, label) => {
     const savedWidth = columnWidths[`mac-${colId}`];
     const styleStr = `position: relative; padding: 8px 12px; cursor: pointer; color: #8b949e; user-select: none; font-weight: 600;${savedWidth ? ` width: ${savedWidth}px;` : ''}`;
@@ -1482,7 +1902,14 @@ function renderSwitch(sw) {
   const wrapThreshold = typeof PORTS_WRAP_THRESHOLD !== 'undefined' ? parseInt(PORTS_WRAP_THRESHOLD) : 0;
   const rawPorts = sw.ports || [];
   
-  const portHtmlList = rawPorts.map(p => {
+  // Separate physical ports from virtual wireless VAP interfaces (e.g. UniFi APs)
+  const isWirelessPort = (p) => p.wireless === true || (p.port && p.port.startsWith('wifi')) || (p.interface && p.interface.startsWith('wifi'));
+  const physicalPorts = rawPorts.filter(p => !isWirelessPort(p));
+  const wirelessPorts = rawPorts.filter(p => isWirelessPort(p));
+  const portsForGraphic = physicalPorts.length > 0 ? physicalPorts : rawPorts;
+  const portsForTable = physicalPorts.length > 0 ? physicalPorts : rawPorts;
+  
+  const renderPortIcon = (p) => {
     const isSfp = (p.port === '9' || (p.speed || '').toLowerCase().includes('10g') || p.port === 'SFP' || p.port === '9/SFP');
     const color = getPortColor(p);
     
@@ -1494,16 +1921,18 @@ function renderSwitch(sw) {
       tooltipParts.push(p.interface);
     }
     const details = tooltipParts.length > 0 ? ` (${tooltipParts.join(' / ')})` : '';
-    const titleText = `Port ${p.port}${details}: ${p.status.toUpperCase()} ${p.speed || ''} (${p.duplex || ''}) - Click to view graph`;
+    const statusText = (p.status || p.link || 'down').toUpperCase();
+    const titleText = `Port ${p.port}${details}: ${statusText} ${p.speed || ''} (${p.duplex || ''}) - Click to view graph`;
     const path = isSfp 
       ? 'M 4,5 h 3 v 3 h 10 v -3 h 3 v 14 h -16 z' // SFP (Fiber)
       : 'M 4,8 h 5 v -3 h 6 v 3 h 5 v 11 h -16 z'; // RJ45 (Copper)
       
+    const portLabel = ((sw.role === 'router' || sw.device_type === 'router') && p.interface) ? p.interface : p.port;
     return `
-      <div style="display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer;" 
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; min-width: 22px;" 
            title="${titleText}"
-           onclick="openGraph('${sw.ip}','${p.port}','${sw.name}','Port ${p.port}', ${p.cum_tx || p.tx_bytes || 0}, ${p.cum_rx || p.rx_bytes || 0})">
-        <span style="font-size: 10px; color: #8b949e; font-weight: 700; margin-bottom: 2px;">${p.port}</span>
+           onclick="openGraph('${sw.ip}','${p.port}','${sw.name}','Port ${p.port}', ${Math.max(0, p.cum_tx || p.tx_bytes || 0)}, ${Math.max(0, p.cum_rx || p.rx_bytes || 0)})">
+        <span style="font-size: 10px; color: #8b949e; font-weight: 700; margin-bottom: 2px;">${portLabel}</span>
         <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: ${color}; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4)); transition: all 0.15s ease-in-out; transform: scale(1);"
              onmouseover="this.style.transform='scale(1.2)';"
              onmouseout="this.style.transform='scale(1)';">
@@ -1511,28 +1940,56 @@ function renderSwitch(sw) {
         </svg>
       </div>
     `;
-  });
+  };
 
   let rowsHtml = '';
-  if (wrapThreshold > 0 && portHtmlList.length > wrapThreshold) {
-    for (let i = 0; i < portHtmlList.length; i += wrapThreshold) {
-      const chunk = portHtmlList.slice(i, i + wrapThreshold);
+  if (wrapThreshold > 0 && portsForGraphic.length > wrapThreshold) {
+    for (let i = 0; i < portsForGraphic.length; i += wrapThreshold) {
+      const chunk = portsForGraphic.slice(i, i + wrapThreshold);
       rowsHtml += `
-        <div style="display: flex; gap: 10px; align-items: center; justify-content: center;">
-          ${chunk.join('')}
+        <div style="display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: nowrap;">
+          ${chunk.map(renderPortIcon).join('')}
         </div>
       `;
     }
+  } else if (portsForGraphic.length > 12) {
+    // Dual-row patch panel layout: odd top, even bottom
+    const topRow = [];
+    const btmRow = [];
+    portsForGraphic.forEach((p, idx) => {
+      const num = parseInt(p.port, 10);
+      if (!isNaN(num)) {
+        if (num % 2 !== 0) topRow.push(renderPortIcon(p));
+        else btmRow.push(renderPortIcon(p));
+      } else {
+        if (idx % 2 === 0) topRow.push(renderPortIcon(p));
+        else btmRow.push(renderPortIcon(p));
+      }
+    });
+    if (topRow.length === 0 || btmRow.length === 0) {
+      const half = Math.ceil(portsForGraphic.length / 2);
+      topRow.length = 0; btmRow.length = 0;
+      portsForGraphic.slice(0, half).forEach(p => topRow.push(renderPortIcon(p)));
+      portsForGraphic.slice(half).forEach(p => btmRow.push(renderPortIcon(p)));
+    }
+    rowsHtml = `
+      <div style="display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: nowrap;">
+        ${topRow.join('')}
+      </div>
+      <div style="display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: nowrap;">
+        ${btmRow.join('')}
+      </div>
+    `;
   } else {
     rowsHtml = `
-      <div style="display: flex; gap: 10px; align-items: center; justify-content: center;">
-        ${portHtmlList.join('')}
+      <div style="display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: nowrap;">
+        ${portsForGraphic.map(renderPortIcon).join('')}
       </div>
     `;
   }
 
-  const portBar = (rawPorts.length > 0) ? `
-    <div style="background: rgba(13, 17, 23, 0.75); border: 1px solid #30363d; border-radius: 20px; padding: 10px 18px; display: inline-flex; flex-direction: column; gap: 10px; align-items: center; justify-content: center; box-shadow: inset 0 2px 4px rgba(0,0,0,0.4), 0 4px 10px rgba(0,0,0,0.3); margin: 4px 0;">
+  const portBar = (portsForGraphic.length > 0) ? `
+    <div style="background: rgba(13, 17, 23, 0.75); border: 1px solid #30363d; border-radius: 12px; padding: 8px 14px; display: inline-flex; flex-direction: column; gap: 6px; align-items: center; justify-content: center; box-shadow: inset 0 2px 4px rgba(0,0,0,0.4), 0 4px 10px rgba(0,0,0,0.3); margin: 4px 0; max-width: 100%; overflow-x: auto;">
       ${rowsHtml}
     </div>
   ` : '';
@@ -1560,19 +2017,30 @@ function renderSwitch(sw) {
             </th>`;
   }).join('');
 
-  const portRows = (sw.ports || []).map(p => {
-    const cells = activeColumnOrder.map(colId => {
-      const colDef = COLUMN_DEFS[colId];
-      const content = colDef.render(p, sw);
-      const tdClass = colDef.tdClassFn ? colDef.tdClassFn(p) : (colDef.tdClass || '');
-      const tdTitle = colDef.tdTitleFn ? colDef.tdTitleFn(p) : (colDef.tdTitle || '');
-      const classAttr = tdClass ? `class="${tdClass}"` : '';
-      const titleAttr = tdTitle ? `title="${tdTitle}"` : '';
-      
-      return `<td ${classAttr} ${titleAttr}>${content}</td>`;
+  const showActiveOnly = getActivePortsOnlyState();
+  const tableSourcePorts = portsForTable;
+  const filteredPorts = showActiveOnly
+    ? tableSourcePorts.filter(p => (p.status || p.link || '').toLowerCase() === 'up')
+    : tableSourcePorts;
+
+  let portRows = '';
+  if (filteredPorts.length > 0) {
+    portRows = filteredPorts.map(p => {
+      const cells = activeColumnOrder.map(colId => {
+        const colDef = COLUMN_DEFS[colId];
+        const content = colDef.render(p, sw);
+        const tdClass = colDef.tdClassFn ? colDef.tdClassFn(p) : (colDef.tdClass || '');
+        const tdTitle = colDef.tdTitleFn ? colDef.tdTitleFn(p) : (colDef.tdTitle || '');
+        const classAttr = tdClass ? `class="${tdClass}"` : '';
+        const titleAttr = tdTitle ? `title="${tdTitle}"` : '';
+        
+        return `<td ${classAttr} ${titleAttr}>${content}</td>`;
+      }).join('');
+      return `<tr>${cells}</tr>`;
     }).join('');
-    return `<tr>${cells}</tr>`;
-  }).join('');
+  } else if (showActiveOnly && tableSourcePorts.length > 0) {
+    portRows = `<tr><td colspan="${activeColumnOrder.length}" style="padding:16px;text-align:center;color:#8b949e">No active ports (all ports down/disabled). <a href="#" onclick="toggleActivePortsOnly(); return false;" style="color:#58a6ff">Show all ports</a></td></tr>`;
+  }
 
   const errorBlock = sw.error ? `<div class="error-card">Error: ${sw.error}</div>` : '';
   const uptime = sw.uptime ? `<span><span class="label">Uptime:</span> <span class="value">${sw.uptime}</span></span>` : '';
@@ -1697,16 +2165,89 @@ function renderSwitch(sw) {
     </div>
   `;
 
-  return `<div class="switch-card">
+  // Wireless SSIDs section (for Access Points)
+  let wirelessSectionHtml = '';
+  if (wirelessPorts.length > 0) {
+    const wirelessState = getWirelessState(sw.ip);
+    const isWirelessExpanded = wirelessState.expanded;
+    const wirelessDisplayStyle = isWirelessExpanded ? 'block' : 'none';
+    const wirelessArrowTransform = isWirelessExpanded ? 'rotate(90deg)' : 'rotate(0deg)';
+
+    const wirelessRows = wirelessPorts.map(p => {
+      const isUp = (p.status || '').toLowerCase() === 'up';
+      const statusBadge = `<span class="status-badge ${isUp ? 'up' : 'down'}"><span class="status-dot ${isUp ? 'up' : 'down'}"></span>${(p.status || 'down').toUpperCase()}</span>`;
+      const radioBand = p.radio ? ({"ng": "2.4 GHz", "na": "5 GHz", "6e": "6 GHz"}[p.radio] || p.radio.toUpperCase()) : '-';
+      const clientCount = p.client_count !== undefined ? p.client_count : 0;
+      const tx = Math.max(0, p.cum_tx !== undefined && p.cum_tx !== null ? p.cum_tx : (p.tx_bytes || 0));
+      const rx = Math.max(0, p.cum_rx !== undefined && p.cum_rx !== null ? p.cum_rx : (p.rx_bytes || 0));
+      return `
+        <tr style="border-bottom: 1px solid #21262d; font-size: 11px; transition: background 0.15s;" onmouseover="this.style.background='#1c2128'" onmouseout="this.style.background='transparent'">
+          <td style="padding: 8px 12px; font-weight: 600; color: #58a6ff;">${p.ssid || p.name || p.port}</td>
+          <td style="padding: 8px 12px; color: #8b949e; font-family: 'SF Mono', Monaco, monospace;">${p.port}</td>
+          <td style="padding: 8px 12px; color: #c9d1d9; font-weight: 500;">${radioBand}</td>
+          <td style="padding: 8px 12px; color: #8b949e;">${p.channel || '-'}</td>
+          <td style="padding: 8px 12px;">${statusBadge}</td>
+          <td style="padding: 8px 12px; font-weight: 600; color: #3fb950;">${clientCount} ${clientCount === 1 ? 'client' : 'clients'}</td>
+          <td style="padding: 8px 12px; font-family: 'SF Mono', Monaco, monospace; color: #b1bac4;">TX ${formatBytes(tx)}<br>RX ${formatBytes(rx)}</td>
+        </tr>
+      `;
+    }).join('');
+
+    wirelessSectionHtml = `
+      <div class="wireless-section" style="border-top: 1px solid #30363d; padding: 12px 20px; background: rgba(22, 27, 34, 0.2);">
+        <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;" onclick="toggleWirelessTable('${sw.ip}')">
+          <h4 style="font-size: 12px; font-weight: 600; color: #8b949e; display: flex; align-items: center; gap: 6px; margin: 0;">
+            <span class="wireless-toggle-arrow-${sw.ip}" style="display: inline-block; transition: transform 0.2s; transform: ${wirelessArrowTransform}; font-size: 10px;">&gt;</span>
+            <span>📶 Wireless Networks &amp; SSIDs (<span style="color: #e1e4e8;">${wirelessPorts.length} Virtual APs</span>)</span>
+          </h4>
+        </div>
+        <div class="wireless-content-${sw.ip}" style="display: ${wirelessDisplayStyle}; margin-top: 12px;">
+          <div style="border: 1px solid #30363d; border-radius: 8px; background: #0d1117; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);">
+            <table style="width: 100%; border-collapse: collapse; text-align: left;">
+              <thead>
+                <tr style="background: #161b22; border-bottom: 1px solid #30363d; font-size: 10px; color: #8b949e; text-transform: uppercase;">
+                  <th style="padding: 8px 12px;">SSID</th>
+                  <th style="padding: 8px 12px;">Interface</th>
+                  <th style="padding: 8px 12px;">Radio Band</th>
+                  <th style="padding: 8px 12px;">Channel</th>
+                  <th style="padding: 8px 12px;">Status</th>
+                  <th style="padding: 8px 12px;">Clients</th>
+                  <th style="padding: 8px 12px;">Traffic (Bytes)</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${wirelessRows}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  const isCardCollapsed = getCardCollapsedState(sw.ip);
+  const displayCardBody = isCardCollapsed ? 'none' : 'block';
+  const cardChevronRotate = isCardCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
+  const activeCount = rawPorts.filter(p => (p.status || p.link || '').toLowerCase() === 'up').length;
+  const portSummaryBadge = rawPorts.length > 0
+    ? `<span class="card-collapsed-summary-${sw.ip}" style="display: ${isCardCollapsed ? 'inline-block' : 'none'}; font-size: 11px; color: #8b949e; background: #0d1117; padding: 2px 8px; border-radius: 12px; border: 1px solid #30363d;">${activeCount}/${rawPorts.length} Ports Up</span>`
+    : '';
+
+  return `<div class="switch-card" data-switch-ip="${sw.ip}">
     <div class="switch-header">
       <div style="display: flex; align-items: center; gap: 12px;">
         <img src="/api/switches/${sw.ip}/image" alt="Switch" style="height: 24px; width: auto; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));">
         <div>
-          <h2>${sw.name}</h2>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <h2>${sw.name}</h2>
+            ${portSummaryBadge}
+          </div>
           <span style="font-size:12px;color:#b1bac4;display:flex;align-items:center;gap:8px;">
             <a href="http://${sw.ip}/" target="_blank" style="color:#58a6ff;text-decoration:none" title="Open switch web UI">${sw.ip}</a>
+            ${sw.can_backup ? `
             <span style="color:#30363d">|</span>
             <a href="#" onclick="backupConfig('${sw.ip}', this); return false;" style="color:#58a6ff;text-decoration:none;font-weight:600;display:inline-flex;align-items:center;gap:4px;" title="Backup configuration on server">💾 Backup</a>
+            ` : ''}
           </span>
         </div>
       </div>
@@ -1714,27 +2255,70 @@ function renderSwitch(sw) {
       <!-- Port Graphic -->
       ${portBar}
       
-      <div class="meta">${sw.model || ''}</div>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div class="meta">${(sw.model && sw.model !== 'generic_switch') ? sw.model : ''}</div>
+        <button onclick="toggleCardCollapse('${sw.ip}')" style="background: #21262d; border: 1px solid #30363d; border-radius: 6px; color: #8b949e; cursor: pointer; padding: 4px 8px; display: inline-flex; align-items: center; gap: 4px; font-size: 11px; transition: all 0.2s;" title="Collapse / Expand card">
+          <span class="card-chevron-${sw.ip}" style="display: inline-block; transition: transform 0.2s; transform: ${cardChevronRotate}; font-size: 9px;">&#9660;</span>
+        </button>
+      </div>
     </div>
-    <div class="device-bar">
-      ${uptime}
-      ${fw}
-      ${mac}
-      ${dhcpBadge}
-      ${igmpBadge}
-      ${jumboBadge}
+    
+    <div class="card-body-${sw.ip}" style="display: ${displayCardBody};">
+      <div class="device-bar">
+        ${uptime}
+        ${fw}
+        ${mac}
+        ${dhcpBadge}
+        ${igmpBadge}
+        ${jumboBadge}
+      </div>
+      <table class="port-table">
+        <thead><tr>
+          ${theadCols}
+        </tr></thead>
+        <tbody>${portRows || `<tr><td colspan="${activeColumnOrder.length}" style="padding:20px;text-align:center;color:#b1bac4">No data</td></tr>`}</tbody>
+      </table>
+      ${wirelessSectionHtml}
+      ${errorBlock}
+      ${macSectionHtml}
+      ${igmpSectionHtml}
+      <div class="last-update">Last update: ${formatTime(sw.timestamp)}</div>
     </div>
-    <table class="port-table">
-      <thead><tr>
-        ${theadCols}
-      </tr></thead>
-      <tbody>${portRows || `<tr><td colspan="${activeColumnOrder.length}" style="padding:20px;text-align:center;color:#b1bac4">No data</td></tr>`}</tbody>
-    </table>
-    ${errorBlock}
-    ${macSectionHtml}
-    ${igmpSectionHtml}
-    <div class="last-update">Last update: ${formatTime(sw.timestamp)}</div>
   </div>`;
+}
+
+function renderDashboardData() {
+  const app = document.getElementById('app');
+  if (!app || !lastSwitchesData || lastSwitchesData.length === 0) return;
+  
+  const q = currentDeviceFilter.toLowerCase();
+  const filteredData = q ? lastSwitchesData.filter(sw => {
+    const matchName = (sw.name || '').toLowerCase().includes(q);
+    const matchIp = (sw.ip || '').toLowerCase().includes(q);
+    const matchModel = (sw.model && sw.model !== 'generic_switch' ? sw.model : '').toLowerCase().includes(q);
+    const matchCluster = (sw.cluster_name || '').toLowerCase().includes(q);
+    const matchNodes = (sw.cluster_nodes || []).some(n => (n.name || '').toLowerCase().includes(q) || (n.ip || '').toLowerCase().includes(q));
+    const matchGuests = (sw.child_devices || []).some(g => (g.name || '').toLowerCase().includes(q) || (g.native_id || '').toString().includes(q));
+    return matchName || matchIp || matchModel || matchCluster || matchNodes || matchGuests;
+  }) : lastSwitchesData;
+
+  if (filteredData.length === 0) {
+    app.className = 'switches';
+    app.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #8b949e; background: #161b22; border: 1px solid #30363d; border-radius: 12px;">No devices match "${currentDeviceFilter}". <a href="#" onclick="clearDeviceFilter(); return false;" style="color: #58a6ff;">Clear search</a></div>`;
+    return;
+  }
+
+  app.className = 'switches';
+  app.innerHTML = filteredData.map(renderSwitch).join('');
+
+  // Re-render active MAC tables
+  filteredData.forEach(sw => {
+    const state = getMacState(sw.ip);
+    state.data = sw.mac_table || [];
+    if (state.expanded) {
+      renderMacTable(sw.ip);
+    }
+  });
 }
 
 async function updateDashboard() {
@@ -1768,17 +2352,8 @@ async function updateDashboard() {
     });
     saveMacStatesToStorage();
 
-    app.className = 'switches';
-    app.innerHTML = data.map(renderSwitch).join('');
-    
-    // Initialize states and render active MAC tables
-    data.forEach(sw => {
-      const state = getMacState(sw.ip);
-      state.data = sw.mac_table || [];
-      if (state.expanded) {
-        renderMacTable(sw.ip);
-      }
-    });
+    lastSwitchesData = data;
+    renderDashboardData();
 
     if (document.getElementById('graph-overlay').classList.contains('open') && currentGraphIp && currentGraphPort) {
       renderGraph(currentGraphIp, currentGraphPort);
@@ -1786,8 +2361,8 @@ async function updateDashboard() {
       if (currentSw) {
         const currentPortObj = (currentSw.ports || []).find(p => p.port === currentGraphPort);
         if (currentPortObj) {
-          const totalTx = currentPortObj.cum_tx || currentPortObj.tx_bytes || 0;
-          const totalRx = currentPortObj.cum_rx || currentPortObj.rx_bytes || 0;
+          const totalTx = Math.max(0, currentPortObj.cum_tx !== undefined && currentPortObj.cum_tx !== null ? currentPortObj.cum_tx : (currentPortObj.tx_bytes || 0));
+          const totalRx = Math.max(0, currentPortObj.cum_rx !== undefined && currentPortObj.cum_rx !== null ? currentPortObj.cum_rx : (currentPortObj.rx_bytes || 0));
           document.getElementById('graph-total-tx').innerHTML = `${totalTx.toLocaleString()} bytes <span style="font-weight:400;color:#8b949e">(${formatBytes(totalTx)})</span>`;
           document.getElementById('graph-total-rx').innerHTML = `${totalRx.toLocaleString()} bytes <span style="font-weight:400;color:#8b949e">(${formatBytes(totalRx)})</span>`;
         }
@@ -1805,6 +2380,8 @@ async function updateDashboard() {
 
 /* ---- Graph ---- */
 function openGraph(ip, port, name, label, totalTx = 0, totalRx = 0) {
+  totalTx = Math.max(0, totalTx || 0);
+  totalRx = Math.max(0, totalRx || 0);
   currentGraphIp = ip;
   currentGraphPort = port;
   currentGraphSwitchName = name;
@@ -2318,6 +2895,8 @@ async function loadSettings() {
 }
 
 loadSettings();
+applyGridColumns();
+updateActivePortsButton();
 updateDashboard();
 startCountdown();
 window.addEventListener('resize', () => {

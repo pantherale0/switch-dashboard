@@ -1,0 +1,42 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Run Tests (uv run pytest)",
+      "type": "shell",
+      "command": "uv run pytest",
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Run Tests with Coverage",
+      "type": "shell",
+      "command": "uv run pytest --cov=switch_dashboard -v",
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Install Dependencies (uv)",
+      "type": "shell",
+      "command": "uv pip install -r requirements.txt pytest pytest-cov",
+      "problemMatcher": []
+    },
+    {
+      "label": "Run Housekeeper Cycle",
+      "type": "shell",
+      "command": "uv run python -c \"from switch_dashboard.storage import get_db, Housekeeper; print(Housekeeper(get_db()).run_once())\"",
+      "problemMatcher": []
+    }
+  ]
+}

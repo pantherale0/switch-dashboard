@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
+.coverage
 
 # Virtual environments
 .env
@@ -31,5 +32,10 @@ logs/
 
 # Databases, state, and credentials configs
 network_scanner.db
+dashboard.db
+*.db
+*.db-wal
+*.db-shm
+*.bak
 last_post_scan.ts
 config.json

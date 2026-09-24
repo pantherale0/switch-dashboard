@@ -171,6 +171,123 @@ You can add the OVS switch from the dashboard's `/config` web interface or direc
 
 ---
 
+## Proxmox VE Cluster Driver
+
+The `proxmox` driver uses the Proxmox VE HTTPS API to discover every physical cluster member, QEMU VM, and LXC container in a cluster. Add one **Virtualisation Host** per Proxmox cluster. That configuration record acts as a polling hub and is not itself rendered as network hardware. Each physical member appears separately on the network map, and guests are grouped around the member on which they currently run. Guest details include their VMID, state, resource usage, bridges, VLAN tags, and configured MAC addresses.
+
+### Create a Read-Only API Token
+
+Run these commands on a Proxmox node. The token secret is displayed only once:
+
+```bash
+pveum user add dashboard@pve
+pveum acl modify / -user dashboard@pve -role PVEAuditor
+pveum user token add dashboard@pve switch-dashboard --privsep 1
+pveum acl modify / -token 'dashboard@pve!switch-dashboard' -role PVEAuditor
+```
+
+Configure the device through `/config`, select **Virtualisation Host** and **Proxmox VE (API Token)**, or add it directly:
+
+```json
+{
+  "id": "production-cluster",
+  "name": "Production Proxmox Cluster",
+  "ip": "192.168.1.20",
+  "management_type": "managed",
+  "role": "virtualisation_host",
+  "device_type": "virtualisation_host",
+  "protocol": "proxmox",
+  "model": "proxmox",
+  "api_user": "dashboard@pve",
+  "token_id": "switch-dashboard",
+  "token_secret": "TOKEN-SECRET",
+  "api_port": 8006,
+  "api_timeout": 15,
+  "verify_ssl": true,
+  "ca_bundle": "",
+  "max_concurrency": 10,
+  "enabled": true
+}
+```
+
+TLS verification is enabled by default. Use `ca_bundle` for a private CA certificate. Disable `verify_ssl` only when the certificate cannot be validated and the security tradeoff is understood.
+
+The configured endpoint can be any reachable cluster member; inventory is collected cluster-wide. Configure only one endpoint for each cluster to avoid duplicate nodes. The driver reads `/nodes/{node}/network` and matches physical interface MAC addresses against managed switch forwarding tables. If Proxmox omits a hardware address, scanner inventory or an IP-aware ARP table can supply the IP-to-MAC match. VM/LXC IP addresses are shown only when available from guest configuration; the driver does not require or assume that the QEMU guest agent is installed. Guest inventory is currently live and is not persisted while the dashboard or Proxmox API is offline.
+
+---
+
+## Ubiquiti UniFi Standalone SSH Driver
+
+Standalone UniFi switches, access points, and gateways can be monitored directly over SSH without a UniFi Network controller. The dedicated `unifi` driver reads the device's `mca-dump` output and normalizes port counters, link state, firmware, uptime, MAC forwarding entries, and LLDP neighbors for the dashboard.
+
+Enable device SSH in the UniFi device settings first. Use the device-specific SSH credentials, not a UI.com account. Add the device through `/config` and select **Ubiquiti UniFi (Standalone SSH)**, or configure it directly:
+
+```json
+{
+  "name": "Office UniFi Switch",
+  "ip": "192.168.1.20",
+  "protocol": "unifi",
+  "model": "USW-Lite-8-PoE",
+  "username": "ubnt",
+  "password": "device-ssh-password",
+  "ssh_port": 22,
+  "strict_host_key": true,
+  "port_count": 8,
+  "enabled": true
+}
+```
+
+With `strict_host_key` enabled, the dashboard service account must trust the device key. For example, run `ssh-keyscan -H 192.168.1.20 >> ~/.ssh/known_hosts` as that service account after verifying the fingerprint. If a verified device has been replaced or regenerated its key, remove the old entry with `ssh-keygen -R 192.168.1.20` before adding the new key. Set `strict_host_key` to `false` only when bypassing `known_hosts` verification is acceptable.
+
+The default telemetry command is `mca-dump`. For switches without an embedded forwarding table, automatic MAC discovery tries `swctrl`, `ubntbox swctrl`, `bridge fdb`, and `brctl` in order. Set `mac_table_command` to a custom command or an empty value to disable that fallback. Access points use the `station_table` from `mca-dump` and do not run switch-only commands. This driver targets direct standalone-device SSH; controller-managed collection is not required.
+
+## Generic SSH JSON Driver
+
+The selectable `ssh` driver supports other SSH-managed network devices through user-provided commands. `scrape_command` is required and must print one JSON object to stdout. `mac_table_command` and `neighbors_command` are optional and must print JSON arrays. Commands must be non-interactive and available to the configured SSH account.
+
+```json
+{
+  "name": "Custom SSH Switch",
+  "ip": "192.168.1.30",
+  "protocol": "ssh",
+  "model": "custom-os",
+  "username": "monitor",
+  "key_filename": "/opt/switch-dashboard/.ssh/id_ed25519",
+  "ssh_port": 22,
+  "ssh_timeout": 10,
+  "strict_host_key": true,
+  "scrape_command": "/usr/local/bin/dashboard-status --json",
+  "mac_table_command": "/usr/local/bin/dashboard-fdb --json",
+  "neighbors_command": "/usr/local/bin/dashboard-lldp --json",
+  "port_count": 24
+}
+```
+
+The telemetry object supports `name`, `model`, `firmware`, `uptime`, `mac`, `status`, and `ports`. Each port should include `port` and `status`; omitted counters and display fields receive safe defaults:
+
+```json
+{
+  "status": "online",
+  "ports": [
+    {
+      "port": "1",
+      "status": "up",
+      "link": "Link Up",
+      "speed": "1G",
+      "duplex": "Full",
+      "tx_bytes": 123456,
+      "rx_bytes": 654321,
+      "tx_packets": 1000,
+      "rx_packets": 900
+    }
+  ]
+}
+```
+
+MAC table entries use `{"mac":"00:11:22:33:44:55","port":"1","vlan":"1"}`. Neighbor entries use `{"local_port":"1","remote_chassis_id":"AA:BB:CC:DD:EE:FF","remote_port_id":"1","remote_system_name":"core-switch"}`. Invalid JSON or an unsuccessful SSH command marks telemetry offline rather than terminating the poller.
+
+---
+
 ## 🛠️ System Architecture
 
 ```mermaid
@@ -193,7 +310,7 @@ graph TD
 
 * **Python 3.9+**
 * **Operating System**: Linux with `systemd` (Debian, Ubuntu, CentOS, Arch) or standalone Windows/macOS.
-* **Network Access**: Port 80 access to target managed switches (e.g. HORACO `HC-SWTGW218AS` or OEM equivalents).
+* **Network Access**: Port 80 access to HTTP-managed switches, TCP port 22 access to SSH/UniFi/OVS targets, and TCP port 8006 access to Proxmox VE as configured.
 
 ---
 

@@ -63,19 +63,694 @@
   }
   
   .left-pane {
-    flex: 3;
+    flex: 1;
     display: flex;
     flex-direction: column;
     gap: 20px;
   }
   .right-pane {
-    flex: 7;
+    flex: 1;
     position: sticky;
     top: 20px;
     display: flex;
     flex-direction: column;
     gap: 20px;
     width: 100%;
+  }
+
+  /* Full-width Devices Command Center */
+  .devices-section {
+    max-width: 1400px;
+    margin: 0 auto 24px auto;
+  }
+  .devices-card {
+    background: rgba(22, 27, 34, 0.7);
+    border: 1px solid rgba(48, 54, 61, 0.6);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  .devices-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .devices-title-area {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .devices-title-area h2 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #f0f6fc;
+    margin: 0;
+    padding: 0;
+    border: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .device-count-pill {
+    background: rgba(88, 166, 255, 0.15);
+    color: #58a6ff;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    border: 1px solid rgba(88, 166, 255, 0.3);
+  }
+  .btn-add-device {
+    background: linear-gradient(135deg, #238636 0%, #2ea043 100%);
+    border: 1px solid rgba(56, 139, 253, 0.2);
+    color: #fff;
+    padding: 9px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 14px rgba(35, 134, 54, 0.3);
+    transition: all 0.2s ease;
+  }
+  .btn-add-device:hover {
+    background: linear-gradient(135deg, #2ea043 0%, #3fb950 100%);
+    box-shadow: 0 6px 20px rgba(35, 134, 54, 0.45);
+    transform: translateY(-1px);
+  }
+  
+  /* Modern Device Roster Table */
+  .device-roster {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 8px;
+  }
+  .device-roster th {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #8b949e;
+    padding: 10px 16px;
+    text-align: left;
+    border: none;
+  }
+  .device-row {
+    background: rgba(28, 33, 40, 0.6);
+    border: 1px solid rgba(48, 54, 61, 0.6);
+    border-radius: 10px;
+    transition: all 0.2s ease;
+  }
+  .device-row:hover {
+    background: rgba(33, 38, 45, 0.85);
+    border-color: rgba(88, 166, 255, 0.3);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  }
+  .device-row td {
+    padding: 14px 16px;
+    font-size: 13px;
+    color: #c9d1d9;
+    border-top: 1px solid rgba(48, 54, 61, 0.5);
+    border-bottom: 1px solid rgba(48, 54, 61, 0.5);
+    vertical-align: middle;
+  }
+  .device-row td:first-child {
+    border-left: 1px solid rgba(48, 54, 61, 0.5);
+    border-top-left-radius: 10px;
+    border-bottom-left-radius: 10px;
+  }
+  .device-row td:last-child {
+    border-right: 1px solid rgba(48, 54, 61, 0.5);
+    border-top-right-radius: 10px;
+    border-bottom-right-radius: 10px;
+  }
+  
+  .device-identity {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .device-icon-box {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    background: rgba(33, 38, 45, 0.8);
+    border: 1px solid rgba(48, 54, 61, 0.8);
+    flex-shrink: 0;
+  }
+  .device-name-text {
+    font-weight: 600;
+    color: #f0f6fc;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .device-meta-sub {
+    font-size: 11px;
+    color: #8b949e;
+    margin-top: 2px;
+  }
+  
+  .badge-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.3;
+  }
+  .badge-managed-http {
+    background: rgba(56, 139, 253, 0.15);
+    color: #58a6ff;
+    border: 1px solid rgba(56, 139, 253, 0.3);
+  }
+  .badge-managed-snmp {
+    background: rgba(57, 197, 187, 0.15);
+    color: #39c5bb;
+    border: 1px solid rgba(57, 197, 187, 0.3);
+  }
+  .badge-managed-fritz {
+    background: rgba(240, 136, 62, 0.15);
+    color: #f0883e;
+    border: 1px solid rgba(240, 136, 62, 0.3);
+  }
+  .badge-managed-ovs {
+    background: rgba(168, 85, 247, 0.15);
+    color: #a855f7;
+    border: 1px solid rgba(168, 85, 247, 0.3);
+  }
+  .badge-managed-ssh {
+    background: rgba(210, 153, 34, 0.15);
+    color: #d29922;
+    border: 1px solid rgba(210, 153, 34, 0.3);
+  }
+  .badge-managed-unifi {
+    background: rgba(0, 111, 238, 0.15);
+    color: #58a6ff;
+    border: 1px solid rgba(0, 111, 238, 0.4);
+  }
+  .badge-managed-proxmox {
+    background: rgba(229, 94, 37, 0.15);
+    color: #ff8a50;
+    border: 1px solid rgba(229, 94, 37, 0.4);
+  }
+  .badge-unmanaged {
+    background: rgba(139, 148, 158, 0.15);
+    color: #8b949e;
+    border: 1px solid rgba(139, 148, 158, 0.3);
+  }
+  .badge-role {
+    background: rgba(255, 255, 255, 0.06);
+    color: #c9d1d9;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+  
+  .status-indicator-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+  .status-dot-active {
+    background: #3fb950;
+    box-shadow: 0 0 8px rgba(63, 185, 80, 0.6);
+  }
+  .status-dot-disabled {
+    background: #484f58;
+  }
+
+  .device-row-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: flex-end;
+  }
+  .action-btn-sm {
+    background: #21262d;
+    border: 1px solid rgba(48, 54, 61, 0.8);
+    color: #c9d1d9;
+    padding: 5px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s ease;
+  }
+  .action-btn-sm:hover {
+    background: #30363d;
+    color: #fff;
+    border-color: #8b949e;
+  }
+  .action-btn-sm.edit:hover {
+    border-color: #58a6ff;
+    color: #58a6ff;
+  }
+  .action-btn-sm.delete {
+    color: #f85149;
+    border-color: rgba(248, 81, 73, 0.3);
+    background: rgba(248, 81, 73, 0.08);
+  }
+  .action-btn-sm.delete:hover {
+    background: rgba(248, 81, 73, 0.2);
+    border-color: #f85149;
+  }
+  .action-btn-sm.test:hover {
+    border-color: #3fb950;
+    color: #3fb950;
+  }
+
+  /* Wizard Modal Styles */
+  .wizard-backdrop {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(10, 11, 15, 0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1100;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .wizard-backdrop.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .wizard-card {
+    background: #161b22;
+    border: 1px solid rgba(56, 139, 253, 0.4);
+    border-radius: 16px;
+    width: 94%;
+    max-width: 740px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.7);
+    transform: scale(0.94);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+  }
+  .wizard-backdrop.active .wizard-card {
+    transform: scale(1);
+  }
+  .wizard-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid rgba(48, 54, 61, 0.8);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(22, 27, 34, 0.9);
+  }
+  .wizard-header-title {
+    font-size: 17px;
+    font-weight: 600;
+    color: #f0f6fc;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .wizard-close-btn {
+    background: transparent;
+    border: none;
+    color: #8b949e;
+    font-size: 20px;
+    cursor: pointer;
+    line-height: 1;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: all 0.2s;
+  }
+  .wizard-close-btn:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  /* Wizard Stepper Progress Bar */
+  .wizard-stepper {
+    display: flex;
+    background: rgba(13, 17, 23, 0.6);
+    padding: 12px 24px;
+    border-bottom: 1px solid rgba(48, 54, 61, 0.5);
+    gap: 20px;
+  }
+  .wizard-step-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #8b949e;
+  }
+  .wizard-step-item.active {
+    color: #58a6ff;
+  }
+  .wizard-step-item.completed {
+    color: #3fb950;
+  }
+  .wizard-step-circle {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    background: rgba(48, 54, 61, 0.6);
+    color: #c9d1d9;
+    border: 1px solid rgba(48, 54, 61, 0.8);
+  }
+  .wizard-step-item.active .wizard-step-circle {
+    background: rgba(56, 139, 253, 0.2);
+    border-color: #58a6ff;
+    color: #58a6ff;
+  }
+  .wizard-step-item.completed .wizard-step-circle {
+    background: rgba(63, 185, 80, 0.2);
+    border-color: #3fb950;
+    color: #3fb950;
+  }
+
+  .wizard-body {
+    padding: 24px;
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  /* Type Selection Cards in Step 1 */
+  .type-selection-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    margin-top: 16px;
+  }
+  @media (max-width: 600px) {
+    .type-selection-grid { grid-template-columns: 1fr; }
+  }
+  .type-card {
+    background: rgba(28, 33, 40, 0.6);
+    border: 2px solid rgba(48, 54, 61, 0.7);
+    border-radius: 12px;
+    padding: 22px 18px;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    position: relative;
+    user-select: none;
+  }
+  .type-card:hover {
+    background: rgba(33, 38, 45, 0.9);
+    border-color: rgba(88, 166, 255, 0.4);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+  }
+  .type-card.selected {
+    background: rgba(56, 139, 253, 0.1);
+    border-color: #58a6ff;
+    box-shadow: 0 0 20px rgba(88, 166, 255, 0.2);
+  }
+  .type-card-icon {
+    font-size: 28px;
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(33, 38, 45, 0.8);
+    border: 1px solid rgba(48, 54, 61, 0.8);
+  }
+  .type-card.selected .type-card-icon {
+    background: rgba(56, 139, 253, 0.2);
+    border-color: #58a6ff;
+  }
+  .type-card h4 {
+    font-size: 15px;
+    font-weight: 600;
+    color: #f0f6fc;
+    margin: 0;
+  }
+  .type-card p {
+    font-size: 12px;
+    color: #8b949e;
+    line-height: 1.5;
+    margin: 0;
+  }
+  .type-card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .wizard-section-divider {
+    border-top: 1px solid rgba(48, 54, 61, 0.6);
+    margin: 20px 0 16px 0;
+    padding-top: 16px;
+  }
+  .wizard-section-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #58a6ff;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .dynamic-driver-box {
+    background: rgba(13, 17, 23, 0.5);
+    border: 1px solid rgba(48, 54, 61, 0.6);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+
+  .password-input-group {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex: 1;
+    min-width: 120px;
+  }
+  .password-toggle-btn {
+    position: absolute;
+    right: 10px;
+    background: none;
+    border: none;
+    color: #8b949e;
+    cursor: pointer;
+    font-size: 12px;
+    padding: 4px;
+    user-select: none;
+  }
+  .password-toggle-btn:hover {
+    color: #58a6ff;
+  }
+
+  .wizard-footer {
+    padding: 18px 24px;
+    border-top: 1px solid rgba(48, 54, 61, 0.8);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #161b22;
+    border-bottom-left-radius: 16px;
+    border-bottom-right-radius: 16px;
+  }
+  .wizard-footer-right {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+  .wizard-footer button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 22px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+    line-height: 1.4;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-sizing: border-box;
+    outline: none;
+    user-select: none;
+  }
+  .wizard-btn-cancel,
+  .wizard-btn-back {
+    background: #21262d;
+    border: 1px solid rgba(240, 246, 252, 0.15);
+    color: #c9d1d9;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+  .wizard-btn-cancel:hover,
+  .wizard-btn-back:hover {
+    background: #30363d;
+    border-color: rgba(240, 246, 252, 0.3);
+    color: #ffffff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  }
+  .wizard-btn-cancel:active,
+  .wizard-btn-back:active {
+    background: #1b1f24;
+    transform: scale(0.98);
+  }
+  .wizard-btn-back:hover {
+    transform: translateX(-2px);
+  }
+  .wizard-btn-primary {
+    background: linear-gradient(135deg, #1f6feb 0%, #388bfd 100%);
+    border: 1px solid rgba(56, 139, 253, 0.4);
+    color: #ffffff;
+    box-shadow: 0 3px 12px rgba(31, 111, 235, 0.35);
+  }
+  .wizard-btn-primary:hover {
+    background: linear-gradient(135deg, #388bfd 0%, #58a6ff 100%);
+    box-shadow: 0 4px 18px rgba(31, 111, 235, 0.5);
+    transform: translateY(-1px);
+  }
+  .wizard-btn-primary:active {
+    transform: translateY(0) scale(0.98);
+  }
+  .wizard-btn-primary:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none !important;
+  }
+  .wizard-btn-success {
+    background: linear-gradient(135deg, #238636 0%, #2ea043 100%);
+    border: 1px solid rgba(46, 160, 67, 0.4);
+    color: #ffffff;
+    box-shadow: 0 3px 12px rgba(35, 134, 54, 0.35);
+  }
+  .wizard-btn-success:hover {
+    background: linear-gradient(135deg, #2ea043 0%, #3fb950 100%);
+    box-shadow: 0 4px 18px rgba(35, 134, 54, 0.5);
+    transform: translateY(-1px);
+  }
+  .wizard-btn-success:active {
+    transform: translateY(0) scale(0.98);
+  }
+
+  .wizard-test-btn {
+    background: rgba(56, 139, 253, 0.12);
+    border: 1px solid rgba(56, 139, 253, 0.35);
+    color: #58a6ff;
+    padding: 7px 16px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+  }
+  .wizard-test-btn:hover {
+    background: rgba(56, 139, 253, 0.25);
+    border-color: #58a6ff;
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(56, 139, 253, 0.3);
+  }
+  .wizard-test-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .upstream-radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 14px;
+    width: 100%;
+  }
+  .upstream-radio-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #c9d1d9;
+    background: rgba(28, 33, 40, 0.4);
+    border: 1px solid rgba(48, 54, 61, 0.5);
+    border-radius: 8px;
+    padding: 10px 14px;
+    transition: all 0.2s;
+  }
+  .upstream-radio-label:hover {
+    border-color: rgba(88, 166, 255, 0.3);
+    background: rgba(33, 38, 45, 0.6);
+  }
+  .upstream-radio-label input[type="radio"]:checked + .upstream-radio-text strong {
+    color: #58a6ff;
+  }
+  .upstream-radio-label input[type="radio"] {
+    margin-top: 3px;
+    accent-color: #58a6ff;
+  }
+  .upstream-radio-text strong {
+    display: block;
+    font-size: 13px;
+    color: #f0f6fc;
+  }
+  .upstream-radio-text span {
+    font-size: 11px;
+    color: #8b949e;
+    line-height: 1.4;
+  }
+
+  .test-status-banner {
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    margin-top: 10px;
+    display: none;
+    line-height: 1.4;
+  }
+  .test-status-banner.success {
+    display: block;
+    background: rgba(63, 185, 80, 0.15);
+    border: 1px solid rgba(63, 185, 80, 0.4);
+    color: #3fb950;
+  }
+  .test-status-banner.error {
+    display: block;
+    background: rgba(248, 81, 73, 0.15);
+    border: 1px solid rgba(248, 81, 73, 0.4);
+    color: #f85149;
+  }
+  .test-status-banner.info {
+    display: block;
+    background: rgba(56, 139, 253, 0.15);
+    border: 1px solid rgba(56, 139, 253, 0.4);
+    color: #58a6ff;
   }
 
   .card {
@@ -366,6 +1041,7 @@
   <div class="nav-links">
     <a href="/">📊 Dashboard</a>
     <a href="/map">🕸️ Network Map</a>
+    <a href="/clients">📱 Clients</a>
     <a href="/scanner">🌐 Scanner</a>
     <a href="/config" class="active">&#9881; Config</a>
     <a href="/backups">💾 Backups</a>
@@ -382,10 +1058,55 @@
 </div>
 {% endif %}
 
-<div class="layout-container">
-  <!-- LEFT PANE: Settings & Switches -->
-  <div class="left-pane">
-    <form method="post" action="/config" id="config-form">
+<form method="post" action="/config" id="config-form">
+  <input type="hidden" name="devices_json" id="devices_json_input" value="">
+
+  <!-- FULL-WIDTH DEVICES COMMAND CENTER -->
+  <div class="devices-section">
+    <div class="devices-card">
+      <div class="devices-header">
+        <div class="devices-title-area">
+          <h2>
+            <span>🔀 Network Devices</span>
+          </h2>
+          <span class="device-count-pill" id="device-count-badge">0 Devices</span>
+          <span class="badge-pill badge-managed-http" id="managed-count-badge" style="display:none;">0 Managed</span>
+          <span class="badge-pill badge-unmanaged" id="unmanaged-count-badge" style="display:none;">0 Unmanaged</span>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <button type="button" class="btn-add-device" onclick="openDeviceWizard()">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+              <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+            </svg>
+            Add Device
+          </button>
+        </div>
+      </div>
+
+      <div id="devices-roster-container" style="overflow-x: auto;">
+        <table class="device-roster" id="device-roster-table">
+          <thead>
+            <tr>
+              <th style="width: 28px;"></th>
+              <th>Device</th>
+              <th>Management / Driver</th>
+              <th>Network Address</th>
+              <th>Upstream Device Attachment</th>
+              <th>Ports</th>
+              <th style="text-align: right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="device-roster-tbody">
+            <!-- Populated dynamically by renderDevicesTable() -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="layout-container">
+    <!-- LEFT PANE: Settings -->
+    <div class="left-pane">
       <div class="card">
         <h2>General Settings</h2>
         <div class="global-row">
@@ -522,134 +1243,6 @@
       </div>
 
       <div class="card">
-        <h2>Nodes</h2>
-        <div id="switch-list">
-          {% for sw in switches %}
-          <div class="switch-group" data-index="{{ loop.index0 }}">
-            <input type="hidden" name="keep[]" value="1">
-            <div class="switch-header" onclick="toggleSwitchExpand(this)">
-              <div class="switch-title-wrap">
-                <span class="drag-handle" onclick="event.stopPropagation()" onmousedown="event.stopPropagation()">⠿</span>
-                <svg class="switch-chevron" viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
-                <h3>Node {{ loop.index }} <span class="switch-subname" id="subname-{{ loop.index0 }}">{{ sw.name }} ({{ sw.ip }})</span></h3>
-              </div>
-              <div class="switch-actions" onclick="event.stopPropagation()">
-                <button type="button" class="inline-reboot-btn" onclick="openRebootModal('{{ sw.ip }}', '{{ sw.name }}')">Reboot</button>
-                <button type="button" class="inline-remove-btn" onclick="removeSwitch(this)">Delete</button>
-              </div>
-            </div>
-            <div class="switch-content">
-              <div class="form-row">
-                <label>Name</label>
-                <input type="text" name="name[]" value="{{ sw.name }}" placeholder="Node 1" oninput="updateSubname({{ loop.index0 }}, this.value, null)">
-              </div>
-              <div class="form-row">
-                <label>IP Address</label>
-                <input type="text" name="ip[]" value="{{ sw.ip }}" placeholder="192.168.1.100" oninput="updateSubname({{ loop.index0 }}, null, this.value)">
-              </div>
-              <div class="form-row">
-                <label>Username</label>
-                <input type="text" name="username[]" value="{{ sw.username }}" placeholder="admin">
-              </div>
-              <div class="form-row">
-                <label>Password</label>
-                <input type="password" name="password[]" value="{{ sw.password }}" placeholder="admin">
-              </div>
-              <div class="form-row">
-                <label>Model</label>
-                <input type="text" name="model[]" value="{{ sw.get('model', '') }}" placeholder="HC-SWTGW218AS">
-                <span class="note">Optional (e.g. HC-SWTGW218AS, fritzbox, openvswitch, or internet)</span>
-              </div>
-              <div class="form-row">
-                <label>Port Count</label>
-                <input type="number" name="port_count[]" value="{{ sw.get('port_count', 9) }}" min="1" max="52" style="max-width:80px">
-              </div>
-              <div class="form-row" style="border-top: 1px solid rgba(48, 54, 61, 0.4); padding-top: 12px; margin-top: 12px;">
-                <label style="color: #58a6ff;">Parent Device IP</label>
-                <input type="text" name="parent_ip[]" value="{{ sw.get('parent_ip', '') }}" placeholder="e.g. 192.168.1.1 (Fritz!Box)">
-                <span class="note">IP of the upstream parent node this node connects to.</span>
-              </div>
-              <div class="form-row">
-                <label style="color: #58a6ff;">Parent Port</label>
-                <input type="text" name="parent_port[]" value="{{ sw.get('parent_port', '') }}" placeholder="e.g. LAN 2 or 8">
-                <span class="note">The port on the parent device that connects to this node.</span>
-              </div>
-              <div class="form-row" style="margin-bottom: 18px;">
-                <label style="color: #58a6ff;">Local Uplink Port</label>
-                <input type="text" name="uplink_port[]" value="{{ sw.get('uplink_port', '') }}" placeholder="e.g. Port 1 or 1">
-                <span class="note">The port on this node itself that connects to the parent.</span>
-              </div>
-              <div class="form-row" style="display: flex; align-items: center; gap: 8px;">
-                <input type="hidden" name="switch_enabled[]" id="switch_enabled_hidden_{{ loop.index0 }}" value="{% if sw.get('enabled', True) %}1{% else %}0{% endif %}">
-                <label class="switch-toggle" style="margin: 0;">
-                  <input type="checkbox" {% if sw.get('enabled', True) %}checked{% endif %} onchange="document.getElementById('switch_enabled_hidden_{{ loop.index0 }}').value = this.checked ? '1' : '0'">
-                  <span class="slider round"></span>
-                </label>
-                <span style="font-size: 13px; color: #e1e4e8;">Enabled (Query and display this node)</span>
-              </div>
-            </div>
-          </div>
-          {% endfor %}
-        </div>
-
-        <button type="button" class="add-btn" onclick="addSwitch()">+ Add Node</button>
-      </div>
-
-      <div class="card">
-        <h2>
-          <span>🖥️ Infrastructure Devices</span>
-        </h2>
-        <span class="note" style="display:block; margin-bottom: 12px;">
-          Define key network infrastructure nodes (e.g., Router/WiFi, Access Points, Repeaters). These MAC addresses are used to correctly root the network map and group client devices.
-        </span>
-        <div id="infra-list" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px;">
-          {% for dev in infrastructure_devices %}
-          <div class="form-row infra-item" style="border: 1px solid rgba(48, 54, 61, 0.4); padding: 12px; border-radius: 8px; background: rgba(22, 27, 34, 0.4);" data-index="{{ loop.index0 }}">
-            <input type="hidden" name="infra_keep[]" value="1">
-            <div style="display: flex; gap: 10px; width: 100%; flex-wrap: wrap; align-items: center;">
-              <input type="text" name="infra_name[]" value="{{ dev.name }}" placeholder="Device Name (e.g. Router)" style="flex: 2; min-width: 150px;">
-              <input type="text" name="infra_mac[]" value="{{ dev.mac }}" placeholder="MAC Address (e.g. AA:BB:CC:...)" style="flex: 2; min-width: 150px;">
-              <select name="infra_type[]" style="background: #0d1117; border: 1px solid rgba(48, 54, 61, 0.8); border-radius: 6px; padding: 8px 12px; color: #e1e4e8; font-size: 13px; flex: 1.5; min-width: 110px; outline: none; cursor: pointer;">
-                <option value="router" {% if dev.type == 'router' %}selected{% endif %}>Router/Gateway</option>
-                <option value="repeater" {% if dev.type == 'repeater' %}selected{% endif %}>Repeater/AP</option>
-                <option value="other" {% if dev.type == 'other' %}selected{% endif %}>Other Infra</option>
-              </select>
-              <button type="button" class="inline-remove-btn" onclick="removeInfra(this)" style="margin-left: auto;">Delete</button>
-            </div>
-          </div>
-          {% endfor %}
-        </div>
-        <button type="button" class="add-btn" onclick="addInfra()">+ Add Infrastructure Device</button>
-      </div>
-
-      <div class="card">
-        <h2>
-          <span>🔌 Unmanaged Switches</span>
-        </h2>
-        <span class="note" style="display:block; margin-bottom: 12px;">
-          Define unmanaged switches connected to a specific managed switch port. All devices learned on that parent port will be grouped under this unmanaged switch.
-        </span>
-        <div id="unmanaged-list" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px;">
-          {% for us in unmanaged_switches %}
-          <div class="form-row unmanaged-item" style="border: 1px solid rgba(48, 54, 61, 0.4); padding: 12px; border-radius: 8px; background: rgba(22, 27, 34, 0.4);" data-index="{{ loop.index0 }}">
-            <input type="hidden" name="unmanaged_keep[]" value="1">
-            <div style="display: flex; gap: 10px; width: 100%; flex-wrap: wrap; align-items: center;">
-              <input type="text" name="unmanaged_name[]" value="{{ us.name }}" placeholder="Switch Name (e.g. Desk Switch)" style="flex: 2; min-width: 150px;">
-              <select name="unmanaged_parent_ip[]" style="background: #0d1117; border: 1px solid rgba(48, 54, 61, 0.8); border-radius: 6px; padding: 8px 12px; color: #e1e4e8; font-size: 13px; flex: 2; min-width: 150px; outline: none; cursor: pointer;">
-                {% for sw in switches if sw.get('model', '').lower() != 'internet' %}
-                <option value="{{ sw.ip }}" {% if us.parent_ip == sw.ip %}selected{% endif %}>{{ sw.name }} ({{ sw.ip }})</option>
-                {% endfor %}
-              </select>
-              <input type="number" name="unmanaged_parent_port[]" value="{{ us.parent_port }}" placeholder="Port (e.g. 2)" min="1" max="52" style="flex: 1; min-width: 80px;">
-              <button type="button" class="inline-remove-btn" onclick="removeUnmanaged(this)" style="margin-left: auto;">Delete</button>
-            </div>
-          </div>
-          {% endfor %}
-        </div>
-        <button type="button" class="add-btn" onclick="addUnmanaged()">+ Add Unmanaged Switch</button>
-      </div>
-
-      <div class="card">
         <h2>📡 Telemetry Settings</h2>
         <span class="note" style="display:block; margin-bottom: 12px; line-height: 1.5;">
           Help improve this project! Enabling anonymous telemetry is active by default.
@@ -670,8 +1263,7 @@
           <a href="/">Cancel</a>
         </div>
       </div>
-    </form>
-  </div>
+    </div>
 
   <!-- RIGHT PANE: YAML Template Editor -->
   <div class="right-pane">
@@ -824,6 +1416,7 @@
     </div>
   </div>
 </div>
+</form>
 
 <div class="footer">
   <div><a href="/" style="color:#8b949e">Back to Dashboard</a> &middot; <a href="/api-docs" style="color:#8b949e">API Reference</a> &middot; <span class="version-badge">v{{ version }}</span></div>
@@ -856,6 +1449,342 @@
     </div>
     <div id="reboot-error" class="reboot-status" style="display:none; color: #f85149;">
       <span style="font-size: 24px; margin-bottom: 8px;">✗</span> Failed: <span id="reboot-error-msg" style="font-size: 13px; font-weight: normal; margin-top: 4px;"></span>
+    </div>
+  </div>
+</div>
+
+<!-- Device Setup Wizard Modal -->
+<div id="device-wizard-modal" class="wizard-backdrop">
+  <div class="wizard-card">
+    <div class="wizard-header">
+      <div class="wizard-header-title">
+        <span id="wizard-title-icon">✨</span>
+        <span id="wizard-title-text">Add Network Device</span>
+      </div>
+      <button type="button" class="wizard-close-btn" onclick="closeDeviceWizard()">&times;</button>
+    </div>
+
+    <!-- Wizard Stepper Indicator -->
+    <div class="wizard-stepper">
+      <div class="wizard-step-item active" id="stepper-step-1">
+        <div class="wizard-step-circle">1</div>
+        <span>Device Type</span>
+      </div>
+      <div class="wizard-step-item" id="stepper-step-2">
+        <div class="wizard-step-circle">2</div>
+        <span>Configuration</span>
+      </div>
+    </div>
+
+    <div class="wizard-body">
+      <!-- STEP 1: Management Type Selection -->
+      <div id="wizard-step-1-content">
+        <p style="font-size: 13px; color: #c9d1d9; margin-bottom: 6px;">Select how this device will be integrated into the network topology and monitoring system.</p>
+        
+        <div class="type-selection-grid">
+          <!-- Card A: Managed Device -->
+          <div class="type-card" id="card-managed" onclick="selectWizardType('managed')">
+            <div class="type-card-icon">🖧</div>
+            <h4>Managed Device</h4>
+            <p>Actively queried for live port states, traffic metrics, VLANs, and connected client MAC tables via a protocol driver.</p>
+            <div class="type-card-tags">
+              <span class="badge-pill badge-managed-http">HTTP / KeepLink</span>
+              <span class="badge-pill badge-managed-snmp">SNMP</span>
+              <span class="badge-pill badge-managed-fritz">FRITZ!Box</span>
+              <span class="badge-pill badge-managed-ovs">Open vSwitch</span>
+              <span class="badge-pill badge-managed-ssh">Generic SSH</span>
+              <span class="badge-pill badge-managed-unifi">UniFi SSH</span>
+              <span class="badge-pill badge-managed-proxmox">Proxmox VE</span>
+            </div>
+          </div>
+
+          <!-- Card B: Unmanaged Device -->
+          <div class="type-card" id="card-unmanaged" onclick="selectWizardType('unmanaged')">
+            <div class="type-card-icon">🔌</div>
+            <h4>Unmanaged Device</h4>
+            <p>Unmanaged switch, hub, access point, or passive infrastructure. Connected to an upstream port to intelligently group downstream devices.</p>
+            <div class="type-card-tags">
+              <span class="badge-pill badge-unmanaged">Unmanaged Switch</span>
+              <span class="badge-pill badge-unmanaged">Dumb Hub</span>
+              <span class="badge-pill badge-unmanaged">Infrastructure</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2A: Unmanaged Device Form -->
+      <div id="wizard-step-2-unmanaged-content" style="display: none;">
+        <div class="form-row">
+          <label style="color: #f0f6fc; font-weight: 600;">Device Name <span style="color:#f85149;">*</span></label>
+          <input type="text" id="unmanaged-input-name" placeholder="e.g. Desk Switch 5-Port" style="font-weight: 500;">
+        </div>
+
+        <div class="form-row">
+          <label>Device Role</label>
+          <select id="unmanaged-input-type" onchange="toggleUnmanagedRoleOptions()" style="background: #0d1117; border: 1px solid rgba(48, 54, 61, 0.8); border-radius: 6px; padding: 8px 12px; color: #e1e4e8; font-size: 13px; flex: 1;">
+            <option value="unmanaged_switch">Switch (Unmanaged)</option>
+            <option value="ont">ONT (Optical Network Terminal / Fiber Modem)</option>
+            <option value="phone">Phone (VoIP / Desk Phone)</option>
+            <option value="router">Router / Gateway</option>
+            <option value="access_point">Access Point</option>
+            <option value="other">Other Infrastructure</option>
+          </select>
+        </div>
+
+        <div id="ont-config-group" style="display: none; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 12px 14px; margin-bottom: 14px;">
+          <div style="display: flex; align-items: center; gap: 8px; color: #34d399; font-size: 13px; font-weight: 600; margin-bottom: 6px;">
+            <span>📦 Optical Network Terminal (ONT)</span>
+          </div>
+          <div style="font-size: 11px; color: #8b949e; line-height: 1.4; margin-bottom: 10px;">
+            An ONT terminates fiber broadband and creates a path from the Internet (Cloud) into your downstream router or intermediate switch. Configure separate download and upload speeds for your PON technology, plus your live statistics source.
+          </div>
+
+          <div style="display: flex; gap: 12px; margin-bottom: 12px;">
+            <div class="form-row" style="flex: 1; margin-bottom: 0;">
+              <label style="font-size: 12px; color: #34d399; font-weight: 600;">Download Speed</label>
+              <input type="text" id="unmanaged-input-speed-down" value="1000M" placeholder="e.g. 1000M, 1G, 2.5G" style="font-size: 12px; padding: 6px 10px;">
+              <div style="display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap;">
+                <button type="button" class="action-btn-sm" style="font-size: 10px; padding: 2px 6px;" onclick="document.getElementById('unmanaged-input-speed-down').value='1000M'">1000M</button>
+                <button type="button" class="action-btn-sm" style="font-size: 10px; padding: 2px 6px;" onclick="document.getElementById('unmanaged-input-speed-down').value='900M'">900M</button>
+                <button type="button" class="action-btn-sm" style="font-size: 10px; padding: 2px 6px;" onclick="document.getElementById('unmanaged-input-speed-down').value='500M'">500M</button>
+                <button type="button" class="action-btn-sm" style="font-size: 10px; padding: 2px 6px;" onclick="document.getElementById('unmanaged-input-speed-down').value='2.5G'">2.5G</button>
+              </div>
+            </div>
+            <div class="form-row" style="flex: 1; margin-bottom: 0;">
+              <label style="font-size: 12px; color: #34d399; font-weight: 600;">Upload Speed</label>
+              <input type="text" id="unmanaged-input-speed-up" value="115M" placeholder="e.g. 115M, 300M, 1G" style="font-size: 12px; padding: 6px 10px;">
+              <div style="display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap;">
+                <button type="button" class="action-btn-sm" style="font-size: 10px; padding: 2px 6px;" onclick="document.getElementById('unmanaged-input-speed-up').value='115M'">115M</button>
+                <button type="button" class="action-btn-sm" style="font-size: 10px; padding: 2px 6px;" onclick="document.getElementById('unmanaged-input-speed-up').value='110M'">110M</button>
+                <button type="button" class="action-btn-sm" style="font-size: 10px; padding: 2px 6px;" onclick="document.getElementById('unmanaged-input-speed-up').value='300M'">300M</button>
+                <button type="button" class="action-btn-sm" style="font-size: 10px; padding: 2px 6px;" onclick="document.getElementById('unmanaged-input-speed-up').value='1G'">1G</button>
+              </div>
+            </div>
+          </div>
+
+          <div style="border-top: 1px dashed rgba(16, 185, 129, 0.3); padding-top: 10px; margin-top: 8px;">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: #f0f6fc; font-size: 12px; font-weight: 600; margin-bottom: 6px;">
+              <input type="checkbox" id="ont-stats-same-as-parent" checked onchange="toggleOntStatsFields()" style="cursor: pointer;">
+              <span>Pull live statistics from downstream connection port</span>
+            </label>
+            <div style="font-size: 11px; color: #8b949e; line-height: 1.4; margin-bottom: 8px;">
+              Uncheck if the ONT connects to an unmanaged port/VLAN on a switch and you want to pull throughput counters from a different device/port (e.g. router WAN).
+            </div>
+            <div id="ont-custom-stats-fields" style="display: none; gap: 10px;">
+              <div class="form-row" style="flex: 2; margin-bottom: 0;">
+                <label style="font-size: 11px;">Stats Device</label>
+                <select id="ont-input-stats-device-ip" style="background: #0d1117; border: 1px solid rgba(48, 54, 61, 0.8); border-radius: 6px; padding: 6px 10px; color: #e1e4e8; font-size: 12px; width: 100%;">
+                  <!-- Populated dynamically -->
+                </select>
+              </div>
+              <div class="form-row" style="flex: 1; margin-bottom: 0;">
+                <label style="font-size: 11px;">Stats Port</label>
+                <input type="text" id="ont-input-stats-port" placeholder="e.g. WAN or 1" style="font-size: 12px; padding: 6px 10px;">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="phone-passthrough-group" style="display: none; background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.25); border-radius: 8px; padding: 12px 14px; margin-bottom: 14px;">
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: #f0f6fc; font-size: 13px; font-weight: 600; margin-bottom: 6px;">
+            <input type="checkbox" id="unmanaged-input-mini-switch" checked style="cursor: pointer;">
+            <span>Ethernet Passthrough</span>
+          </label>
+          <div style="font-size: 11px; color: #8b949e; line-height: 1.4; margin-bottom: 8px;">
+            Provides an Ethernet passthrough port so that a downstream switch or workstation can be daisy-chained through this desk phone without creating a full node card on the main dashboard.
+          </div>
+          <div class="form-row" style="margin-bottom: 0;">
+            <label style="font-size: 12px;">Passthrough Port Name</label>
+            <input type="text" id="unmanaged-input-passthrough-port" value="PC" placeholder="e.g. PC" style="font-size: 12px; padding: 6px 10px; width: 140px;">
+          </div>
+        </div>
+
+        <div class="wizard-section-divider"></div>
+        <div class="wizard-section-title">
+          <span id="unmanaged-attachment-title">🔗 Upstream Attachment</span>
+        </div>
+        <div id="unmanaged-attachment-help" style="background: rgba(88, 166, 255, 0.08); border: 1px solid rgba(88, 166, 255, 0.25); border-radius: 8px; padding: 12px 14px; margin-bottom: 14px; font-size: 12px; color: #8b949e; line-height: 1.5;">
+          💡 Select what upstream device this hardware connects to and on which port. In the network map and topology views, all client devices detected off this port will be grouped under this unmanaged device.
+        </div>
+
+        <div class="form-row">
+          <label id="unmanaged-parent-ip-label">Attachment Device</label>
+          <select id="unmanaged-input-parent-ip" style="background: #0d1117; border: 1px solid rgba(48, 54, 61, 0.8); border-radius: 6px; padding: 8px 12px; color: #e1e4e8; font-size: 13px; flex: 1;">
+            <!-- Populated dynamically -->
+          </select>
+        </div>
+
+        <div class="form-row">
+          <label id="unmanaged-parent-port-label">Attachment Port</label>
+          <input type="text" id="unmanaged-input-parent-port" placeholder="e.g. WAN or 2" style="max-width: 140px;">
+          <span class="note" style="margin-left: 8px;">Port identifier (e.g. WAN, 1, eth0)</span>
+        </div>
+
+        <div class="wizard-section-divider"></div>
+        <div class="wizard-section-title" style="cursor: pointer; user-select: none;" onclick="toggleOptionalUnmanagedFields()">
+          <span>⚙️ Optional Identifiers</span>
+          <span id="optional-unmanaged-toggle" style="font-size: 11px; color: #8b949e; font-weight: normal; margin-left: auto;">[Click to Expand]</span>
+        </div>
+
+        <div id="optional-unmanaged-fields" style="display: none;">
+          <div class="form-row">
+            <label>MAC Address</label>
+            <input type="text" id="unmanaged-input-mac" placeholder="e.g. AA:BB:CC:DD:EE:FF">
+            <span class="note" style="width: 100%; margin-left: 97px;">Optional physical MAC address if known</span>
+          </div>
+
+          <div class="form-row">
+            <label>IP Address</label>
+            <input type="text" id="unmanaged-input-ip" placeholder="e.g. 192.168.1.50">
+            <span class="note" style="width: 100%; margin-left: 97px;">Optional management IP address if reachable</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2B: Managed Device Form -->
+      <div id="wizard-step-2-managed-content" style="display: none;">
+        <!-- Identity -->
+        <div class="wizard-section-title">
+          <span>🏷️ Device Identity</span>
+        </div>
+
+        <div class="form-row">
+          <label style="color: #f0f6fc; font-weight: 600;">Device Name <span style="color:#f85149;">*</span></label>
+          <input type="text" id="managed-input-name" placeholder="e.g. Core Switch" style="font-weight: 500;">
+        </div>
+
+        <div class="form-row">
+          <label style="color: #f0f6fc; font-weight: 600;">IP Address <span style="color:#f85149;">*</span></label>
+          <input type="text" id="managed-input-ip" placeholder="e.g. 192.168.1.90" onblur="checkUpstreamAutoDiscovery()">
+        </div>
+
+        <div class="form-row">
+          <label>Hardware Model <span style="font-size: 11px; font-weight: normal; color: #8b949e;">(Optional)</span></label>
+          <input type="text" id="managed-input-model" placeholder="e.g. UniFi UAP-AC-Pro, RB4011, TL-SG108E">
+        </div>
+
+        <div class="form-row">
+          <label>Role</label>
+          <select id="managed-input-role" style="background: #0d1117; border: 1px solid rgba(48, 54, 61, 0.8); border-radius: 6px; padding: 8px 12px; color: #e1e4e8; font-size: 13px; flex: 1;">
+            <option value="switch">Switch</option>
+            <option value="router">Router / Gateway</option>
+            <option value="access_point">Access Point</option>
+            <option value="virtualisation_host">Virtualisation Host</option>
+            <option value="other">Other Device</option>
+          </select>
+          
+          <label style="min-width: 70px; margin-left: 10px;">Port Count</label>
+          <input type="number" id="managed-input-port-count" value="9" min="1" max="128" style="max-width: 80px;">
+        </div>
+
+        <div class="form-row" style="display: flex; align-items: center; gap: 8px; margin-top: 6px;">
+          <input type="hidden" id="managed-input-enabled-val" value="1">
+          <label class="switch-toggle" style="margin: 0;">
+            <input type="checkbox" id="managed-input-enabled-checkbox" checked onchange="document.getElementById('managed-input-enabled-val').value = this.checked ? '1' : '0'">
+            <span class="slider round"></span>
+          </label>
+          <span style="font-size: 13px; color: #e1e4e8;">Enabled (Actively query and display this node)</span>
+        </div>
+
+        <!-- Connection & Protocol Driver -->
+        <div class="wizard-section-divider"></div>
+        <div class="wizard-section-title">
+          <span>🔌 Protocol Driver & Credentials</span>
+        </div>
+
+        <div class="form-row">
+          <label style="color: #58a6ff; font-weight: 600;">Protocol Driver</label>
+          <select id="managed-input-protocol" onchange="onWizardProtocolChange()" style="background: #0d1117; border: 1px solid #388bfd; border-radius: 6px; padding: 8px 12px; color: #58a6ff; font-size: 13px; flex: 1; font-weight: 600;">
+            <!-- Populated from registeredProtocols -->
+          </select>
+        </div>
+
+        <!-- Dynamic parameters from Voluptuous schema -->
+        <div class="dynamic-driver-box">
+          <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: #8b949e; margin-bottom: 12px; letter-spacing: 0.5px;">Driver Parameters</div>
+          <div id="managed-dynamic-params-container">
+            <!-- Dynamic fields inserted here by renderDynamicDriverFields() -->
+          </div>
+        </div>
+
+        <!-- Connection Test Area -->
+        <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
+          <button type="button" class="wizard-test-btn" id="wizard-test-conn-btn" onclick="executeWizardConnectionTest()">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14l-4-4 1.41-1.41L11 13.17l6.59-6.59L19 8l-8 8z"/>
+            </svg>
+            Test Connection
+          </button>
+          <span id="wizard-test-spinner" class="spinner" style="display:none; width: 18px; height: 18px; border-width: 2px;"></span>
+        </div>
+        <div id="wizard-test-status" class="test-status-banner"></div>
+
+        <!-- Upstream Attachment & Topology -->
+        <div class="wizard-section-divider"></div>
+        <div class="wizard-section-title">
+          <span>🕸️ Upstream Device Attachment</span>
+        </div>
+
+        <div class="upstream-radio-group">
+          <label class="upstream-radio-label">
+            <input type="radio" name="managed_upstream_mode" id="upstream-mode-auto" value="auto" checked onchange="toggleManagedUpstreamFields()">
+            <div class="upstream-radio-text">
+              <strong>Auto-Detect (Recommended)</strong>
+              <span>The topology engine automatically discovers upstream links by cross-referencing MAC transit tables and LLDP neighbor peering.</span>
+            </div>
+          </label>
+
+          <label class="upstream-radio-label">
+            <input type="radio" name="managed_upstream_mode" id="upstream-mode-manual" value="manual" onchange="toggleManagedUpstreamFields()">
+            <div class="upstream-radio-text">
+              <strong>Manual Override</strong>
+              <span>Explicitly specify the upstream device, upstream port, and local uplink port for custom or non-standard topologies.</span>
+            </div>
+          </label>
+        </div>
+
+        <div id="managed-manual-upstream-fields" style="display: none; background: rgba(28, 33, 40, 0.4); border: 1px solid rgba(48, 54, 61, 0.5); border-radius: 8px; padding: 14px; margin-top: 10px;">
+          <div class="form-row">
+            <label>Upstream Device</label>
+            <select id="managed-input-parent-ip" style="background: #0d1117; border: 1px solid rgba(48, 54, 61, 0.8); border-radius: 6px; padding: 8px 12px; color: #e1e4e8; font-size: 13px; flex: 1;">
+              <!-- Populated dynamically -->
+            </select>
+          </div>
+
+          <div class="form-row">
+            <label>Upstream Port</label>
+            <input type="number" id="managed-input-parent-port" min="1" max="128" placeholder="e.g. 2" style="max-width: 120px;">
+            <span class="note" style="margin-left: 8px;">Port on upstream device (numeric: 1 = Port 1, 2 = Port 2)</span>
+          </div>
+
+          <div class="form-row">
+            <label>Local Uplink Port</label>
+            <input type="number" id="managed-input-uplink-port" min="1" max="128" placeholder="e.g. 1" style="max-width: 120px;">
+            <span class="note" style="margin-left: 8px;">Port on this device that links to upstream (numeric: 1 = Port 1)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Wizard Footer Actions -->
+    <div class="wizard-footer">
+      <div>
+        <button type="button" class="wizard-btn-back" id="wizard-back-btn" onclick="wizardBackToStep1()" style="display:none;">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+          Back
+        </button>
+      </div>
+      <div class="wizard-footer-right">
+        <button type="button" class="wizard-btn-cancel" onclick="closeDeviceWizard()">Cancel</button>
+        <button type="button" class="wizard-btn-primary" id="wizard-next-btn" onclick="wizardNextFromStep1()">
+          Continue
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
+        </button>
+        <button type="button" class="wizard-btn-success" id="wizard-save-btn" onclick="saveDeviceFromWizard()" style="display:none;">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+          Save Device
+        </button>
+      </div>
     </div>
   </div>
 </div>
@@ -920,261 +1849,953 @@ async function importCsvFile() {
   }
 }
 
-// Switch Collapsing Logic
-function toggleSwitchExpand(header) {
-  const content = header.nextElementSibling;
-  header.classList.toggle('active');
-  content.classList.toggle('active');
+// ==========================================
+// UNIFIED DEVICES & SETUP WIZARD MANAGEMENT
+// ==========================================
+
+let devicesData = {{ devices | tojson }};
+let registeredProtocols = [];
+let upstreamCandidates = [];
+let wizardSelectedType = null;
+let wizardEditingDeviceId = null;
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', () => {
+  fetchProtocolsAndInit();
+});
+
+async function fetchProtocolsAndInit() {
+  try {
+    const res = await fetch('/api/protocols');
+    if (res.ok) {
+      registeredProtocols = await res.json();
+    }
+  } catch (e) {
+    console.error('Failed to load registered protocols:', e);
+  }
+  try {
+    const resCand = await fetch('/api/devices/upstream-candidates');
+    if (resCand.ok) {
+      const data = await resCand.json();
+      upstreamCandidates = data.candidates || [];
+    }
+  } catch (e) {
+    console.debug('Failed to load upstream candidates:', e);
+  }
+  populateProtocolDropdown();
+  renderDevicesTable();
 }
 
-// Live Header text update
-function updateSubname(index, nameVal, ipVal) {
-  const subnameSpan = document.getElementById(`subname-${index}`);
-  if (!subnameSpan) return;
+function syncDevicesJson() {
+  const hiddenInput = document.getElementById('devices_json_input');
+  if (hiddenInput) {
+    hiddenInput.value = JSON.stringify(devicesData);
+  }
+}
+
+function populateProtocolDropdown() {
+  const select = document.getElementById('managed-input-protocol');
+  if (!select) return;
+  select.innerHTML = '';
+  registeredProtocols.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.name;
+    opt.textContent = p.display_name || p.name;
+    select.appendChild(opt);
+  });
+}
+
+function populateUpstreamDropdowns(currentDevId = null) {
+  const unmanagedSelect = document.getElementById('unmanaged-input-parent-ip');
+  const managedSelect = document.getElementById('managed-input-parent-ip');
   
-  const group = document.querySelector(`.switch-group[data-index="${index}"]`);
-  if (!group) return;
+  const options = [];
+  options.push({ value: '', label: '-- No Upstream / Root Device --' });
   
-  const nameInput = group.querySelector('input[name="name[]"]');
-  const ipInput = group.querySelector('input[name="ip[]"]');
+  const pool = (upstreamCandidates && upstreamCandidates.length > 0) ? upstreamCandidates : devicesData;
+  const seenValues = new Set();
+
+  pool.forEach(d => {
+    if (d.id === currentDevId) return;
+    const isPhone = (d.device_type === 'phone' || d.role === 'phone');
+    let typeDesc = d.management_type === 'managed' ? 'Managed Switch' : (isPhone ? (d.is_mini_switch !== false ? 'Phone (Ethernet Passthrough)' : 'Phone') : (d.device_type === 'unmanaged_switch' ? 'Unmanaged Switch' : (d.device_type || 'Infrastructure')));
+    const val = d.ip || d.id;
+    if (!val || seenValues.has(val)) return;
+    seenValues.add(val);
+    const label = `${d.name} (${d.ip || d.mac || ''} - ${typeDesc})`;
+    options.push({ value: val, label: label });
+  });
+
+  const ontStatsSelect = document.getElementById('ont-input-stats-device-ip');
+
+  [unmanagedSelect, managedSelect, ontStatsSelect].forEach(sel => {
+    if (!sel) return;
+    const currentVal = sel.value;
+    sel.innerHTML = '';
+    options.forEach(optData => {
+      const opt = document.createElement('option');
+      opt.value = optData.value;
+      opt.textContent = optData.label;
+      sel.appendChild(opt);
+    });
+    if (currentVal) sel.value = currentVal;
+  });
+}
+
+function formatDeviceModelDisplay(dev) {
+  if (dev.model && dev.model !== 'generic_switch' && dev.model.trim()) {
+    return dev.model;
+  }
+  if (dev.management_type !== 'managed') {
+    if (dev.device_type === 'ont') return 'Optical Network Terminal (ONT)';
+    if (dev.device_type === 'phone') return dev.is_mini_switch !== false ? 'VoIP Phone (Passthrough)' : 'VoIP Phone';
+    if (dev.device_type === 'unmanaged_switch') return 'Unmanaged Switch';
+    return dev.device_type || 'Unmanaged Device';
+  }
+  const proto = (dev.protocol || '').toLowerCase();
+  const role = (dev.role || dev.device_type || 'switch').toLowerCase();
   
-  const name = nameInput ? nameInput.value : '';
-  const ip = ipInput ? ipInput.value : '';
-  
-  subnameSpan.textContent = `${name} (${ip})`;
+  if (proto === 'proxmox') return 'Proxmox VE Host';
+  if (proto === 'unifi') return 'UniFi Access Point';
+  if (proto === 'fritzbox') return 'FRITZ!Box Gateway';
+  if (proto === 'ovs') return 'Open vSwitch';
+  if (proto === 'http_hc') return 'Web Managed Switch';
+  if (proto === 'snmp') {
+    if (role === 'router') return 'SNMP Router / Gateway';
+    if (role === 'access_point') return 'SNMP Access Point';
+    if (role === 'virtualisation_host') return 'Virtualisation Host';
+    return 'Managed SNMP Switch';
+  }
+  if (role === 'router') return 'Router / Gateway';
+  if (role === 'access_point') return 'Access Point';
+  if (role === 'virtualisation_host') return 'Virtualisation Host';
+  return 'Managed Switch';
 }
 
-// Drag and Drop Initialization
-function initDragAndDrop(card) {
-  const handle = card.querySelector('.drag-handle');
-  if (!handle) return;
+function renderDevicesTable() {
+  syncDevicesJson();
+  const tbody = document.getElementById('device-roster-tbody');
+  const countBadge = document.getElementById('device-count-badge');
+  const managedBadge = document.getElementById('managed-count-badge');
+  const unmanagedBadge = document.getElementById('unmanaged-count-badge');
 
-  handle.addEventListener('mousedown', () => {
-    card.setAttribute('draggable', 'true');
-  });
+  if (!tbody) return;
 
-  handle.addEventListener('mouseup', () => {
-    card.removeAttribute('draggable');
-  });
-  
-  handle.addEventListener('mouseleave', () => {
-    card.removeAttribute('draggable');
-  });
+  const total = devicesData.length;
+  const managedCount = devicesData.filter(d => d.management_type === 'managed').length;
+  const unmanagedCount = total - managedCount;
 
-  card.addEventListener('dragstart', (e) => {
-    card.classList.add('dragging');
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', '');
-  });
-
-  card.addEventListener('dragend', () => {
-    card.classList.remove('dragging');
-    card.removeAttribute('draggable');
-    renumber();
-  });
-}
-
-// Add Switch Collapsible template
-function addSwitch() {
-  const list = document.getElementById('switch-list');
-  const count = list.children.length;
-  const div = document.createElement('div');
-  div.className = 'switch-group';
-  div.setAttribute('data-index', count);
-  div.innerHTML = `
-    <input type="hidden" name="keep[]" value="1">
-    <div class="switch-header active" onclick="toggleSwitchExpand(this)">
-      <div class="switch-title-wrap">
-        <span class="drag-handle" onclick="event.stopPropagation()" onmousedown="event.stopPropagation()">⠿</span>
-        <svg class="switch-chevron" viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
-        <h3>Node ${count + 1} <span class="switch-subname" id="subname-${count}">New Node</span></h3>
-      </div>
-      <div class="switch-actions" onclick="event.stopPropagation()">
-        <button type="button" class="inline-remove-btn" onclick="removeSwitch(this)">Delete</button>
-      </div>
-    </div>
-    <div class="switch-content active">
-      <div class="form-row">
-        <label>Name</label>
-        <input type="text" name="name[]" value="Node ${count + 1}" placeholder="Node ${count + 1}" oninput="updateSubname(${count}, this.value, null)">
-      </div>
-      <div class="form-row">
-        <label>IP Address</label>
-        <input type="text" name="ip[]" value="" placeholder="192.168.1.x" oninput="updateSubname(${count}, null, this.value)">
-      </div>
-      <div class="form-row">
-        <label>Username</label>
-        <input type="text" name="username[]" value="admin" placeholder="admin">
-      </div>
-      <div class="form-row">
-        <label>Password</label>
-        <input type="password" name="password[]" value="admin" placeholder="password">
-      </div>
-      <div class="form-row">
-        <label>Model</label>
-        <input type="text" name="model[]" value="" placeholder="HC-SWTGW218AS">
-        <span class="note">Optional (e.g. HC-SWTGW218AS, fritzbox, openvswitch, or internet)</span>
-      </div>
-      <div class="form-row">
-        <label>Port Count</label>
-        <input type="number" name="port_count[]" value="9" min="1" max="52" style="max-width:80px">
-      </div>
-      <div class="form-row" style="border-top: 1px solid rgba(48, 54, 61, 0.4); padding-top: 12px; margin-top: 12px;">
-        <label style="color: #58a6ff;">Parent Device IP</label>
-        <input type="text" name="parent_ip[]" value="" placeholder="e.g. 192.168.1.1 (Fritz!Box)">
-        <span class="note">IP of the upstream parent node this node connects to.</span>
-      </div>
-      <div class="form-row">
-        <label style="color: #58a6ff;">Parent Port</label>
-        <input type="text" name="parent_port[]" value="" placeholder="e.g. LAN 2 or 8">
-        <span class="note">The port on the parent device that connects to this node.</span>
-      </div>
-      <div class="form-row" style="margin-bottom: 18px;">
-        <label style="color: #58a6ff;">Local Uplink Port</label>
-        <input type="text" name="uplink_port[]" value="" placeholder="e.g. Port 1 or 1">
-        <span class="note">The port on this node itself that connects to the parent.</span>
-      </div>
-      <div class="form-row" style="display: flex; align-items: center; gap: 8px;">
-        <input type="hidden" name="switch_enabled[]" id="switch_enabled_hidden_${count}" value="1">
-        <label class="switch-toggle" style="margin: 0;">
-          <input type="checkbox" checked onchange="document.getElementById('switch_enabled_hidden_${count}').value = this.checked ? '1' : '0'">
-          <span class="slider round"></span>
-        </label>
-        <span style="font-size: 13px; color: #e1e4e8;">Enabled (Query and display this node)</span>
-      </div>
-    </div>`;
-  list.appendChild(div);
-  initDragAndDrop(div);
-  renumber();
-  updateSubname(count);
-}
-
-function removeSwitch(btn) {
-  const group = btn.closest('.switch-group');
-  const hidden = group.querySelector('input[name="keep[]"]');
-  hidden.value = '0';
-  group.style.display = 'none';
-  renumber();
-}
-
-function renumber() {
-  const groups = document.querySelectorAll('.switch-group');
-  let activeIndex = 1;
-  groups.forEach((g, i) => {
-    g.setAttribute('data-index', i);
-
-    const subname = g.querySelector('.switch-subname');
-    if (subname) {
-      subname.id = `subname-${i}`;
-    }
-
-    const h3 = g.querySelector('.switch-title-wrap h3');
-    if (h3) {
-      if (g.style.display !== 'none') {
-        const text = subname ? subname.textContent : '';
-        h3.innerHTML = `Node ${activeIndex} <span class="switch-subname" id="subname-${i}">${text}</span>`;
-        activeIndex++;
-      }
-    }
-
-    const nameInput = g.querySelector('input[name="name[]"]');
-    if (nameInput) {
-      nameInput.setAttribute('oninput', `updateSubname(${i}, this.value, null)`);
-    }
-    const ipInput = g.querySelector('input[name="ip[]"]');
-    if (ipInput) {
-      ipInput.setAttribute('oninput', `updateSubname(${i}, null, this.value)`);
-    }
-
-    const hiddenEnabled = g.querySelector('input[name="switch_enabled[]"]');
-    if (hiddenEnabled) {
-      hiddenEnabled.id = `switch_enabled_hidden_${i}`;
-    }
-    const checkbox = g.querySelector('.switch-toggle input[type="checkbox"]');
-    if (checkbox) {
-      checkbox.setAttribute('onchange', `document.getElementById('switch_enabled_hidden_${i}').value = this.checked ? '1' : '0'`);
-    }
-  });
-}
-
-// Infrastructure Devices Management
-function addInfra() {
-  const list = document.getElementById('infra-list');
-  const count = list.querySelectorAll('.infra-item').length;
-  const div = document.createElement('div');
-  div.className = 'form-row infra-item';
-  div.style.cssText = 'border: 1px solid rgba(48, 54, 61, 0.4); padding: 12px; border-radius: 8px; background: rgba(22, 27, 34, 0.4);';
-  div.setAttribute('data-index', count);
-  div.innerHTML = `
-    <input type="hidden" name="infra_keep[]" value="1">
-    <div style="display: flex; gap: 10px; width: 100%; flex-wrap: wrap; align-items: center;">
-      <input type="text" name="infra_name[]" value="" placeholder="Device Name (e.g. Router)" style="flex: 2; min-width: 150px;">
-      <input type="text" name="infra_mac[]" value="" placeholder="MAC Address (e.g. AA:BB:CC:...)" style="flex: 2; min-width: 150px;">
-      <select name="infra_type[]" style="background: #0d1117; border: 1px solid rgba(48, 54, 61, 0.8); border-radius: 6px; padding: 8px 12px; color: #e1e4e8; font-size: 13px; flex: 1.5; min-width: 110px; outline: none; cursor: pointer;">
-        <option value="router">Router/Gateway</option>
-        <option value="repeater">Repeater/AP</option>
-        <option value="other">Other Infra</option>
-      </select>
-      <button type="button" class="inline-remove-btn" onclick="removeInfra(this)" style="margin-left: auto;">Delete</button>
-    </div>
-  `;
-  list.appendChild(div);
-}
-
-function removeInfra(btn) {
-  const item = btn.closest('.infra-item');
-  const hidden = item.querySelector('input[name="infra_keep[]"]');
-  hidden.value = '0';
-  item.style.display = 'none';
-}
-
-// Unmanaged Switches Management
-function addUnmanaged() {
-  const list = document.getElementById('unmanaged-list');
-  const count = list.querySelectorAll('.unmanaged-item').length;
-  
-  // Find current switches from the DOM
-  let optionsHtml = '';
-  document.querySelectorAll('.switch-group').forEach(g => {
-    const keepInput = g.querySelector('input[name="keep[]"]');
-    if (keepInput && keepInput.value === '1') {
-      const nameInput = g.querySelector('input[name="name[]"]');
-      const ipInput = g.querySelector('input[name="ip[]"]');
-      if (ipInput && ipInput.value) {
-        const name = nameInput ? nameInput.value.trim() : 'Switch';
-        const ip = ipInput.value.trim();
-        optionsHtml += `<option value="${ip}">${name} (${ip})</option>`;
-      }
-    }
-  });
-
-  if (!optionsHtml) {
-    optionsHtml = '<option value="" disabled>No managed switches configured</option>';
+  if (countBadge) countBadge.textContent = `${total} Device${total === 1 ? '' : 's'}`;
+  if (managedBadge) {
+    managedBadge.textContent = `${managedCount} Managed`;
+    managedBadge.style.display = managedCount > 0 ? 'inline-flex' : 'none';
+  }
+  if (unmanagedBadge) {
+    unmanagedBadge.textContent = `${unmanagedCount} Unmanaged`;
+    unmanagedBadge.style.display = unmanagedCount > 0 ? 'inline-flex' : 'none';
   }
 
-  const div = document.createElement('div');
-  div.className = 'form-row unmanaged-item';
-  div.style.cssText = 'border: 1px solid rgba(48, 54, 61, 0.4); padding: 12px; border-radius: 8px; background: rgba(22, 27, 34, 0.4);';
-  div.setAttribute('data-index', count);
-  div.innerHTML = `
-    <input type="hidden" name="unmanaged_keep[]" value="1">
-    <div style="display: flex; gap: 10px; width: 100%; flex-wrap: wrap; align-items: center;">
-      <input type="text" name="unmanaged_name[]" value="" placeholder="Switch Name (e.g. Desk Switch)" style="flex: 2; min-width: 150px;">
-      <select name="unmanaged_parent_ip[]" style="background: #0d1117; border: 1px solid rgba(48, 54, 61, 0.8); border-radius: 6px; padding: 8px 12px; color: #e1e4e8; font-size: 13px; flex: 2; min-width: 150px; outline: none; cursor: pointer;">
-        ${optionsHtml}
-      </select>
-      <input type="number" name="unmanaged_parent_port[]" value="" placeholder="Port (e.g. 2)" min="1" max="52" style="flex: 1; min-width: 80px;">
-      <button type="button" class="inline-remove-btn" onclick="removeUnmanaged(this)" style="margin-left: auto;">Delete</button>
-    </div>
-  `;
-  list.appendChild(div);
+  if (devicesData.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" style="text-align: center; padding: 40px 20px; color: #8b949e;">
+          <div style="font-size: 32px; margin-bottom: 10px;">🔌</div>
+          <p style="font-size: 14px; font-weight: 500; color: #c9d1d9; margin-bottom: 6px;">No devices configured yet</p>
+          <p style="font-size: 12px; margin-bottom: 16px;">Add your managed switches, routers, or unmanaged switches to build your network topology.</p>
+          <button type="button" class="btn-add-device" onclick="openDeviceWizard()" style="margin: 0 auto;">+ Add First Device</button>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = '';
+  devicesData.forEach(dev => {
+    const isManaged = (dev.management_type === 'managed');
+    const isEnabled = (dev.enabled !== false);
+    
+    // Icon & Type mapping
+    let icon = '🔀';
+    const role = (dev.role || dev.device_type || '').toLowerCase();
+    if (role.includes('ont')) icon = '📦';
+    else if (role.includes('router') || role.includes('gateway')) icon = '🌐';
+    else if (role.includes('ap') || role.includes('access_point') || role.includes('repeater') || role.includes('wifi')) icon = '📶';
+    else if (role.includes('unmanaged') || !isManaged) icon = '🔌';
+    else if (role.includes('virtualisation')) icon = '▦';
+    else if (role.includes('ovs')) icon = '⚡';
+    else if (role.includes('phone')) icon = '☎';
+
+    // Management badge
+    let mgmtBadge = '<span class="badge-pill badge-unmanaged">Unmanaged</span>';
+    if (isManaged) {
+      const proto = (dev.protocol || dev.model || 'http_hc').toLowerCase();
+      if (proto.includes('snmp')) {
+        mgmtBadge = '<span class="badge-pill badge-managed-snmp">Managed • SNMP</span>';
+      } else if (proto.includes('fritz')) {
+        mgmtBadge = '<span class="badge-pill badge-managed-fritz">Managed • FRITZ!Box</span>';
+      } else if (proto.includes('ovs') || proto.includes('openvswitch')) {
+        mgmtBadge = '<span class="badge-pill badge-managed-ovs">Managed • OVS</span>';
+      } else if (proto.includes('unifi') || proto.includes('usw') || proto.includes('uap')) {
+        mgmtBadge = '<span class="badge-pill badge-managed-unifi">Managed • UniFi SSH</span>';
+      } else if (proto.includes('proxmox') || proto === 'pve') {
+        mgmtBadge = '<span class="badge-pill badge-managed-proxmox">Managed • Proxmox VE</span>';
+      } else if (proto.includes('ssh')) {
+        mgmtBadge = '<span class="badge-pill badge-managed-ssh">Managed • SSH</span>';
+      } else {
+        mgmtBadge = '<span class="badge-pill badge-managed-http">Managed • HTTP</span>';
+      }
+    }
+
+    // Role badge
+    let roleText = dev.role || dev.device_type || (isManaged ? 'Switch' : 'Unmanaged Switch');
+    let roleBadge = '';
+    if (dev.device_type === 'ont' || dev.role === 'ont') {
+      const downSpeed = dev.speed_down || dev.speed || '1000M';
+      const upSpeed = dev.speed_up || dev.speed || '115M';
+      roleBadge = `<span class="badge-pill" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4);">ONT (${downSpeed} ↓ / ${upSpeed} ↑)</span>`;
+    } else if (dev.device_type === 'phone' || dev.role === 'phone') {
+      const miniSwitchNote = dev.is_mini_switch !== false ? ' (Passthrough)' : '';
+      roleBadge = `<span class="badge-pill" style="background: rgba(6, 182, 212, 0.15); color: #22d3ee; border: 1px solid rgba(6, 182, 212, 0.4);">Phone${miniSwitchNote}</span>`;
+    } else {
+      if (['core_switch', 'dist_switch', 'access_switch', 'switch'].includes(roleText.toLowerCase())) {
+        roleText = isManaged ? 'Switch' : 'Unmanaged Switch';
+      } else {
+        roleText = roleText.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      }
+      roleBadge = `<span class="badge-pill badge-role">${roleText}</span>`;
+    }
+
+    // Upstream device attachment display
+    let upstreamDisplay = '<span style="color: #8b949e; font-size: 12px;">Auto-Detect (Transit)</span>';
+    if (dev.device_type === 'ont' || dev.role === 'ont') {
+      if (dev.parent_ip) {
+        const downstreamDev = devicesData.find(d => (d.ip === dev.parent_ip || d.id === dev.parent_ip));
+        const downstreamName = downstreamDev ? downstreamDev.name : dev.parent_ip;
+        const portPart = dev.parent_port ? ` : Port ${dev.parent_port}` : '';
+        upstreamDisplay = `<span style="color: #34d399; font-weight: 500;">&rarr; ${downstreamName}${portPart}</span> <span style="font-size: 11px; color: #8b949e; margin-left: 4px;">(Downstream)</span>`;
+      } else {
+        upstreamDisplay = '<span style="color: #f85149; font-size: 12px;">Unconnected</span>';
+      }
+    } else if (dev.parent_ip) {
+      const upstreamDev = devicesData.find(d => (d.ip === dev.parent_ip || d.id === dev.parent_ip));
+      const upstreamName = upstreamDev ? upstreamDev.name : dev.parent_ip;
+      const portPart = dev.parent_port ? ` : Port ${dev.parent_port}` : '';
+      const uplinkPart = dev.uplink_port ? ` <span style="color:#8b949e;">[Uplink ${dev.uplink_port}]</span>` : '';
+      upstreamDisplay = `<span style="color: #58a6ff; font-weight: 500;">&rarr; ${upstreamName}${portPart}</span>${uplinkPart}`;
+    } else if (!isManaged) {
+      upstreamDisplay = '<span style="color: #8b949e; font-size: 12px;">Root / Unattached</span>';
+    }
+
+    // Network address display
+    let addrDisplay = '';
+    if (dev.ip) {
+      addrDisplay += `<div style="font-family: monospace; font-size: 12px; color: #f0f6fc;">${dev.ip}</div>`;
+    }
+    if (dev.mac) {
+      addrDisplay += `<div style="font-family: monospace; font-size: 11px; color: #8b949e;">${dev.mac}</div>`;
+    }
+    if (!addrDisplay) {
+      addrDisplay = '<span style="color: #484f58; font-size: 12px;">None</span>';
+    }
+
+    // Ports count
+    const portsDisplay = dev.port_count ? `${dev.port_count}` : (isManaged ? '9' : '-');
+
+    // Reboot capability
+    const canReboot = isManaged && (!dev.protocol || dev.protocol === 'http_hc');
+
+    const tr = document.createElement('tr');
+    tr.className = 'device-row';
+    tr.innerHTML = `
+      <td style="text-align: center;">
+        <span class="status-indicator-dot ${isEnabled ? 'status-dot-active' : 'status-dot-disabled'}" title="${isEnabled ? 'Device Enabled' : 'Device Disabled'}"></span>
+      </td>
+      <td>
+        <div class="device-identity">
+          <div class="device-icon-box">${icon}</div>
+          <div>
+            <div class="device-name-text">
+              ${dev.name}
+              ${roleBadge}
+            </div>
+            <div class="device-meta-sub">${formatDeviceModelDisplay(dev)}</div>
+          </div>
+        </div>
+      </td>
+      <td>${mgmtBadge}</td>
+      <td>${addrDisplay}</td>
+      <td>${upstreamDisplay}</td>
+      <td><span style="font-size: 12px; font-weight: 600; color: #c9d1d9;">${portsDisplay}</span></td>
+      <td>
+        <div class="device-row-actions">
+          ${isManaged ? `<button type="button" class="action-btn-sm test" onclick="testDeviceConnectionById('${dev.id}')" title="Test Driver Connection">Test</button>` : ''}
+          <button type="button" class="action-btn-sm edit" onclick="editDeviceById('${dev.id}')">Edit</button>
+          ${canReboot ? `<button type="button" class="action-btn-sm" style="color: #f0883e;" onclick="openRebootModal('${dev.ip}', '${dev.name}')">Reboot</button>` : ''}
+          <button type="button" class="action-btn-sm delete" onclick="deleteDeviceById('${dev.id}')">Delete</button>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
 }
 
-function removeUnmanaged(btn) {
-  const item = btn.closest('.unmanaged-item');
-  const hidden = item.querySelector('input[name="unmanaged_keep[]"]');
-  hidden.value = '0';
-  item.style.display = 'none';
+function toggleUnmanagedRoleOptions() {
+  const role = document.getElementById('unmanaged-input-type') ? document.getElementById('unmanaged-input-type').value : '';
+  const phoneGroup = document.getElementById('phone-passthrough-group');
+  const ontGroup = document.getElementById('ont-config-group');
+  const attachTitle = document.getElementById('unmanaged-attachment-title');
+  const attachHelp = document.getElementById('unmanaged-attachment-help');
+  const parentIpLabel = document.getElementById('unmanaged-parent-ip-label');
+  const parentPortLabel = document.getElementById('unmanaged-parent-port-label');
+
+  if (phoneGroup) phoneGroup.style.display = (role === 'phone') ? 'block' : 'none';
+  if (ontGroup) ontGroup.style.display = (role === 'ont') ? 'block' : 'none';
+
+  if (role === 'ont') {
+    if (attachTitle) attachTitle.textContent = '🔗 Downstream Connection (Router / Switch)';
+    if (attachHelp) attachHelp.innerHTML = '💡 Select which router or switch port this ONT feeds traffic into (e.g. Router WAN port or switch access port). The <strong>Internet (Cloud)</strong> node will automatically link into this ONT.';
+    if (parentIpLabel) parentIpLabel.textContent = 'Downstream Device';
+    if (parentPortLabel) parentPortLabel.textContent = 'Downstream Port';
+  } else {
+    if (attachTitle) attachTitle.textContent = '🔗 Upstream Attachment';
+    if (attachHelp) attachHelp.innerHTML = '💡 Select what upstream device this hardware connects to and on which port. In the network map and topology views, all client devices detected off this port will be grouped under this unmanaged device.';
+    if (parentIpLabel) parentIpLabel.textContent = 'Attachment Device';
+    if (parentPortLabel) parentPortLabel.textContent = 'Attachment Port';
+  }
+}
+
+function toggleOntStatsFields() {
+  const sameAsParent = document.getElementById('ont-stats-same-as-parent') ? document.getElementById('ont-stats-same-as-parent').checked : true;
+  const customFields = document.getElementById('ont-custom-stats-fields');
+  if (customFields) {
+    customFields.style.display = sameAsParent ? 'none' : 'flex';
+  }
+}
+
+// Wizard Controls
+function openDeviceWizard(deviceToEdit = null) {
+  const modal = document.getElementById('device-wizard-modal');
+  const titleText = document.getElementById('wizard-title-text');
+  const titleIcon = document.getElementById('wizard-title-icon');
+  const testStatus = document.getElementById('wizard-test-status');
+  if (testStatus) testStatus.style.display = 'none';
+
+  populateProtocolDropdown();
+  populateUpstreamDropdowns(deviceToEdit ? deviceToEdit.id : null);
+
+  if (deviceToEdit) {
+    wizardEditingDeviceId = deviceToEdit.id;
+    titleIcon.textContent = '✏️';
+    titleText.textContent = `Edit Device: ${deviceToEdit.name}`;
+    wizardSelectedType = deviceToEdit.management_type || 'managed';
+
+    if (wizardSelectedType === 'unmanaged') {
+      wizardGoToStep(2, 'unmanaged');
+      document.getElementById('unmanaged-input-name').value = deviceToEdit.name || '';
+      const rawUnmanaged = (deviceToEdit.device_type || deviceToEdit.role || 'unmanaged_switch').toLowerCase();
+      const unmanagedRole = (['core_switch', 'dist_switch', 'access_switch', 'switch', 'unmanaged_switch'].includes(rawUnmanaged)) ? 'unmanaged_switch' : (rawUnmanaged === 'repeater' ? 'access_point' : (rawUnmanaged === 'phone' ? 'phone' : (rawUnmanaged === 'ont' ? 'ont' : rawUnmanaged)));
+      document.getElementById('unmanaged-input-type').value = unmanagedRole;
+      if (document.getElementById('unmanaged-input-mini-switch')) {
+        document.getElementById('unmanaged-input-mini-switch').checked = (deviceToEdit.is_mini_switch !== false);
+      }
+      if (document.getElementById('unmanaged-input-passthrough-port')) {
+        document.getElementById('unmanaged-input-passthrough-port').value = deviceToEdit.passthrough_port || 'PC';
+      }
+      if (document.getElementById('unmanaged-input-speed-down')) {
+        document.getElementById('unmanaged-input-speed-down').value = deviceToEdit.speed_down || deviceToEdit.speed || '1000M';
+      }
+      if (document.getElementById('unmanaged-input-speed-up')) {
+        document.getElementById('unmanaged-input-speed-up').value = deviceToEdit.speed_up || deviceToEdit.speed || '115M';
+      }
+      const hasCustomStats = Boolean(deviceToEdit.stats_device_ip && deviceToEdit.stats_device_ip !== deviceToEdit.parent_ip);
+      if (document.getElementById('ont-stats-same-as-parent')) {
+        document.getElementById('ont-stats-same-as-parent').checked = !hasCustomStats;
+      }
+      if (document.getElementById('ont-input-stats-device-ip')) {
+        document.getElementById('ont-input-stats-device-ip').value = deviceToEdit.stats_device_ip || '';
+      }
+      if (document.getElementById('ont-input-stats-port')) {
+        document.getElementById('ont-input-stats-port').value = deviceToEdit.stats_port || '';
+      }
+      toggleOntStatsFields();
+      toggleUnmanagedRoleOptions();
+      document.getElementById('unmanaged-input-parent-ip').value = deviceToEdit.parent_ip || '';
+      document.getElementById('unmanaged-input-parent-port').value = deviceToEdit.parent_port || '';
+      document.getElementById('unmanaged-input-mac').value = deviceToEdit.mac || '';
+      document.getElementById('unmanaged-input-ip').value = deviceToEdit.ip || '';
+      if (deviceToEdit.mac || deviceToEdit.ip) {
+        document.getElementById('optional-unmanaged-fields').style.display = 'block';
+        document.getElementById('optional-unmanaged-toggle').textContent = '[Click to Collapse]';
+      }
+    } else {
+      wizardGoToStep(2, 'managed');
+      document.getElementById('managed-input-name').value = deviceToEdit.name || '';
+      document.getElementById('managed-input-ip').value = deviceToEdit.ip || '';
+      document.getElementById('managed-input-model').value = (deviceToEdit.model && deviceToEdit.model !== 'generic_switch') ? deviceToEdit.model : '';
+      const rawManaged = (deviceToEdit.role || deviceToEdit.device_type || 'switch').toLowerCase();
+      const managedRole = (['core_switch', 'dist_switch', 'access_switch', 'switch'].includes(rawManaged)) ? 'switch' : rawManaged;
+      document.getElementById('managed-input-role').value = managedRole;
+      document.getElementById('managed-input-port-count').value = deviceToEdit.port_count || 9;
+      
+      const isEnabled = (deviceToEdit.enabled !== false);
+      document.getElementById('managed-input-enabled-checkbox').checked = isEnabled;
+      document.getElementById('managed-input-enabled-val').value = isEnabled ? '1' : '0';
+
+      const protoSelect = document.getElementById('managed-input-protocol');
+      const proto = deviceToEdit.protocol || 'http_hc';
+      protoSelect.value = proto;
+
+      // Render dynamic driver parameters prefilled with existing values
+      renderDynamicDriverFields(proto, deviceToEdit);
+
+      // Upstream mode
+      if (deviceToEdit.parent_ip || deviceToEdit.parent_port) {
+        document.getElementById('upstream-mode-manual').checked = true;
+        document.getElementById('managed-manual-upstream-fields').style.display = 'block';
+        document.getElementById('managed-input-parent-ip').value = deviceToEdit.parent_ip || '';
+        document.getElementById('managed-input-parent-port').value = deviceToEdit.parent_port || '';
+        document.getElementById('managed-input-uplink-port').value = deviceToEdit.uplink_port || '';
+      } else {
+        document.getElementById('upstream-mode-auto').checked = true;
+        document.getElementById('managed-manual-upstream-fields').style.display = 'none';
+      }
+    }
+  } else {
+    wizardEditingDeviceId = null;
+    wizardSelectedType = null;
+    titleIcon.textContent = '✨';
+    titleText.textContent = 'Add Network Device';
+    
+    // Clear selections
+    document.querySelectorAll('.type-card').forEach(c => c.classList.remove('selected'));
+    document.getElementById('wizard-next-btn').disabled = true;
+    document.getElementById('wizard-next-btn').style.opacity = '0.5';
+
+    // Clear form inputs
+    ['unmanaged-input-name', 'unmanaged-input-parent-port', 'unmanaged-input-mac', 'unmanaged-input-ip',
+     'managed-input-name', 'managed-input-ip', 'managed-input-model', 'managed-input-parent-port', 'managed-input-uplink-port'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    document.getElementById('managed-input-port-count').value = '9';
+    document.getElementById('managed-input-enabled-checkbox').checked = true;
+    document.getElementById('managed-input-enabled-val').value = '1';
+    document.getElementById('upstream-mode-auto').checked = true;
+    document.getElementById('managed-manual-upstream-fields').style.display = 'none';
+    document.getElementById('optional-unmanaged-fields').style.display = 'none';
+
+    wizardGoToStep(1);
+  }
+
+  modal.classList.add('active');
+}
+
+function closeDeviceWizard() {
+  const modal = document.getElementById('device-wizard-modal');
+  modal.classList.remove('active');
+}
+
+function selectWizardType(type) {
+  wizardSelectedType = type;
+  document.querySelectorAll('.type-card').forEach(c => c.classList.remove('selected'));
+  const card = document.getElementById(`card-${type}`);
+  if (card) card.classList.add('selected');
+
+  const nextBtn = document.getElementById('wizard-next-btn');
+  nextBtn.disabled = false;
+  nextBtn.style.opacity = '1';
+}
+
+function wizardGoToStep(step, type = null) {
+  const s1Indicator = document.getElementById('stepper-step-1');
+  const s2Indicator = document.getElementById('stepper-step-2');
+  const s1Content = document.getElementById('wizard-step-1-content');
+  const s2UnmanagedContent = document.getElementById('wizard-step-2-unmanaged-content');
+  const s2ManagedContent = document.getElementById('wizard-step-2-managed-content');
+  const backBtn = document.getElementById('wizard-back-btn');
+  const nextBtn = document.getElementById('wizard-next-btn');
+  const saveBtn = document.getElementById('wizard-save-btn');
+
+  if (step === 1) {
+    s1Indicator.className = 'wizard-step-item active';
+    s2Indicator.className = 'wizard-step-item';
+    s1Content.style.display = 'block';
+    s2UnmanagedContent.style.display = 'none';
+    s2ManagedContent.style.display = 'none';
+    backBtn.style.display = 'none';
+    nextBtn.style.display = 'inline-flex';
+    saveBtn.style.display = 'none';
+  } else if (step === 2) {
+    s1Indicator.className = 'wizard-step-item completed';
+    s2Indicator.className = 'wizard-step-item active';
+    s1Content.style.display = 'none';
+    backBtn.style.display = wizardEditingDeviceId ? 'none' : 'inline-flex';
+    nextBtn.style.display = 'none';
+    saveBtn.style.display = 'inline-flex';
+
+    if (type === 'unmanaged') {
+      s2UnmanagedContent.style.display = 'block';
+      s2ManagedContent.style.display = 'none';
+    } else {
+      s2UnmanagedContent.style.display = 'none';
+      s2ManagedContent.style.display = 'block';
+      const protoSelect = document.getElementById('managed-input-protocol');
+      if (protoSelect) {
+        renderDynamicDriverFields(protoSelect.value || 'http_hc');
+      }
+    }
+  }
+}
+
+function wizardNextFromStep1() {
+  if (!wizardSelectedType) return;
+  wizardGoToStep(2, wizardSelectedType);
+}
+
+function wizardBackToStep1() {
+  wizardGoToStep(1);
+}
+
+function toggleOptionalUnmanagedFields() {
+  const container = document.getElementById('optional-unmanaged-fields');
+  const toggle = document.getElementById('optional-unmanaged-toggle');
+  if (container.style.display === 'none') {
+    container.style.display = 'block';
+    toggle.textContent = '[Click to Collapse]';
+  } else {
+    container.style.display = 'none';
+    toggle.textContent = '[Click to Expand]';
+  }
+}
+
+function toggleManagedUpstreamFields() {
+  const isManual = document.getElementById('upstream-mode-manual').checked;
+  const container = document.getElementById('managed-manual-upstream-fields');
+  container.style.display = isManual ? 'block' : 'none';
+}
+
+function onWizardProtocolChange() {
+  const proto = document.getElementById('managed-input-protocol').value;
+  if (proto === 'proxmox') {
+    document.getElementById('managed-input-role').value = 'virtualisation_host';
+  }
+  renderDynamicDriverFields(proto);
+}
+
+function renderDynamicDriverFields(protoName, currentValues = {}) {
+  const container = document.getElementById('managed-dynamic-params-container');
+  if (!container) return;
+
+  const proto = registeredProtocols.find(p => p.name === protoName);
+  if (!proto || !proto.config_schema || proto.config_schema.length === 0) {
+    container.innerHTML = '<div style="font-size: 12px; color: #8b949e;">No additional driver parameters required.</div>';
+    return;
+  }
+
+  container.innerHTML = '';
+
+  const renderField = (param, parentEl) => {
+    const val = currentValues[param.name] !== undefined ? currentValues[param.name] : (param.default !== null ? param.default : '');
+    const isRequired = param.required;
+    const reqMark = isRequired ? '<span style="color:#f85149;">*</span>' : '';
+
+    const row = document.createElement('div');
+    row.className = 'form-row';
+    row.style.marginBottom = '12px';
+
+    const label = document.createElement('label');
+    label.innerHTML = `${param.title || param.name} ${reqMark}`;
+    label.title = param.description || param.name;
+    row.appendChild(label);
+
+    if (param.type === 'select' && param.choices) {
+      const select = document.createElement('select');
+      select.id = `driver_param_${param.name}`;
+      select.style.cssText = 'background: #0d1117; border: 1px solid rgba(48, 54, 61, 0.8); border-radius: 6px; padding: 8px 12px; color: #e1e4e8; font-size: 13px; flex: 1;';
+      param.choices.forEach(ch => {
+        const opt = document.createElement('option');
+        opt.value = ch;
+        opt.textContent = ch;
+        if (String(ch) === String(val)) opt.selected = true;
+        select.appendChild(opt);
+      });
+      row.appendChild(select);
+    } else if (param.type === 'password') {
+      const wrap = document.createElement('div');
+      wrap.className = 'password-input-group';
+      wrap.innerHTML = `
+        <input type="password" id="driver_param_${param.name}" value="${val}" placeholder="${param.description || ''}" style="width: 100%;">
+        <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('driver_param_${param.name}', this)">Show</button>
+      `;
+      row.appendChild(wrap);
+    } else if (param.type === 'number') {
+      const input = document.createElement('input');
+      input.type = 'number';
+      input.id = `driver_param_${param.name}`;
+      input.value = val;
+      input.placeholder = param.description || '';
+      input.style.maxWidth = '140px';
+      row.appendChild(input);
+    } else if (param.type === 'boolean') {
+      const select = document.createElement('select');
+      select.id = `driver_param_${param.name}`;
+      select.style.cssText = 'background: #0d1117; border: 1px solid rgba(48, 54, 61, 0.8); border-radius: 6px; padding: 8px 12px; color: #e1e4e8; font-size: 13px; flex: 1;';
+      [['true', 'Enabled'], ['false', 'Disabled']].forEach(([optionValue, label]) => {
+        const opt = document.createElement('option');
+        opt.value = optionValue;
+        opt.textContent = label;
+        opt.selected = String(val).toLowerCase() === optionValue;
+        select.appendChild(opt);
+      });
+      row.appendChild(select);
+    } else {
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.id = `driver_param_${param.name}`;
+      input.value = val;
+      input.placeholder = param.description || '';
+      if (param.name.startsWith('oid_')) {
+        input.style.fontFamily = 'monospace';
+        input.style.fontSize = '12px';
+      }
+      row.appendChild(input);
+    }
+
+    if (param.description) {
+      const note = document.createElement('span');
+      note.className = 'note';
+      note.style.cssText = 'width: 100%; margin-left: 97px; display: block; font-size: 11px; color: #8b949e; margin-top: 4px;';
+      note.textContent = param.description;
+      row.appendChild(note);
+    }
+
+    parentEl.appendChild(row);
+  };
+
+  const standardParams = proto.config_schema.filter(p => !p.name.startsWith('oid_'));
+  const oidParams = proto.config_schema.filter(p => p.name.startsWith('oid_'));
+
+  standardParams.forEach(param => renderField(param, container));
+
+  if (oidParams.length > 0) {
+    const hasCustomOid = oidParams.some(p => {
+      const val = currentValues[p.name];
+      return val !== undefined && val !== null && val !== '' && val !== p.default;
+    });
+
+    const oidWrapper = document.createElement('div');
+    oidWrapper.style.cssText = 'margin-top: 14px; border: 1px dashed rgba(56, 139, 253, 0.4); border-radius: 6px; background: rgba(56, 139, 253, 0.03); overflow: hidden;';
+
+    const toggleHeader = document.createElement('div');
+    toggleHeader.style.cssText = 'padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; background: rgba(56, 139, 253, 0.08);';
+    toggleHeader.innerHTML = `
+      <span style="font-size: 12px; font-weight: 600; color: #58a6ff; display: flex; align-items: center; gap: 6px;">
+        ⚙️ Advanced OID Parameters (Optional)
+      </span>
+      <span id="wizard-oid-toggle-btn" style="font-size: 11px; color: #8b949e;">${hasCustomOid ? '[Click to Collapse]' : '[Click to Expand]'}</span>
+    `;
+
+    const oidBody = document.createElement('div');
+    oidBody.id = 'wizard-oid-body';
+    oidBody.style.cssText = `padding: 14px; display: ${hasCustomOid ? 'block' : 'none'}; border-top: 1px solid rgba(56, 139, 253, 0.2);`;
+
+    const oidHint = document.createElement('div');
+    oidHint.style.cssText = 'font-size: 11px; color: #8b949e; margin-bottom: 12px;';
+    oidHint.textContent = 'Override standard MIB-2, IF-MIB, Bridge-MIB, or LLDP OIDs for non-standard or vendor-specific network hardware.';
+    oidBody.appendChild(oidHint);
+
+    oidParams.forEach(param => renderField(param, oidBody));
+
+    toggleHeader.onclick = () => {
+      const isHidden = oidBody.style.display === 'none';
+      oidBody.style.display = isHidden ? 'block' : 'none';
+      const toggleBtn = document.getElementById('wizard-oid-toggle-btn');
+      if (toggleBtn) {
+        toggleBtn.textContent = isHidden ? '[Click to Collapse]' : '[Click to Expand]';
+      }
+    };
+
+    oidWrapper.appendChild(toggleHeader);
+    oidWrapper.appendChild(oidBody);
+    container.appendChild(oidWrapper);
+  }
+}
+
+function togglePasswordVisibility(inputId, btn) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  if (input.type === 'password') {
+    input.type = 'text';
+    if (btn) btn.textContent = 'Hide';
+  } else {
+    input.type = 'password';
+    if (btn) btn.textContent = 'Show';
+  }
+}
+
+function collectDriverDynamicParams(protoName) {
+  const params = {};
+  const proto = registeredProtocols.find(p => p.name === protoName);
+  if (!proto || !proto.config_schema) return params;
+
+  proto.config_schema.forEach(p => {
+    const el = document.getElementById(`driver_param_${p.name}`);
+    if (el) {
+      let val = el.value;
+      if (p.type === 'number') {
+        val = parseInt(val, 10) || p.default || 0;
+      } else if (p.type === 'boolean') {
+        val = val === 'true';
+      }
+      params[p.name] = val;
+    }
+  });
+  return params;
+}
+
+async function executeWizardConnectionTest() {
+  const btn = document.getElementById('wizard-test-conn-btn');
+  const spinner = document.getElementById('wizard-test-spinner');
+  const statusBanner = document.getElementById('wizard-test-status');
+
+  const ip = document.getElementById('managed-input-ip').value.trim();
+  const proto = document.getElementById('managed-input-protocol').value;
+  const dynamicParams = collectDriverDynamicParams(proto);
+
+  if (!ip) {
+    statusBanner.className = 'test-status-banner error';
+    statusBanner.textContent = 'Error: Please enter an IP Address first to test connection.';
+    return;
+  }
+
+  btn.disabled = true;
+  spinner.style.display = 'inline-block';
+  statusBanner.className = 'test-status-banner info';
+  statusBanner.textContent = `Connecting to ${ip} via ${proto}...`;
+
+  try {
+    const payload = { ip: ip, protocol: proto, ...dynamicParams };
+    const res = await fetch('/api/devices/test-connection', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const result = await res.json();
+
+    if (result.success) {
+      statusBanner.className = 'test-status-banner success';
+      statusBanner.textContent = `✓ ${result.message || 'Connection verified successfully!'}`;
+      checkUpstreamAutoDiscovery();
+    } else {
+      statusBanner.className = 'test-status-banner error';
+      statusBanner.textContent = `✗ Connection failed: ${result.message || 'No response'}`;
+    }
+  } catch (e) {
+    statusBanner.className = 'test-status-banner error';
+    statusBanner.textContent = `✗ Connection error: ${e.message}`;
+  } finally {
+    btn.disabled = false;
+    spinner.style.display = 'none';
+  }
+}
+
+async function checkUpstreamAutoDiscovery() {
+  const ip = document.getElementById('managed-input-ip').value.trim();
+  if (!ip) return;
+  try {
+    const res = await fetch(`/api/devices/detect-upstream?ip=${encodeURIComponent(ip)}`);
+    const data = await res.json();
+    if (data.found) {
+      const banner = document.getElementById('wizard-test-status');
+      const text = `ℹ Upstream Detected: Device is connected to ${data.upstream_name} on Port ${data.upstream_port_display || data.upstream_port}.`;
+      if (banner.className.includes('success')) {
+        banner.innerHTML = banner.innerHTML + `<div style="margin-top: 4px; font-weight: 500;">${text}</div>`;
+      }
+    }
+  } catch (e) {
+    console.debug('Detect upstream note:', e);
+  }
+}
+
+async function saveDeviceFromWizard() {
+  const isManaged = (wizardSelectedType === 'managed');
+  let deviceObj = {};
+
+  if (!isManaged) {
+    const name = document.getElementById('unmanaged-input-name').value.trim();
+    if (!name) {
+      alert('Please enter a Device Name.');
+      return;
+    }
+    const role = document.getElementById('unmanaged-input-type').value;
+    const parentIp = document.getElementById('unmanaged-input-parent-ip').value;
+    const parentPort = document.getElementById('unmanaged-input-parent-port').value.trim();
+    const mac = document.getElementById('unmanaged-input-mac').value.trim().toUpperCase();
+    const ip = document.getElementById('unmanaged-input-ip').value.trim();
+
+    const isMiniSwitch = (role === 'phone')
+      ? (document.getElementById('unmanaged-input-mini-switch') ? document.getElementById('unmanaged-input-mini-switch').checked : true)
+      : false;
+    const passthroughPort = (role === 'phone')
+      ? (document.getElementById('unmanaged-input-passthrough-port') ? document.getElementById('unmanaged-input-passthrough-port').value.trim() : 'PC')
+      : '';
+
+    let speedDown = '1000M';
+    let speedUp = '115M';
+    let statsDeviceIp = parentIp;
+    let statsPort = parentPort;
+    if (role === 'ont') {
+      speedDown = document.getElementById('unmanaged-input-speed-down') ? document.getElementById('unmanaged-input-speed-down').value.trim() || '1000M' : '1000M';
+      speedUp = document.getElementById('unmanaged-input-speed-up') ? document.getElementById('unmanaged-input-speed-up').value.trim() || '115M' : '115M';
+      const sameAsParent = document.getElementById('ont-stats-same-as-parent') ? document.getElementById('ont-stats-same-as-parent').checked : true;
+      if (!sameAsParent) {
+        statsDeviceIp = document.getElementById('ont-input-stats-device-ip') ? document.getElementById('ont-input-stats-device-ip').value.trim() : parentIp;
+        statsPort = document.getElementById('ont-input-stats-port') ? document.getElementById('ont-input-stats-port').value.trim() : parentPort;
+      }
+    }
+
+    deviceObj = {
+      id: wizardEditingDeviceId || `unmanaged_${Date.now()}`,
+      name: name,
+      management_type: 'unmanaged',
+      device_type: role,
+      role: role,
+      parent_ip: parentIp,
+      parent_port: parentPort ? (parseInt(parentPort, 10) || parentPort) : '',
+      mac: mac,
+      ip: ip,
+      is_mini_switch: isMiniSwitch,
+      passthrough: isMiniSwitch,
+      passthrough_port: passthroughPort,
+      speed_down: speedDown,
+      speed_up: speedUp,
+      speed: (speedDown !== speedUp) ? `${speedDown} / ${speedUp}` : speedDown,
+      stats_device_ip: statsDeviceIp,
+      stats_port: statsPort,
+    };
+  } else {
+    const name = document.getElementById('managed-input-name').value.trim();
+    const ip = document.getElementById('managed-input-ip').value.trim();
+    if (!name) {
+      alert('Please enter a Device Name.');
+      return;
+    }
+    if (!ip) {
+      alert('Please enter a valid IP Address.');
+      return;
+    }
+
+    const role = document.getElementById('managed-input-role').value;
+    const portCount = parseInt(document.getElementById('managed-input-port-count').value, 10) || 9;
+    const isEnabled = (document.getElementById('managed-input-enabled-val').value === '1');
+    const proto = document.getElementById('managed-input-protocol').value;
+    const dynamicParams = collectDriverDynamicParams(proto);
+
+    const isManualUpstream = document.getElementById('upstream-mode-manual').checked;
+    let parentIp = '';
+    let parentPort = '';
+    let uplinkPort = '';
+
+    if (isManualUpstream) {
+      parentIp = document.getElementById('managed-input-parent-ip').value;
+      const rawParentPort = document.getElementById('managed-input-parent-port').value.trim();
+      parentPort = rawParentPort ? parseInt(rawParentPort, 10) : '';
+      const rawUplinkPort = document.getElementById('managed-input-uplink-port').value.trim();
+      uplinkPort = rawUplinkPort ? parseInt(rawUplinkPort, 10) : '';
+    }
+
+    const model = document.getElementById('managed-input-model') ? document.getElementById('managed-input-model').value.trim() : '';
+
+    deviceObj = {
+      id: wizardEditingDeviceId || `dev_${ip.replace(/\./g, '_')}_${Date.now()}`,
+      name: name,
+      ip: ip,
+      model: model,
+      management_type: 'managed',
+      device_type: role,
+      role: role,
+      port_count: portCount,
+      enabled: isEnabled,
+      protocol: proto,
+      parent_ip: parentIp,
+      parent_port: parentPort,
+      uplink_port: uplinkPort,
+      ...dynamicParams,
+    };
+  }
+
+  // Update in local devices array
+  if (wizardEditingDeviceId) {
+    const idx = devicesData.findIndex(d => d.id === wizardEditingDeviceId);
+    if (idx !== -1) {
+      devicesData[idx] = deviceObj;
+    } else {
+      devicesData.push(deviceObj);
+    }
+  } else {
+    devicesData.push(deviceObj);
+  }
+
+  // Persist directly via REST API
+  try {
+    const endpoint = wizardEditingDeviceId ? `/api/devices/${encodeURIComponent(wizardEditingDeviceId)}` : '/api/devices';
+    const method = wizardEditingDeviceId ? 'PUT' : 'POST';
+    await fetch(endpoint, {
+      method: method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(deviceObj)
+    });
+  } catch (err) {
+    console.error('Failed to persist device via API:', err);
+  }
+
+  closeDeviceWizard();
+  renderDevicesTable();
+}
+
+function editDeviceById(id) {
+  const dev = devicesData.find(d => d.id === id);
+  if (dev) {
+    openDeviceWizard(dev);
+  }
+}
+
+async function deleteDeviceById(id) {
+  const dev = devicesData.find(d => d.id === id);
+  if (!dev) return;
+
+  if (!confirm(`Are you sure you want to remove '${dev.name}'?`)) {
+    return;
+  }
+
+  devicesData = devicesData.filter(d => d.id !== id);
+
+  try {
+    await fetch(`/api/devices/${encodeURIComponent(id)}`, {
+      method: 'DELETE'
+    });
+  } catch (e) {
+    console.error('Failed to delete device via API:', e);
+  }
+
+  renderDevicesTable();
+}
+
+async function testDeviceConnectionById(id) {
+  const dev = devicesData.find(d => d.id === id);
+  if (!dev || !dev.ip) return;
+  alert(`Testing connection to ${dev.name} (${dev.ip})...`);
+  try {
+    const res = await fetch('/api/devices/test-connection', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(dev)
+    });
+    const result = await res.json();
+    alert(result.success ? `✓ ${result.message}` : `✗ Failed: ${result.message}`);
+  } catch (e) {
+    alert(`Connection error: ${e.message}`);
+  }
 }
 
 // ==========================================
@@ -1797,4 +3418,3 @@ function saveDeviceTypes() {
 </script>
 </body>
 </html>
-

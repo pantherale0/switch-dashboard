@@ -1,5 +1,6 @@
 services:
   switch-dashboard:
+    image: ghcr.io/pantherale0/switch-dashboard:latest
     build: .
     container_name: switch-dashboard
     restart: unless-stopped

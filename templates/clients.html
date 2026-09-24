@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Active Client Monitoring | Switch Dashboard</title>
+<link rel="icon" href="/static/logo.png" type="image/png">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background: #0d1117; color: #c9d1d9; padding: 16px 24px; min-height: 100vh;
+  }
+
+  /* Header */
+  .header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 20px; background: #161b22; border-radius: 10px;
+    border: 1px solid #30363d; margin-bottom: 20px;
+  }
+  .header-left { display: flex; align-items: center; gap: 12px; }
+  .header h1 { font-size: 20px; font-weight: 600; color: #f0f6fc; }
+  .header .nav-links { display: flex; gap: 8px; align-items: center; }
+  .header .nav-links a, .header .nav-links button {
+    color: #8b949e; text-decoration: none; font-size: 13px;
+    padding: 6px 12px; border-radius: 6px; transition: all .15s;
+    background: rgba(33, 38, 45, 0.5); border: 1px solid rgba(48, 54, 61, 0.8);
+    display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+  }
+  .header .nav-links a:hover, .header .nav-links button:hover {
+    color: #ffffff; background: #1c2128; border-color: #58a6ff;
+  }
+  .header .nav-links a.active {
+    color: #58a6ff; border-color: rgba(56, 139, 253, 0.5); background: rgba(56, 139, 253, 0.1);
+  }
+  .live-indicator { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #8b949e; }
+  .live-dot { width: 8px; height: 8px; border-radius: 50%; background: #3fb950; box-shadow: 0 0 8px #3fb950; }
+
+  /* Fing 2-Column Master Layout */
+  .fing-container {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+
+  /* Left Sidebar: Subnets / Networks */
+  .subnets-sidebar {
+    background: #161b22; border: 1px solid #30363d; border-radius: 10px;
+    padding: 16px; display: flex; flex-direction: column; gap: 8px;
+  }
+  .sidebar-title {
+    font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;
+    color: #8b949e; font-weight: 600; margin-bottom: 8px; display: flex;
+    justify-content: space-between; align-items: center;
+  }
+  .subnet-card {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 12px; border-radius: 8px; border: 1px solid transparent;
+    background: #0d1117; cursor: pointer; transition: all 0.15s;
+  }
+  .subnet-card:hover {
+    border-color: #30363d; background: #1c2128;
+  }
+  .subnet-card.active {
+    border-color: #388bfd; background: rgba(56, 139, 253, 0.1);
+  }
+  .subnet-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .subnet-icon {
+    width: 32px; height: 32px; border-radius: 6px; background: #21262d;
+    display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0;
+  }
+  .subnet-info { min-width: 0; }
+  .subnet-name { font-size: 13px; font-weight: 600; color: #f0f6fc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .subnet-cidr { font-size: 11px; color: #8b949e; font-family: monospace; }
+  .subnet-badge-box {
+    text-align: right; flex-shrink: 0;
+  }
+  .subnet-ratio-badge {
+    font-size: 12px; font-weight: 700; color: #58a6ff; background: #1f242c;
+    padding: 2px 6px; border-radius: 4px; border: 1px solid #30363d;
+  }
+  .subnet-last-seen { font-size: 10px; color: #8b949e; margin-top: 2px; }
+
+  /* Main Monitoring Area */
+  .monitoring-main {
+    display: flex; flex-direction: column; gap: 16px; min-width: 0;
+  }
+
+  /* Fing 3-Column Summary Cards */
+  .fing-summary-banner {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px;
+  }
+  .summary-card {
+    background: #161b22; border: 1px solid #30363d; border-radius: 10px;
+    padding: 16px; display: flex; flex-direction: column; justify-content: space-between;
+  }
+  .summary-metric-val {
+    font-size: 26px; font-weight: 700; color: #f0f6fc; line-height: 1.2;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .summary-metric-val .sub { font-size: 14px; color: #8b949e; font-weight: 500; }
+  .summary-metric-label {
+    font-size: 12px; color: #8b949e; font-weight: 500; margin-top: 4px;
+  }
+
+  /* Directory Toolbar */
+  .directory-toolbar {
+    background: #161b22; border: 1px solid #30363d; border-radius: 10px 10px 0 0;
+    padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;
+    gap: 12px; flex-wrap: wrap; border-bottom: none;
+  }
+  .search-box {
+    display: flex; align-items: center; gap: 8px; background: #0d1117;
+    border: 1px solid #30363d; border-radius: 6px; padding: 6px 12px; width: 300px;
+  }
+  .search-box input {
+    background: transparent; border: none; outline: none; color: #f0f6fc;
+    font-size: 13px; width: 100%;
+  }
+  .filter-pills { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .filter-pill {
+    background: #21262d; border: 1px solid #30363d; border-radius: 16px;
+    padding: 4px 10px; font-size: 12px; color: #8b949e; cursor: pointer; transition: all 0.15s;
+  }
+  .filter-pill:hover, .filter-pill.active {
+    color: #f0f6fc; background: #30363d; border-color: #58a6ff;
+  }
+
+  /* Client Table */
+  .table-wrapper {
+    background: #161b22; border: 1px solid #30363d; border-radius: 0 0 10px 10px;
+    overflow-x: auto;
+  }
+  table.client-table {
+    width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;
+  }
+  table.client-table th {
+    background: #1c2128; color: #8b949e; font-weight: 600; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.5px; padding: 10px 16px;
+    border-bottom: 1px solid #30363d; white-space: nowrap;
+  }
+  table.client-table td {
+    padding: 12px 16px; border-bottom: 1px solid #21262d; vertical-align: middle;
+  }
+  table.client-table tr:hover td { background: rgba(88, 166, 255, 0.04); cursor: pointer; }
+  table.client-table tr:last-child td { border-bottom: none; }
+
+  /* Device Cell */
+  .device-cell { display: flex; align-items: center; gap: 12px; }
+  .device-icon-box {
+    width: 34px; height: 34px; border-radius: 8px; background: #21262d;
+    display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;
+    border: 1px solid #30363d;
+  }
+  .device-name-box { min-width: 0; }
+  .device-name {
+    font-size: 13px; font-weight: 600; color: #f0f6fc; display: flex; align-items: center; gap: 6px;
+  }
+  .device-hostname { font-size: 11px; color: #8b949e; }
+
+  /* Copyable IP / MAC */
+  .copyable {
+    font-family: 'SF Mono', Monaco, monospace; font-size: 12px; color: #58a6ff;
+    cursor: pointer; display: inline-flex; align-items: center; gap: 4px;
+    border-radius: 4px; padding: 2px 4px; transition: background 0.15s;
+  }
+  .copyable:hover { background: rgba(88, 166, 255, 0.15); }
+
+  /* Category Badges */
+  .type-badge {
+    display: inline-block; font-size: 11px; font-weight: 500; padding: 2px 8px;
+    border-radius: 12px; background: #21262d; border: 1px solid #30363d; color: #c9d1d9;
+    white-space: nowrap;
+  }
+
+  /* Vendor / Model */
+  .vendor-model { font-size: 12px; color: #c9d1d9; }
+  .vendor-sub { font-size: 11px; color: #8b949e; }
+
+  /* Speed meters */
+  .speed-tag { font-family: monospace; font-size: 11px; font-weight: 600; }
+  .speed-down { color: #3fb950; }
+  .speed-up { color: #58a6ff; }
+
+  /* Status Indicator */
+  .status-circle {
+    display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  }
+  .status-circle.online { background: #3fb950; box-shadow: 0 0 6px #3fb950; }
+  .status-circle.offline { background: #57606a; }
+
+  /* Footer Status */
+  .table-footer {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 16px; font-size: 11px; color: #8b949e; background: #161b22;
+    border: 1px solid #30363d; border-radius: 8px; margin-top: 12px;
+  }
+
+  /* Slide-Over Drawer */
+  .drawer-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(2px);
+    z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.25s ease;
+  }
+  .drawer-overlay.open { opacity: 1; pointer-events: auto; }
+  .drawer {
+    position: fixed; top: 0; right: -550px; width: 520px; max-width: 95vw; height: 100vh;
+    background: #161b22; border-left: 1px solid #30363d; box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+    z-index: 1001; transition: right 0.25s ease; display: flex; flex-direction: column;
+  }
+  .drawer.open { right: 0; }
+  .drawer-header {
+    padding: 16px 20px; border-bottom: 1px solid #30363d; display: flex;
+    justify-content: space-between; align-items: center; background: #1c2128;
+  }
+  .drawer-title-box { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .drawer-title-box h2 { font-size: 16px; font-weight: 600; color: #f0f6fc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .close-btn {
+    background: transparent; border: none; color: #8b949e; font-size: 20px;
+    cursor: pointer; padding: 4px 8px; border-radius: 4px;
+  }
+  .close-btn:hover { color: #f0f6fc; background: #30363d; }
+
+  /* Drawer Navigation Tabs */
+  .drawer-tabs {
+    display: flex; border-bottom: 1px solid #30363d; background: #161b22;
+    padding: 0 16px; overflow-x: auto;
+  }
+  .drawer-tab {
+    padding: 12px 14px; font-size: 12px; font-weight: 500; color: #8b949e;
+    cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap;
+    transition: all 0.15s;
+  }
+  .drawer-tab:hover { color: #f0f6fc; }
+  .drawer-tab.active { color: #58a6ff; border-bottom-color: #58a6ff; font-weight: 600; }
+
+  /* Drawer Body */
+  .drawer-body {
+    padding: 20px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 18px;
+  }
+
+  /* Fing Deep-Dive Card */
+  .fing-card {
+    background: #0d1117; border: 1px solid #30363d; border-radius: 8px; padding: 16px;
+  }
+  .fing-card-title {
+    font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;
+    color: #8b949e; font-weight: 600; margin-bottom: 12px; display: flex;
+    align-items: center; justify-content: space-between; border-bottom: 1px solid #21262d;
+    padding-bottom: 8px;
+  }
+  .fing-kv-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 6px 0; font-size: 12px; border-bottom: 1px solid #161b22;
+  }
+  .fing-kv-row:last-child { border-bottom: none; }
+  .fing-kv-label { color: #8b949e; font-weight: 500; }
+  .fing-kv-val { color: #f0f6fc; font-family: 'SF Mono', Monaco, monospace; display: flex; align-items: center; gap: 6px; }
+
+  /* WiFi Signal Strength Bar (Fing Style) */
+  .signal-bar-container {
+    display: flex; align-items: center; gap: 10px; width: 100%; margin-top: 4px;
+  }
+  .signal-bar-track {
+    flex: 1; height: 10px; background: #21262d; border-radius: 5px; overflow: hidden;
+  }
+  .signal-bar-fill {
+    height: 100%; background: #3fb950; border-radius: 5px; transition: width 0.3s ease;
+  }
+  .signal-bar-percent {
+    font-size: 12px; font-weight: 700; color: #3fb950; min-width: 40px; text-align: right;
+  }
+
+  /* Bandwidth Gauges in Drawer */
+  .drawer-gauges {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;
+  }
+  .gauge-box {
+    background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 12px;
+    text-align: center;
+  }
+  .gauge-val { font-size: 18px; font-weight: 700; color: #f0f6fc; }
+  .gauge-label { font-size: 11px; color: #8b949e; margin-top: 2px; }
+
+  /* Timeline */
+  .timeline { position: relative; padding-left: 20px; display: flex; flex-direction: column; gap: 14px; }
+  .timeline::before {
+    content: ''; position: absolute; top: 6px; bottom: 6px; left: 6px;
+    width: 2px; background: #30363d;
+  }
+  .timeline-item { position: relative; }
+  .timeline-dot {
+    position: absolute; left: -18px; top: 4px; width: 10px; height: 10px;
+    border-radius: 50%; background: #58a6ff; border: 2px solid #161b22;
+  }
+  .timeline-dot.roamed { background: #d29922; }
+  .timeline-dot.disconnected { background: #f85149; }
+  .timeline-time { font-size: 11px; color: #8b949e; }
+  .timeline-desc { font-size: 12px; color: #f0f6fc; margin-top: 2px; }
+  .timeline-meta { font-size: 11px; color: #8b949e; margin-top: 2px; }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .fing-container { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-left">
+    <img src="/static/logo.png" alt="Logo" style="height: 36px; width: 36px; border-radius: 6px; border: 1px solid #30363d;">
+    <div>
+      <h1>Active Client Monitoring</h1>
+    </div>
+  </div>
+  <div class="nav-links">
+    <div class="live-indicator"><span class="live-dot"></span><span>Live</span></div>
+    <a href="/">📊 Dashboard</a>
+    <a href="/map">🕸️ Network Map</a>
+    <a href="/clients" class="active">📱 Clients</a>
+    <a href="/scanner">🌐 Scanner</a>
+    <a href="/config">⚙️ Config</a>
+    <a href="/logs">📋 Logs</a>
+  </div>
+</div>
+
+<!-- Fing Master Container -->
+<div class="fing-container">
+
+  <!-- Left Sidebar: Subnets / Networks -->
+  <div class="subnets-sidebar">
+    <div class="sidebar-title">
+      <span>Detected Networks</span>
+      <span id="networks-count" style="font-size: 10px; background: #21262d; padding: 2px 6px; border-radius: 10px;">0</span>
+    </div>
+
+    <!-- All Networks item -->
+    <div class="subnet-card active" onclick="selectSubnet('all', this)">
+      <div class="subnet-left">
+        <div class="subnet-icon">🌐</div>
+        <div class="subnet-info">
+          <div class="subnet-name">All Networks</div>
+          <div class="subnet-cidr">All subnets & VLANs</div>
+        </div>
+      </div>
+      <div class="subnet-badge-box">
+        <span class="subnet-ratio-badge" id="all-ratio-badge">- / -</span>
+      </div>
+    </div>
+
+    <!-- Subnets List -->
+    <div id="subnets-list" style="display: flex; flex-direction: column; gap: 6px;">
+      <!-- Populated via JS -->
+    </div>
+  </div>
+
+  <!-- Main Content Area -->
+  <div class="monitoring-main">
+
+    <!-- Fing 3-Column Summary Cards -->
+    <div class="fing-summary-banner">
+      <div class="summary-card">
+        <div class="summary-metric-val" id="summary-ratio">- / -</div>
+        <div class="summary-metric-label">Up / Discovered</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-metric-val" id="summary-popular-type" style="font-size: 20px;">-</div>
+        <div class="summary-metric-label" id="summary-popular-type-sub">Most popular type</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-metric-val" id="summary-popular-vendor" style="font-size: 20px;">-</div>
+        <div class="summary-metric-label" id="summary-popular-vendor-sub">Most popular vendor</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-metric-val" style="font-size: 18px; color: #3fb950;" id="summary-bandwidth">↓ 0 bps  ↑ 0 bps</div>
+        <div class="summary-metric-label">Live Client Throughput</div>
+      </div>
+    </div>
+
+    <!-- Device Directory Table Container -->
+    <div>
+      <div class="directory-toolbar">
+        <div class="search-box">
+          <span>🔍</span>
+          <input type="text" id="client-search-input" placeholder="Search devices, IP, MAC, vendor, port..." oninput="onSearchChange(this.value)">
+        </div>
+        <div class="filter-pills">
+          <div class="filter-pill active" onclick="selectCategory('all', this)">All</div>
+          <div class="filter-pill" onclick="selectCategory('laptop', this)">💻 Laptops</div>
+          <div class="filter-pill" onclick="selectCategory('smartphone', this)">📱 Phones</div>
+          <div class="filter-pill" onclick="selectCategory('television', this)">📺 TVs</div>
+          <div class="filter-pill" onclick="selectCategory('printer', this)">🖨️ Printers</div>
+          <div class="filter-pill" onclick="selectCategory('smart_home', this)">🏠 Smart Home</div>
+          <div class="filter-pill" onclick="selectCategory('server', this)">🗄️ Servers</div>
+          <div class="filter-pill" onclick="selectStatusFilter('online', this)" id="online-filter-pill">🟢 Online Only</div>
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table class="client-table">
+          <thead>
+            <tr>
+              <th style="width: 40px;"></th>
+              <th>IP Address</th>
+              <th>Device Name / Host</th>
+              <th>Type</th>
+              <th>Brand & Model</th>
+              <th>Connection / AP</th>
+              <th>Live Speed</th>
+              <th style="text-align: right;">Action</th>
+            </tr>
+          </thead>
+          <tbody id="clients-tbody">
+            <tr>
+              <td colspan="8" style="text-align: center; color: #8b949e; padding: 30px;">Loading network devices...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="table-footer">
+        <div>
+          <span>Last discovered: <strong id="last-discovered-val">-</strong></span> &middot;
+          <span>Last changed: <strong id="last-changed-val">-</strong></span>
+        </div>
+        <div>
+          <span id="showing-count-val">Showing 0 devices</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Slide-Over Drawer (Fing Inspector) -->
+<div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="client-drawer">
+  <div class="drawer-header">
+    <div class="drawer-title-box">
+      <div id="drawer-device-icon" style="font-size: 22px;">📱</div>
+      <div>
+        <h2 id="drawer-device-name">Client Details</h2>
+        <div style="font-size: 11px; color: #8b949e; display: flex; align-items: center; gap: 6px;">
+          <span class="status-circle" id="drawer-status-circle"></span>
+          <span id="drawer-status-text">Online</span> &middot;
+          <span id="drawer-vendor-text">Vendor</span>
+        </div>
+      </div>
+    </div>
+    <button class="close-btn" onclick="closeDrawer()">&times;</button>
+  </div>
+
+  <div class="drawer-tabs">
+    <div class="drawer-tab active" onclick="switchDrawerTab('setup', this)">Network Setup</div>
+    <div class="drawer-tab" onclick="switchDrawerTab('wifi', this)">Wi-Fi / AP</div>
+    <div class="drawer-tab" onclick="switchDrawerTab('bandwidth', this)">Bandwidth</div>
+    <div class="drawer-tab" onclick="switchDrawerTab('timeline', this)">Roaming Timeline</div>
+    <div class="drawer-tab" onclick="switchDrawerTab('ip_history', this)">IP History</div>
+  </div>
+
+  <div class="drawer-body" id="drawer-tab-setup">
+    <!-- Fing Network Setup Card -->
+    <div class="fing-card">
+      <div class="fing-card-title">
+        <span>Network Setup</span>
+        <span style="font-size: 11px; color: #58a6ff;">Fing Profile</span>
+      </div>
+      <div class="fing-kv-row">
+        <span class="fing-kv-label">Netmask</span>
+        <span class="fing-kv-val copyable" onclick="copyToClipboard(this.innerText)">
+          <span id="net-setup-mask">255.255.255.0</span> 📋
+        </span>
+      </div>
+      <div class="fing-kv-row">
+        <span class="fing-kv-label">Gateway IP Address</span>
+        <span class="fing-kv-val copyable" onclick="copyToClipboard(this.innerText)">
+          <span id="net-setup-gw-ip">192.168.1.1</span> 📋
+        </span>
+      </div>
+      <div class="fing-kv-row">
+        <span class="fing-kv-label">Gateway MAC Address</span>
+        <span class="fing-kv-val copyable" onclick="copyToClipboard(this.innerText)">
+          <span id="net-setup-gw-mac">00:00:00:00:00:00</span> 📋
+        </span>
+      </div>
+      <div class="fing-kv-row">
+        <span class="fing-kv-label">Local Address</span>
+        <span class="fing-kv-val copyable" onclick="copyToClipboard(this.innerText)">
+          <span id="net-setup-local-ip">192.168.1.100</span> 📋
+        </span>
+      </div>
+      <div class="fing-kv-row">
+        <span class="fing-kv-label">DNS</span>
+        <span class="fing-kv-val copyable" onclick="copyToClipboard(this.innerText)">
+          <span id="net-setup-dns">1.1.1.1</span> 📋
+        </span>
+      </div>
+      <div class="fing-kv-row">
+        <span class="fing-kv-label">Interface Type</span>
+        <span class="fing-kv-val" id="net-setup-interface">Ethernet</span>
+      </div>
+    </div>
+
+    <!-- Device Properties & Customization Card -->
+    <div class="fing-card">
+      <div class="fing-card-title">Device Properties</div>
+      <div class="fing-kv-row">
+        <span class="fing-kv-label">Hardware MAC</span>
+        <span class="fing-kv-val copyable" onclick="copyToClipboard(this.innerText)">
+          <span id="drawer-mac-val">00:00:00:00:00:00</span> 📋
+        </span>
+      </div>
+      <div class="fing-kv-row">
+        <span class="fing-kv-label">OUI Vendor</span>
+        <span class="fing-kv-val" id="drawer-vendor-val">-</span>
+      </div>
+      <div style="margin-top: 12px; display: flex; flex-direction: column; gap: 8px;">
+        <label style="font-size: 11px; color: #8b949e;">Custom Nickname</label>
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="edit-custom-name" style="flex: 1; background: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 6px 10px; color: #f0f6fc; font-size: 12px;">
+          <button onclick="saveClientCustomName()" style="background: #238636; border: none; color: white; padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer;">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Wi-Fi / AP Tab -->
+  <div class="drawer-body" id="drawer-tab-wifi" style="display: none;">
+    <div class="fing-card">
+      <div class="fing-card-title">WiFi Access Points</div>
+      <div class="fing-kv-row">
+        <span class="fing-kv-label">BSSID / AP</span>
+        <span class="fing-kv-val copyable" onclick="copyToClipboard(this.innerText)">
+          <span id="wifi-bssid-val">-</span> 📋
+        </span>
+      </div>
+      <div class="fing-kv-row">
+        <span class="fing-kv-label">SSID</span>
+        <span class="fing-kv-val" id="wifi-ssid-val">-</span>
+      </div>
+      <div class="fing-kv-row">
+        <span class="fing-kv-label">Security Protocol</span>
+        <span class="fing-kv-val" id="wifi-security-val">WPA2 Personal</span>
+      </div>
+      <div style="margin-top: 12px;">
+        <div style="display: flex; justify-content: space-between; font-size: 12px; color: #8b949e; margin-bottom: 4px;">
+          <span>Signal Strength</span>
+          <span id="wifi-dbm-val">- dBm</span>
+        </div>
+        <div class="signal-bar-container">
+          <span>📶</span>
+          <div class="signal-bar-track">
+            <div class="signal-bar-fill" id="wifi-signal-fill" style="width: 0%;"></div>
+          </div>
+          <span class="signal-bar-percent" id="wifi-signal-percent">0%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bandwidth Tab -->
+  <div class="drawer-body" id="drawer-tab-bandwidth" style="display: none;">
+    <div class="drawer-gauges">
+      <div class="gauge-box">
+        <div class="gauge-val" style="color: #3fb950;" id="drawer-speed-rx">0 bps</div>
+        <div class="gauge-label">Live Download Rate</div>
+      </div>
+      <div class="gauge-box">
+        <div class="gauge-val" style="color: #58a6ff;" id="drawer-speed-tx">0 bps</div>
+        <div class="gauge-label">Live Upload Rate</div>
+      </div>
+      <div class="gauge-box">
+        <div class="gauge-val" id="drawer-day-rx">0 B</div>
+        <div class="gauge-label">24h Downloaded</div>
+      </div>
+      <div class="gauge-box">
+        <div class="gauge-val" id="drawer-day-tx">0 B</div>
+        <div class="gauge-label">24h Uploaded</div>
+      </div>
+    </div>
+
+    <div class="fing-card">
+      <div class="fing-card-title">Hourly Bandwidth Trend (Past 7 Days)</div>
+      <div id="drawer-chart-container" style="height: 160px; width: 100%; display: flex; align-items: flex-end; gap: 2px; padding-top: 10px;">
+        <!-- Dynamic SVG / bars -->
+      </div>
+      <div style="display: flex; justify-content: space-between; font-size: 10px; color: #8b949e; margin-top: 6px;">
+        <span>7 days ago</span>
+        <span>Past 24 hours</span>
+        <span>Now</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Roaming & Connection Timeline Tab -->
+  <div class="drawer-body" id="drawer-tab-timeline" style="display: none;">
+    <div class="fing-card">
+      <div class="fing-card-title">Connection & Roaming Timeline</div>
+      <div class="timeline" id="drawer-timeline-container">
+        <!-- Dynamic timeline events -->
+      </div>
+    </div>
+  </div>
+
+  <!-- IP History Tab -->
+  <div class="drawer-body" id="drawer-tab-ip_history" style="display: none;">
+    <div class="fing-card">
+      <div class="fing-card-title">Historical IP Addresses</div>
+      <table style="width: 100%; font-size: 12px; border-collapse: collapse;">
+        <thead>
+          <tr style="color: #8b949e; border-bottom: 1px solid #30363d; text-align: left;">
+            <th style="padding: 6px 8px;">IP Address</th>
+            <th style="padding: 6px 8px;">Hostname</th>
+            <th style="padding: 6px 8px;">First Seen</th>
+            <th style="padding: 6px 8px;">Status</th>
+          </tr>
+        </thead>
+        <tbody id="drawer-ip-history-tbody">
+          <!-- Dynamic IP rows -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// State
+let currentSubnet = 'all';
+let currentCategory = 'all';
+let currentStatusFilter = '';
+let currentSearch = '';
+let activeClientMac = '';
+
+// Category icon map
+const CATEGORY_ICONS = {
+  router: '🔀',
+  access_point: '📡',
+  laptop: '💻',
+  computer: '🖥️',
+  smartphone: '📱',
+  tablet: '📱',
+  television: '📺',
+  media_player: '🔊',
+  printer: '🖨️',
+  smart_home: '🏠',
+  server: '🗄️',
+  gaming: '🎮',
+  camera: '📷',
+  iot: '📦',
+  generic: '🔹'
+};
+
+// Clipboard helper
+function copyToClipboard(text) {
+  text = text.replace('📋', '').trim();
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('Copied: ' + text);
+  });
+}
+
+function showToast(msg) {
+  let toast = document.getElementById('fing-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'fing-toast';
+    toast.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#1f6feb;color:#fff;padding:8px 16px;border-radius:6px;font-size:12px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.4);transition:opacity 0.2s;';
+    document.body.appendChild(toast);
+  }
+  toast.innerText = msg;
+  toast.style.opacity = '1';
+  setTimeout(() => { toast.style.opacity = '0'; }, 1800);
+}
+
+// Subnet selection
+function selectSubnet(cidr, el) {
+  currentSubnet = cidr;
+  document.querySelectorAll('.subnet-card').forEach(c => c.classList.remove('active'));
+  if (el) el.classList.add('active');
+  loadSummary();
+  loadClients();
+}
+
+// Category filter
+function selectCategory(cat, el) {
+  currentCategory = cat;
+  document.querySelectorAll('.filter-pill').forEach(p => {
+    if (p.id !== 'online-filter-pill') p.classList.remove('active');
+  });
+  if (el) el.classList.add('active');
+  loadClients();
+}
+
+// Online toggle
+function selectStatusFilter(status, el) {
+  if (currentStatusFilter === status) {
+    currentStatusFilter = '';
+    el.classList.remove('active');
+  } else {
+    currentStatusFilter = status;
+    el.classList.add('active');
+  }
+  loadClients();
+}
+
+// Search
+let searchTimeout = null;
+function onSearchChange(val) {
+  currentSearch = val;
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(loadClients, 250);
+}
+
+// Load Subnets
+async function loadSubnets() {
+  try {
+    const res = await fetch('/api/clients/subnets');
+    const data = await res.json();
+    if (data.status !== 'ok') return;
+
+    const listEl = document.getElementById('subnets-list');
+    document.getElementById('networks-count').innerText = data.subnets.length;
+
+    listEl.innerHTML = data.subnets.map(s => `
+      <div class="subnet-card ${currentSubnet === s.cidr ? 'active' : ''}" onclick="selectSubnet('${s.cidr}', this)">
+        <div class="subnet-left">
+          <div class="subnet-icon">🌐</div>
+          <div class="subnet-info">
+            <div class="subnet-name">${s.name}</div>
+            <div class="subnet-cidr">${s.cidr}</div>
+          </div>
+        </div>
+        <div class="subnet-badge-box">
+          <span class="subnet-ratio-badge">${s.online_count} / ${s.total_count}</span>
+          <div class="subnet-last-seen">${s.last_seen_str || ''}</div>
+        </div>
+      </div>
+    `).join('');
+  } catch (err) {
+    console.error('Failed to load subnets:', err);
+  }
+}
+
+// Load Hero Summary
+async function loadSummary() {
+  try {
+    const url = currentSubnet && currentSubnet !== 'all'
+      ? `/api/clients/monitoring/summary?subnet=${encodeURIComponent(currentSubnet)}`
+      : '/api/clients/monitoring/summary';
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.status !== 'ok') return;
+
+    const s = data.summary;
+    document.getElementById('summary-ratio').innerHTML = `${s.up_count} <span class="sub">/ ${s.total_discovered}</span>`;
+    document.getElementById('all-ratio-badge').innerText = s.ratio_str;
+    document.getElementById('summary-popular-type').innerText = s.popular_type;
+    document.getElementById('summary-popular-type-sub').innerText = s.popular_type_subtitle;
+    document.getElementById('summary-popular-vendor').innerText = s.popular_vendor;
+    document.getElementById('summary-popular-vendor-sub').innerText = s.popular_vendor_subtitle;
+    document.getElementById('summary-bandwidth').innerText = `↓ ${s.total_down_formatted}  ↑ ${s.total_up_formatted}`;
+    document.getElementById('last-discovered-val').innerText = s.last_discovered;
+    document.getElementById('last-changed-val').innerText = s.last_changed;
+  } catch (err) {
+    console.error('Failed to load summary:', err);
+  }
+}
+
+// Load Client List
+async function loadClients() {
+  try {
+    let params = new URLSearchParams();
+    if (currentSubnet && currentSubnet !== 'all') params.set('subnet', currentSubnet);
+    if (currentCategory && currentCategory !== 'all') params.set('category', currentCategory);
+    if (currentStatusFilter) params.set('status', currentStatusFilter);
+    if (currentSearch) params.set('search', currentSearch);
+
+    const res = await fetch('/api/clients/monitoring/list?' + params.toString());
+    const data = await res.json();
+    if (data.status !== 'ok') return;
+
+    const tbody = document.getElementById('clients-tbody');
+    document.getElementById('showing-count-val').innerText = `Showing ${data.count} devices`;
+
+    if (!data.clients || data.clients.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: #8b949e; padding: 30px;">No clients match the selected filters.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = data.clients.map(c => {
+      const icon = CATEGORY_ICONS[c.category] || '🔹';
+      const statusCls = c.is_online ? 'online' : 'offline';
+      const hasSpeed = c.speed_rx_bps > 0 || c.speed_tx_bps > 0;
+      const speedHtml = hasSpeed
+        ? `<div class="speed-tag"><span class="speed-down">↓ ${c.speed_rx_formatted}</span> <span class="speed-up">↑ ${c.speed_tx_formatted}</span></div>`
+        : `<span style="color:#57606a; font-size:11px;">Idle</span>`;
+
+      const apLocation = c.ssid
+        ? `📶 ${c.ssid} ${c.signal_dbm ? `<span style="color:#3fb950; font-size:10px;">(${c.signal_dbm} dBm)</span>` : ''}`
+        : (c.switch_ip ? `🔌 ${c.switch_ip}:${c.port}` : 'Ethernet');
+
+      return `
+        <tr onclick="openDrawer('${c.mac}')">
+          <td><span class="status-circle ${statusCls}"></span></td>
+          <td>
+            <span class="copyable" onclick="event.stopPropagation(); copyToClipboard('${c.ip}')">
+              ${c.ip || '<span style="color:#57606a;">Unassigned</span>'} 📋
+            </span>
+          </td>
+          <td>
+            <div class="device-cell">
+              <div class="device-icon-box">${icon}</div>
+              <div class="device-name-box">
+                <div class="device-name">${escapeHtml(c.display_name)}</div>
+                <div class="device-hostname">${escapeHtml(c.hostname || c.mac)}</div>
+              </div>
+            </div>
+          </td>
+          <td><span class="type-badge">${c.category_label}</span></td>
+          <td>
+            <div class="vendor-model">${escapeHtml(c.brand_model_str)}</div>
+            <div class="vendor-sub">${escapeHtml(c.vendor || '')}</div>
+          </td>
+          <td style="font-size: 12px; color: #c9d1d9;">${apLocation}</td>
+          <td>${speedHtml}</td>
+          <td style="text-align: right;">
+            <button onclick="event.stopPropagation(); openDrawer('${c.mac}')" style="background:#21262d; border:1px solid #30363d; color:#58a6ff; font-size:11px; padding:4px 8px; border-radius:4px; cursor:pointer;">Inspect</button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  } catch (err) {
+    console.error('Failed to load clients:', err);
+  }
+}
+
+// Drawer Functions
+async function openDrawer(mac) {
+  activeClientMac = mac;
+  document.getElementById('drawer-overlay').classList.add('open');
+  document.getElementById('client-drawer').classList.add('open');
+
+  try {
+    const res = await fetch(`/api/clients/${encodeURIComponent(mac)}/details`);
+    const data = await res.json();
+    if (data.status !== 'ok') return;
+    const c = data.client;
+
+    document.getElementById('drawer-device-name').innerText = c.display_name;
+    document.getElementById('drawer-device-icon').innerText = CATEGORY_ICONS[c.category] || '🔹';
+    document.getElementById('drawer-status-circle').className = 'status-circle ' + (c.is_online ? 'online' : 'offline');
+    document.getElementById('drawer-status-text').innerText = c.is_online ? 'Online' : 'Offline';
+    document.getElementById('drawer-vendor-text').innerText = c.brand_model_str || c.vendor;
+
+    // Network Setup Card
+    document.getElementById('net-setup-mask').innerText = c.network_setup.netmask;
+    document.getElementById('net-setup-gw-ip').innerText = c.network_setup.gateway_ip || '192.168.1.1';
+    document.getElementById('net-setup-gw-mac').innerText = c.network_setup.gateway_mac || 'Unknown';
+    document.getElementById('net-setup-local-ip').innerText = c.network_setup.local_address;
+    document.getElementById('net-setup-dns').innerText = c.network_setup.dns;
+    document.getElementById('net-setup-interface').innerText = c.network_setup.interface_type;
+
+    // Properties
+    document.getElementById('drawer-mac-val').innerText = c.mac;
+    document.getElementById('drawer-vendor-val').innerText = c.vendor || 'Unknown';
+    document.getElementById('edit-custom-name').value = c.custom_name || '';
+
+    // WiFi
+    document.getElementById('wifi-bssid-val').innerText = c.wifi_setup.bssid;
+    document.getElementById('wifi-ssid-val').innerText = c.wifi_setup.ssid;
+    document.getElementById('wifi-security-val').innerText = c.wifi_setup.security_protocol;
+    document.getElementById('wifi-dbm-val').innerText = c.wifi_setup.signal_dbm ? `${c.wifi_setup.signal_dbm} dBm` : 'N/A';
+    document.getElementById('wifi-signal-fill').style.width = `${c.wifi_setup.signal_percent}%`;
+    document.getElementById('wifi-signal-percent').innerText = `${c.wifi_setup.signal_percent}%`;
+
+    // Bandwidth
+    document.getElementById('drawer-speed-rx').innerText = c.bandwidth.speed_rx_formatted;
+    document.getElementById('drawer-speed-tx').innerText = c.bandwidth.speed_tx_formatted;
+    document.getElementById('drawer-day-rx').innerText = c.bandwidth.day_rx_formatted;
+    document.getElementById('drawer-day-tx').innerText = c.bandwidth.day_tx_formatted;
+
+    renderBandwidthChart(c.bandwidth.trends || []);
+    renderTimeline(c.connection_history || []);
+    renderIpHistory(c.ip_history || []);
+
+  } catch (err) {
+    console.error('Failed to load client details:', err);
+  }
+}
+
+function closeDrawer() {
+  document.getElementById('drawer-overlay').classList.remove('open');
+  document.getElementById('client-drawer').classList.remove('open');
+}
+
+function switchDrawerTab(tabName, el) {
+  document.querySelectorAll('.drawer-tab').forEach(t => t.classList.remove('active'));
+  if (el) el.classList.add('active');
+
+  const tabs = ['setup', 'wifi', 'bandwidth', 'timeline', 'ip_history'];
+  tabs.forEach(t => {
+    const body = document.getElementById(`drawer-tab-${t}`);
+    if (body) body.style.display = (t === tabName) ? 'flex' : 'none';
+  });
+}
+
+function renderBandwidthChart(trends) {
+  const container = document.getElementById('drawer-chart-container');
+  if (!trends || trends.length === 0) {
+    container.innerHTML = '<div style="color:#8b949e;font-size:12px;margin:auto;">No traffic samples recorded in past 7 days</div>';
+    return;
+  }
+  const maxBytes = Math.max(...trends.map(t => (t.rx_bytes || 0) + (t.tx_bytes || 0)), 1024);
+  container.innerHTML = trends.slice(-48).map(t => {
+    const total = (t.rx_bytes || 0) + (t.tx_bytes || 0);
+    const heightPercent = Math.max(4, Math.min(100, Math.round((total / maxBytes) * 100)));
+    return `<div style="flex:1;height:${heightPercent}%;background:#388bfd;border-radius:2px;" title="${new Date(t.hour_timestamp*1000).toLocaleString()}: ${Math.round(total/1048576)} MB"></div>`;
+  }).join('');
+}
+
+function renderTimeline(events) {
+  const container = document.getElementById('drawer-timeline-container');
+  if (!events || events.length === 0) {
+    container.innerHTML = '<div style="color:#8b949e;font-size:12px;">No mobility events logged yet.</div>';
+    return;
+  }
+  container.innerHTML = events.map(e => {
+    const dotCls = e.event_type === 'roamed' ? 'roamed' : (e.event_type === 'disconnected' ? 'disconnected' : '');
+    const dateStr = new Date(e.connected_at * 1000).toLocaleString();
+    let desc = `Connected to <strong>${e.switch_name || e.switch_ip}</strong> (Port ${e.port})`;
+    if (e.event_type === 'roamed') {
+      desc = `Roamed from <strong>${e.from_switch_ip || 'Previous'}</strong> &rarr; <strong>${e.switch_name || e.switch_ip}</strong> (Port ${e.port})`;
+    }
+    const duration = e.duration_seconds > 0 ? `Duration: ${Math.round(e.duration_seconds / 60)} min` : '';
+    return `
+      <div class="timeline-item">
+        <span class="timeline-dot ${dotCls}"></span>
+        <div class="timeline-time">${dateStr}</div>
+        <div class="timeline-desc">${desc}</div>
+        <div class="timeline-meta">${e.ssid ? `SSID: ${e.ssid} &middot; ` : ''}${duration}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderIpHistory(ips) {
+  const tbody = document.getElementById('drawer-ip-history-tbody');
+  if (!ips || ips.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" style="color:#8b949e;text-align:center;padding:12px;">No historical IP bindings.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = ips.map(ip => `
+    <tr style="border-bottom: 1px solid #21262d;">
+      <td style="padding: 6px 8px; font-family: monospace; color: #58a6ff;">${ip.ip}</td>
+      <td style="padding: 6px 8px; color: #8b949e;">${escapeHtml(ip.hostname || '-')}</td>
+      <td style="padding: 6px 8px; color: #8b949e;">${new Date(ip.first_seen * 1000).toLocaleDateString()}</td>
+      <td style="padding: 6px 8px;">
+        <span style="font-size: 10px; padding: 2px 6px; border-radius: 4px; background:${ip.is_active ? 'rgba(63,185,80,0.15);color:#3fb950;' : 'rgba(139,148,158,0.15);color:#8b949e;'}">
+          ${ip.is_active ? 'Active' : 'Historical'}
+        </span>
+      </td>
+    </tr>
+  `).join('');
+}
+
+async function saveClientCustomName() {
+  if (!activeClientMac) return;
+  const newName = document.getElementById('edit-custom-name').value.trim();
+  try {
+    const res = await fetch(`/api/clients/${encodeURIComponent(activeClientMac)}/edit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ custom_name: newName })
+    });
+    const data = await res.json();
+    if (data.status === 'ok') {
+      showToast('Nickname updated!');
+      loadClients();
+      openDrawer(activeClientMac);
+    }
+  } catch (err) {
+    console.error('Failed to update nickname:', err);
+  }
+}
+
+function escapeHtml(str) {
+  return String(str || '').replace(/[&<>"']/g, m => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[m]);
+}
+
+// Auto-refresh cycle (every 10s)
+function init() {
+  loadSubnets();
+  loadSummary();
+  loadClients();
+  setInterval(() => {
+    loadSubnets();
+    loadSummary();
+    loadClients();
+    if (activeClientMac && document.getElementById('client-drawer').classList.contains('open')) {
+      openDrawer(activeClientMac);
+    }
+  }, 10000);
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
