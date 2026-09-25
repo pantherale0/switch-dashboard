@@ -6,6 +6,8 @@ import logging
 import threading
 from typing import Any, Dict, List, Optional
 
+from switch_dashboard.security.crypto import CryptoConfigurationError, SECRET_FIELDS, encrypt_bytes, redact_secrets, redact_tree
+
 logger = logging.getLogger("switch_dashboard.config")
 
 # Project base directory (where app.py / templates / static reside)
@@ -84,16 +86,23 @@ def set_data_dir(new_dir: str):
         try:
             from switch_dashboard.storage.engine import reset_engine
             reset_engine()
+            from switch_dashboard.storage.database import reset_database
+            reset_database()
         except Exception:
             pass
 
 
 def ensure_directories():
     """Ensure essential directories exist."""
-    os.makedirs(DATA_DIR, exist_ok=True)
-    os.makedirs(LOG_DIR, exist_ok=True)
-    os.makedirs(BACKUP_DIR, exist_ok=True)
-    os.makedirs(DEVICE_TEMPLATES_DIR, exist_ok=True)
+    os.makedirs(DATA_DIR, mode=0o700, exist_ok=True)
+    os.makedirs(LOG_DIR, mode=0o700, exist_ok=True)
+    os.makedirs(BACKUP_DIR, mode=0o700, exist_ok=True)
+    os.makedirs(DEVICE_TEMPLATES_DIR, mode=0o700, exist_ok=True)
+    for path in (DATA_DIR, LOG_DIR, BACKUP_DIR, DEVICE_TEMPLATES_DIR):
+        try:
+            os.chmod(path, 0o700)
+        except OSError:
+            pass
 
 
 def get_default_config() -> Dict[str, Any]:
@@ -136,6 +145,7 @@ def load_config() -> Dict[str, Any]:
             repo = ConfigRepository()
             repo.import_from_json_if_empty(CONFIG_PATH)
             data = repo.load_full_config()
+            _sanitize_legacy_config_files(data)
 
             if not data.get("devices") and not data.get("switches"):
                 if os.path.exists(CONFIG_PATH):
@@ -145,14 +155,24 @@ def load_config() -> Dict[str, Any]:
                         if isinstance(raw, dict) and (raw.get("devices") or raw.get("switches")):
                             repo.save_full_config(raw)
                             data = repo.load_full_config()
+                    except CryptoConfigurationError:
+                        raise
                     except Exception:
                         pass
 
             if not data.get("devices") and not data.get("switches"):
-                data = get_default_config()
+                defaults = get_default_config()
+                defaults.update(data)
+                defaults["settings"] = {
+                    **get_default_config()["settings"],
+                    **data.get("settings", {}),
+                }
+                data = defaults
 
             _cached_config = data
             return data
+        except CryptoConfigurationError:
+            raise
         except Exception as e:
             logger.error(f"Error loading configuration from database: {e}", exc_info=True)
             if _cached_config is not None:
@@ -220,6 +240,15 @@ def save_config(cfg: Dict[str, Any]) -> bool:
                 repo.save_full_config(cfg)
             except Exception as e:
                 logger.error(f"Error persisting configuration to database: {e}", exc_info=True)
+                contains_secrets = any(
+                    any(device.get(field) not in (None, "") for field in SECRET_FIELDS)
+                    for device in cfg.get("devices", [])
+                )
+                if contains_secrets:
+                    return False
+                persistence_failed = True
+            else:
+                persistence_failed = False
 
             # Test safeguard: prevent any test execution from touching real PROJECT_ROOT config.json
             is_test_env = bool(
@@ -229,7 +258,7 @@ def save_config(cfg: Dict[str, Any]) -> bool:
             )
             real_config_path = os.path.abspath(os.path.join(PROJECT_ROOT, "config.json"))
 
-            # Optional human-readable export to config.json
+            # Optional human-readable export. Credentials are never exported.
             if not (is_test_env and os.path.abspath(CONFIG_PATH) == real_config_path):
                 try:
                     if os.path.abspath(CONFIG_PATH) == real_config_path and os.path.exists(CONFIG_PATH):
@@ -238,17 +267,51 @@ def save_config(cfg: Dict[str, Any]) -> bool:
                         shutil.copy2(CONFIG_PATH, backup_dest)
 
                     temp_path = f"{CONFIG_PATH}.tmp"
+                    export_cfg = redact_tree(cfg)
                     with open(temp_path, "w", encoding="utf-8") as f:
-                        json.dump(cfg, f, indent=2)
+                        json.dump(export_cfg, f, indent=2)
+                    os.chmod(temp_path, 0o600)
                     os.replace(temp_path, CONFIG_PATH)
                 except Exception as e:
                     logger.debug(f"Could not export config.json: {e}")
 
-            _cached_config = cfg
-            return True
+            _cached_config = None
+            return not persistence_failed
         except Exception as e:
             logger.error(f"Error saving config: {e}", exc_info=True)
             return False
+
+
+def _sanitize_legacy_config_files(cfg: Dict[str, Any]) -> None:
+    """Remove plaintext credentials from legacy JSON and encrypt old copies."""
+    if os.path.exists(CONFIG_PATH):
+        try:
+            with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+                exported = json.load(f)
+            if isinstance(exported, dict):
+                exported = redact_tree(exported)
+                temp_path = f"{CONFIG_PATH}.tmp"
+                with open(temp_path, "w", encoding="utf-8") as f:
+                    json.dump(exported, f, indent=2)
+                os.chmod(temp_path, 0o600)
+                os.replace(temp_path, CONFIG_PATH)
+        except (OSError, ValueError, TypeError) as exc:
+            logger.warning(f"Could not sanitize legacy config export: {exc}")
+
+    for legacy_path in (f"{CONFIG_PATH}.bak", os.path.join(BACKUP_DIR, "config.json.bak")):
+        if not os.path.isfile(legacy_path):
+            continue
+        encrypted_path = f"{legacy_path}.enc"
+        try:
+            with open(legacy_path, "rb") as f:
+                encrypted = encrypt_bytes(f.read(), f"legacy-config:{os.path.basename(encrypted_path)}")
+            fd = os.open(f"{encrypted_path}.tmp", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+            with os.fdopen(fd, "wb") as f:
+                f.write(encrypted)
+            os.replace(f"{encrypted_path}.tmp", encrypted_path)
+            os.remove(legacy_path)
+        except Exception as exc:
+            logger.warning(f"Could not encrypt legacy config backup {legacy_path}: {exc}")
 
 
 def get_config() -> Dict[str, Any]:

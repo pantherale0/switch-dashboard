@@ -1,9 +1,11 @@
 import os
 import logging
+import re
 from logging.handlers import RotatingFileHandler
 from typing import List, Optional
 
 from switch_dashboard.config import LOG_FILE_PATH, LOG_DIR, get_setting
+from switch_dashboard.security.crypto import SECRET_FIELDS
 
 logger = logging.getLogger("switch_dashboard.services.log")
 
@@ -16,6 +18,21 @@ LEVEL_MAP = {
     "CRITICAL": logging.CRITICAL,
     "NONE": 99,
 }
+
+
+class SecretRedactionFilter(logging.Filter):
+    _names = "|".join(re.escape(name) for name in sorted(SECRET_FIELDS | {"passwd", "authorization", "cookie"}, key=len, reverse=True))
+    _pattern = re.compile(
+        rf"(?i)([\"']?(?:{_names})[\"']?)(\s*[=:]\s*)([\"']?[^\s,;\"']+[\"']?)"
+    )
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        message = record.getMessage()
+        redacted = self._pattern.sub(r"\1\2[REDACTED]", message)
+        if redacted != message:
+            record.msg = redacted
+            record.args = ()
+        return True
 
 
 def setup_logging(level_name: Optional[str] = None):
@@ -40,6 +57,7 @@ def setup_logging(level_name: Optional[str] = None):
     console_handler = logging.StreamHandler()
     console_handler.setFormatter(formatter)
     console_handler.setLevel(level)
+    console_handler.addFilter(SecretRedactionFilter())
     root.addHandler(console_handler)
 
     os.makedirs(LOG_DIR, exist_ok=True)
@@ -52,6 +70,7 @@ def setup_logging(level_name: Optional[str] = None):
         )
         file_handler.setFormatter(formatter)
         file_handler.setLevel(level)
+        file_handler.addFilter(SecretRedactionFilter())
         root.addHandler(file_handler)
     except Exception as e:
         print(f"Warning: could not initialize file logger: {e}")

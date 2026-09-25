@@ -4,6 +4,7 @@ import logging
 import json
 import threading
 import yaml
+import ipaddress
 from flask import Blueprint, render_template, jsonify, request, redirect, url_for, current_app
 
 from switch_dashboard.config import (
@@ -21,10 +22,51 @@ from switch_dashboard.services.poller_service import get_poller_service
 from switch_dashboard.services.scanner_service import get_scanner_service
 from switch_dashboard.core.ports import normalize_port
 from switch_dashboard.protocols.registry import ProtocolRegistry
+from switch_dashboard.security.crypto import redact_secrets
+from switch_dashboard.security.network import validate_management_target
 
 logger = logging.getLogger("switch_dashboard.web.config")
 
 config_bp = Blueprint("config_bp", __name__)
+
+
+def _validate_scanner_settings(values):
+    try:
+        network = ipaddress.ip_network(
+            values.get("scanner_network_range", "192.168.1.0/24"), strict=False
+        )
+        if network.num_addresses > 4096 or not network.is_private:
+            return "Scanner network must be a private CIDR containing at most 4096 addresses"
+        ports = set()
+        for part in str(values.get("scanner_port_scan_range", "22,80,443,8080")).split(","):
+            part = part.strip()
+            if not part:
+                continue
+            if "-" in part:
+                start, end = map(int, part.split("-", 1))
+                if not 1 <= start <= end <= 65535 or end - start + 1 > 1024:
+                    return "Each scanner port range must contain at most 1024 valid ports"
+                ports.update(range(start, end + 1))
+            else:
+                port = int(part)
+                if not 1 <= port <= 65535:
+                    return "Scanner ports must be between 1 and 65535"
+                ports.add(port)
+        if len(ports) > 1024:
+            return "At most 1024 ports may be scanned"
+        if not 1 <= int(values.get("scanner_port_scan_threads", 20)) <= 128:
+            return "Scanner port threads must be between 1 and 128"
+        if not 1 <= int(values.get("scanner_host_scan_threads", 4)) <= 32:
+            return "Scanner host threads must be between 1 and 32"
+        if int(values.get("scanner_interval", 60)) < 30:
+            return "Scanner interval must be at least 30 seconds"
+        if int(values.get("scanner_port_scan_interval", 300)) < 60:
+            return "Port scan interval must be at least 60 seconds"
+        if not 100 <= int(values.get("scanner_port_scan_timeout_ms", 500)) <= 10000:
+            return "Port scan timeout must be between 100 and 10000 milliseconds"
+    except (TypeError, ValueError):
+        return "Scanner settings contain an invalid number or CIDR"
+    return None
 
 
 def trigger_background_poll():
@@ -95,7 +137,7 @@ def manage_template(filename: str):
 @config_bp.route("/api/devices", methods=["GET"])
 def api_get_devices():
     cfg = load_config()
-    return jsonify({"devices": cfg.get("devices", [])})
+    return jsonify({"devices": [redact_secrets(d) for d in cfg.get("devices", [])]})
 
 
 @config_bp.route("/api/devices/upstream-candidates", methods=["GET"])
@@ -150,6 +192,8 @@ def api_get_upstream_candidates():
 @config_bp.route("/api/devices", methods=["POST"])
 def api_add_device():
     data = request.get_json(force=True, silent=True) or {}
+    if {"scrape_command", "status_command", "key_filename"}.intersection(data):
+        return jsonify({"error": "Remote command and key path fields cannot be managed through the API"}), 400
     name = data.get("name", "").strip()
     if not name:
         return jsonify({"error": "Device name is required"}), 400
@@ -172,6 +216,10 @@ def api_add_device():
         data["device_type"] = "switch"
 
     if management_type == "managed":
+        try:
+            validate_management_target(str(data.get("ip", "")))
+        except ValueError as exc:
+            return jsonify({"error": str(exc)}), 400
         proto = data.get("protocol", "http_hc")
         is_valid, err, coerced = ProtocolRegistry.validate_config(proto, data)
         if not is_valid:
@@ -189,12 +237,14 @@ def api_add_device():
 
     trigger_background_poll()
 
-    return jsonify({"status": "ok", "device": data}), 201
+    return jsonify({"status": "ok", "device": redact_secrets(data)}), 201
 
 
 @config_bp.route("/api/devices/<device_id>", methods=["PUT"])
 def api_update_device(device_id: str):
     data = request.get_json(force=True, silent=True) or {}
+    if {"scrape_command", "status_command", "key_filename"}.intersection(data):
+        return jsonify({"error": "Remote command and key path fields cannot be managed through the API"}), 400
     cfg = load_config()
     devices = cfg.get("devices", [])
 
@@ -224,6 +274,10 @@ def api_update_device(device_id: str):
         current_dev["device_type"] = "switch"
 
     if current_dev.get("management_type") == "managed":
+        try:
+            validate_management_target(str(current_dev.get("ip", "")))
+        except ValueError as exc:
+            return jsonify({"error": str(exc)}), 400
         proto = current_dev.get("protocol", "http_hc")
         is_valid, err, coerced = ProtocolRegistry.validate_config(proto, current_dev)
         if not is_valid:
@@ -238,7 +292,9 @@ def api_update_device(device_id: str):
 
     trigger_background_poll()
 
-    return jsonify({"status": "ok", "device": current_dev})
+    for field in data.get("clear_secrets", []):
+        current_dev.pop(str(field), None)
+    return jsonify({"status": "ok", "device": redact_secrets(current_dev)})
 
 
 @config_bp.route("/api/devices/<device_id>", methods=["DELETE"])
@@ -273,6 +329,8 @@ def config_page():
                 parsed_devices = json.loads(devices_json)
                 if isinstance(parsed_devices, list):
                     for dev in parsed_devices:
+                        if dev.get("management_type") == "managed":
+                            validate_management_target(str(dev.get("ip", "")))
                         if "parent_port" in dev and dev["parent_port"]:
                             dev["parent_port"] = normalize_port(dev["parent_port"])
                         if "uplink_port" in dev and dev["uplink_port"]:
@@ -385,6 +443,9 @@ def config_page():
         cfg["scanner_port_scan_threads"] = int(request.form.get("scanner_port_scan_threads", 20))
         cfg["scanner_host_scan_threads"] = int(request.form.get("scanner_host_scan_threads", 4))
         cfg["scanner_port_scan_timeout_ms"] = int(request.form.get("scanner_port_scan_timeout_ms", 500))
+        scanner_error = _validate_scanner_settings(cfg)
+        if scanner_error:
+            return jsonify({"error": scanner_error}), 400
         cfg["telemetry_enabled"] = request.form.get("telemetry_enabled") == "true"
 
         ignored_macs_raw = request.form.get("ignored_macs", "")
@@ -408,8 +469,8 @@ def config_page():
     return render_template(
         "config.html",
         title=cfg.get("title", "Switch Dashboard"),
-        devices=cfg.get("devices", []),
-        switches=cfg.get("switches", []),
+        devices=[redact_secrets(d) for d in cfg.get("devices", [])],
+        switches=[redact_secrets(d) for d in cfg.get("switches", [])],
         infrastructure_devices=cfg.get("infrastructure_devices", []),
         unmanaged_switches=cfg.get("unmanaged_switches", []),
         refresh=cfg.get("refresh_interval", 30),
@@ -439,6 +500,11 @@ def api_settings():
     cfg = load_config()
     if request.method == "POST":
         data = request.get_json(force=True, silent=True) or {}
+        proposed = dict(cfg)
+        proposed.update({k: v for k, v in data.items() if k.startswith("scanner_")})
+        scanner_error = _validate_scanner_settings(proposed)
+        if scanner_error:
+            return jsonify({"error": scanner_error}), 400
         if "settings" not in cfg:
             cfg["settings"] = {}
         for k, v in data.items():

@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="csrf-token" content="{{ csrf_token }}">
+<script src="/static/security.js"></script>
 <title>Active Client Monitoring | Switch Dashboard</title>
 <link rel="icon" href="/static/logo.png" type="image/png">
 <style>
@@ -726,21 +728,47 @@ async function loadSubnets() {
     const listEl = document.getElementById('subnets-list');
     document.getElementById('networks-count').innerText = data.subnets.length;
 
-    listEl.innerHTML = data.subnets.map(s => `
-      <div class="subnet-card ${currentSubnet === s.cidr ? 'active' : ''}" onclick="selectSubnet('${s.cidr}', this)">
-        <div class="subnet-left">
-          <div class="subnet-icon">🌐</div>
-          <div class="subnet-info">
-            <div class="subnet-name">${s.name}</div>
-            <div class="subnet-cidr">${s.cidr}</div>
-          </div>
-        </div>
-        <div class="subnet-badge-box">
-          <span class="subnet-ratio-badge">${s.online_count} / ${s.total_count}</span>
-          <div class="subnet-last-seen">${s.last_seen_str || ''}</div>
-        </div>
-      </div>
-    `).join('');
+    listEl.replaceChildren();
+    (data.subnets || []).forEach((subnet) => {
+      const card = document.createElement('div');
+      card.className = `subnet-card ${currentSubnet === subnet.cidr ? 'active' : ''}`;
+      card.dataset.cidr = subnet.cidr || '';
+
+      const left = document.createElement('div');
+      left.className = 'subnet-left';
+
+      const icon = document.createElement('div');
+      icon.className = 'subnet-icon';
+      icon.textContent = '🌐';
+      left.appendChild(icon);
+
+      const info = document.createElement('div');
+      info.className = 'subnet-info';
+      const name = document.createElement('div');
+      name.className = 'subnet-name';
+      name.textContent = subnet.name || '';
+      const cidr = document.createElement('div');
+      cidr.className = 'subnet-cidr';
+      cidr.textContent = subnet.cidr || '';
+      info.appendChild(name);
+      info.appendChild(cidr);
+      left.appendChild(info);
+
+      const badgeBox = document.createElement('div');
+      badgeBox.className = 'subnet-badge-box';
+      const ratio = document.createElement('span');
+      ratio.className = 'subnet-ratio-badge';
+      ratio.textContent = `${subnet.online_count ?? 0} / ${subnet.total_count ?? 0}`;
+      const lastSeen = document.createElement('div');
+      lastSeen.className = 'subnet-last-seen';
+      lastSeen.textContent = subnet.last_seen_str || '';
+      badgeBox.appendChild(ratio);
+      badgeBox.appendChild(lastSeen);
+
+      card.appendChild(left);
+      card.appendChild(badgeBox);
+      listEl.appendChild(card);
+    });
   } catch (err) {
     console.error('Failed to load subnets:', err);
   }
@@ -757,7 +785,14 @@ async function loadSummary() {
     if (data.status !== 'ok') return;
 
     const s = data.summary;
-    document.getElementById('summary-ratio').innerHTML = `${s.up_count} <span class="sub">/ ${s.total_discovered}</span>`;
+    const ratioEl = document.getElementById('summary-ratio');
+    ratioEl.replaceChildren();
+    ratioEl.appendChild(document.createTextNode(String(s.up_count ?? 0)));
+    const ratioSub = document.createElement('span');
+    ratioSub.className = 'sub';
+    ratioSub.textContent = `/ ${s.total_discovered ?? 0}`;
+    ratioEl.appendChild(document.createTextNode(' '));
+    ratioEl.appendChild(ratioSub);
     document.getElementById('all-ratio-badge').innerText = s.ratio_str;
     document.getElementById('summary-popular-type').innerText = s.popular_type;
     document.getElementById('summary-popular-type-sub').innerText = s.popular_type_subtitle;
@@ -787,53 +822,145 @@ async function loadClients() {
     const tbody = document.getElementById('clients-tbody');
     document.getElementById('showing-count-val').innerText = `Showing ${data.count} devices`;
 
+    tbody.replaceChildren();
     if (!data.clients || data.clients.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: #8b949e; padding: 30px;">No clients match the selected filters.</td></tr>`;
+      const row = document.createElement('tr');
+      const cell = document.createElement('td');
+      cell.colSpan = 8;
+      cell.style.textAlign = 'center';
+      cell.style.color = '#8b949e';
+      cell.style.padding = '30px';
+      cell.textContent = 'No clients match the selected filters.';
+      row.appendChild(cell);
+      tbody.appendChild(row);
       return;
     }
 
-    tbody.innerHTML = data.clients.map(c => {
-      const icon = CATEGORY_ICONS[c.category] || '🔹';
-      const statusCls = c.is_online ? 'online' : 'offline';
-      const hasSpeed = c.speed_rx_bps > 0 || c.speed_tx_bps > 0;
-      const speedHtml = hasSpeed
-        ? `<div class="speed-tag"><span class="speed-down">↓ ${c.speed_rx_formatted}</span> <span class="speed-up">↑ ${c.speed_tx_formatted}</span></div>`
-        : `<span style="color:#57606a; font-size:11px;">Idle</span>`;
+    (data.clients || []).forEach((client) => {
+      const row = document.createElement('tr');
+      row.dataset.mac = client.mac || '';
 
-      const apLocation = c.ssid
-        ? `📶 ${c.ssid} ${c.signal_dbm ? `<span style="color:#3fb950; font-size:10px;">(${c.signal_dbm} dBm)</span>` : ''}`
-        : (c.switch_ip ? `🔌 ${c.switch_ip}:${c.port}` : 'Ethernet');
+      const statusCell = document.createElement('td');
+      const statusCircle = document.createElement('span');
+      statusCircle.className = `status-circle ${safeCssToken(client.is_online ? 'online' : 'offline')}`;
+      statusCell.appendChild(statusCircle);
+      row.appendChild(statusCell);
 
-      return `
-        <tr onclick="openDrawer('${c.mac}')">
-          <td><span class="status-circle ${statusCls}"></span></td>
-          <td>
-            <span class="copyable" onclick="event.stopPropagation(); copyToClipboard('${c.ip}')">
-              ${c.ip || '<span style="color:#57606a;">Unassigned</span>'} 📋
-            </span>
-          </td>
-          <td>
-            <div class="device-cell">
-              <div class="device-icon-box">${icon}</div>
-              <div class="device-name-box">
-                <div class="device-name">${escapeHtml(c.display_name)}</div>
-                <div class="device-hostname">${escapeHtml(c.hostname || c.mac)}</div>
-              </div>
-            </div>
-          </td>
-          <td><span class="type-badge">${c.category_label}</span></td>
-          <td>
-            <div class="vendor-model">${escapeHtml(c.brand_model_str)}</div>
-            <div class="vendor-sub">${escapeHtml(c.vendor || '')}</div>
-          </td>
-          <td style="font-size: 12px; color: #c9d1d9;">${apLocation}</td>
-          <td>${speedHtml}</td>
-          <td style="text-align: right;">
-            <button onclick="event.stopPropagation(); openDrawer('${c.mac}')" style="background:#21262d; border:1px solid #30363d; color:#58a6ff; font-size:11px; padding:4px 8px; border-radius:4px; cursor:pointer;">Inspect</button>
-          </td>
-        </tr>
-      `;
-    }).join('');
+      const ipCell = document.createElement('td');
+      const copyable = document.createElement('span');
+      copyable.className = 'copyable';
+      copyable.dataset.copyValue = client.ip || 'Unassigned';
+      if (client.ip) {
+        copyable.appendChild(document.createTextNode(client.ip));
+      } else {
+        const unassigned = document.createElement('span');
+        unassigned.style.color = '#57606a';
+        unassigned.textContent = 'Unassigned';
+        copyable.appendChild(unassigned);
+      }
+      copyable.appendChild(document.createTextNode(' 📋'));
+      ipCell.appendChild(copyable);
+      row.appendChild(ipCell);
+
+      const deviceCell = document.createElement('td');
+      const deviceWrap = document.createElement('div');
+      deviceWrap.className = 'device-cell';
+      const iconBox = document.createElement('div');
+      iconBox.className = 'device-icon-box';
+      iconBox.textContent = CATEGORY_ICONS[client.category] || '🔹';
+      const nameBox = document.createElement('div');
+      nameBox.className = 'device-name-box';
+      const displayName = document.createElement('div');
+      displayName.className = 'device-name';
+      displayName.textContent = client.display_name || '';
+      const hostName = document.createElement('div');
+      hostName.className = 'device-hostname';
+      hostName.textContent = client.hostname || client.mac || '';
+      nameBox.appendChild(displayName);
+      nameBox.appendChild(hostName);
+      deviceWrap.appendChild(iconBox);
+      deviceWrap.appendChild(nameBox);
+      deviceCell.appendChild(deviceWrap);
+      row.appendChild(deviceCell);
+
+      const typeCell = document.createElement('td');
+      const typeBadge = document.createElement('span');
+      typeBadge.className = 'type-badge';
+      typeBadge.textContent = client.category_label || '';
+      typeCell.appendChild(typeBadge);
+      row.appendChild(typeCell);
+
+      const vendorCell = document.createElement('td');
+      const brandModel = document.createElement('div');
+      brandModel.className = 'vendor-model';
+      brandModel.textContent = client.brand_model_str || '';
+      const vendorSub = document.createElement('div');
+      vendorSub.className = 'vendor-sub';
+      vendorSub.textContent = client.vendor || '';
+      vendorCell.appendChild(brandModel);
+      vendorCell.appendChild(vendorSub);
+      row.appendChild(vendorCell);
+
+      const apCell = document.createElement('td');
+      apCell.style.fontSize = '12px';
+      apCell.style.color = '#c9d1d9';
+      if (client.ssid) {
+        apCell.appendChild(document.createTextNode(`📶 ${client.ssid}`));
+        if (client.signal_dbm) {
+          const signal = document.createElement('span');
+          signal.style.color = '#3fb950';
+          signal.style.fontSize = '10px';
+          signal.textContent = ` (${client.signal_dbm} dBm)`;
+          apCell.appendChild(signal);
+        }
+      } else if (client.switch_ip) {
+        apCell.textContent = `🔌 ${client.switch_ip}:${client.port}`;
+      } else {
+        apCell.textContent = 'Ethernet';
+      }
+      row.appendChild(apCell);
+
+      const speedCell = document.createElement('td');
+      const hasSpeed = (client.speed_rx_bps || 0) > 0 || (client.speed_tx_bps || 0) > 0;
+      if (hasSpeed) {
+        const speedTag = document.createElement('div');
+        speedTag.className = 'speed-tag';
+        const down = document.createElement('span');
+        down.className = 'speed-down';
+        down.textContent = `↓ ${client.speed_rx_formatted || ''}`;
+        const up = document.createElement('span');
+        up.className = 'speed-up';
+        up.textContent = `↑ ${client.speed_tx_formatted || ''}`;
+        speedTag.appendChild(down);
+        speedTag.appendChild(document.createTextNode(' '));
+        speedTag.appendChild(up);
+        speedCell.appendChild(speedTag);
+      } else {
+        const idle = document.createElement('span');
+        idle.style.color = '#57606a';
+        idle.style.fontSize = '11px';
+        idle.textContent = 'Idle';
+        speedCell.appendChild(idle);
+      }
+      row.appendChild(speedCell);
+
+      const actionCell = document.createElement('td');
+      actionCell.style.textAlign = 'right';
+      const inspectBtn = document.createElement('button');
+      inspectBtn.className = 'inspect-client-btn';
+      inspectBtn.style.background = '#21262d';
+      inspectBtn.style.border = '1px solid #30363d';
+      inspectBtn.style.color = '#58a6ff';
+      inspectBtn.style.fontSize = '11px';
+      inspectBtn.style.padding = '4px 8px';
+      inspectBtn.style.borderRadius = '4px';
+      inspectBtn.style.cursor = 'pointer';
+      inspectBtn.textContent = 'Inspect';
+      actionCell.appendChild(inspectBtn);
+      row.appendChild(actionCell);
+
+      tbody.appendChild(row);
+    });
   } catch (err) {
     console.error('Failed to load clients:', err);
   }
@@ -875,7 +1002,8 @@ async function openDrawer(mac) {
     document.getElementById('wifi-ssid-val').innerText = c.wifi_setup.ssid;
     document.getElementById('wifi-security-val').innerText = c.wifi_setup.security_protocol;
     document.getElementById('wifi-dbm-val').innerText = c.wifi_setup.signal_dbm ? `${c.wifi_setup.signal_dbm} dBm` : 'N/A';
-    document.getElementById('wifi-signal-fill').style.width = `${c.wifi_setup.signal_percent}%`;
+    const signalPercent = Math.max(0, Math.min(100, Number(c.wifi_setup.signal_percent) || 0));
+    document.getElementById('wifi-signal-fill').style.width = `${signalPercent}%`;
     document.getElementById('wifi-signal-percent').innerText = `${c.wifi_setup.signal_percent}%`;
 
     // Bandwidth
@@ -911,61 +1039,148 @@ function switchDrawerTab(tabName, el) {
 
 function renderBandwidthChart(trends) {
   const container = document.getElementById('drawer-chart-container');
+  container.replaceChildren();
   if (!trends || trends.length === 0) {
-    container.innerHTML = '<div style="color:#8b949e;font-size:12px;margin:auto;">No traffic samples recorded in past 7 days</div>';
+    const empty = document.createElement('div');
+    empty.style.color = '#8b949e';
+    empty.style.fontSize = '12px';
+    empty.style.margin = 'auto';
+    empty.textContent = 'No traffic samples recorded in past 7 days';
+    container.appendChild(empty);
     return;
   }
   const maxBytes = Math.max(...trends.map(t => (t.rx_bytes || 0) + (t.tx_bytes || 0)), 1024);
-  container.innerHTML = trends.slice(-48).map(t => {
-    const total = (t.rx_bytes || 0) + (t.tx_bytes || 0);
+  trends.slice(-48).forEach((trend) => {
+    const total = (trend.rx_bytes || 0) + (trend.tx_bytes || 0);
     const heightPercent = Math.max(4, Math.min(100, Math.round((total / maxBytes) * 100)));
-    return `<div style="flex:1;height:${heightPercent}%;background:#388bfd;border-radius:2px;" title="${new Date(t.hour_timestamp*1000).toLocaleString()}: ${Math.round(total/1048576)} MB"></div>`;
-  }).join('');
+    const bar = document.createElement('div');
+    bar.style.flex = '1';
+    bar.style.height = `${heightPercent}%`;
+    bar.style.background = '#388bfd';
+    bar.style.borderRadius = '2px';
+    bar.title = `${new Date((trend.hour_timestamp || 0) * 1000).toLocaleString()}: ${Math.round(total / 1048576)} MB`;
+    container.appendChild(bar);
+  });
 }
 
 function renderTimeline(events) {
   const container = document.getElementById('drawer-timeline-container');
+  container.replaceChildren();
   if (!events || events.length === 0) {
-    container.innerHTML = '<div style="color:#8b949e;font-size:12px;">No mobility events logged yet.</div>';
+    const empty = document.createElement('div');
+    empty.style.color = '#8b949e';
+    empty.style.fontSize = '12px';
+    empty.textContent = 'No mobility events logged yet.';
+    container.appendChild(empty);
     return;
   }
-  container.innerHTML = events.map(e => {
-    const dotCls = e.event_type === 'roamed' ? 'roamed' : (e.event_type === 'disconnected' ? 'disconnected' : '');
-    const dateStr = new Date(e.connected_at * 1000).toLocaleString();
-    let desc = `Connected to <strong>${e.switch_name || e.switch_ip}</strong> (Port ${e.port})`;
-    if (e.event_type === 'roamed') {
-      desc = `Roamed from <strong>${e.from_switch_ip || 'Previous'}</strong> &rarr; <strong>${e.switch_name || e.switch_ip}</strong> (Port ${e.port})`;
+  events.forEach((event) => {
+    const dotCls = safeCssToken(event.event_type === 'roamed' ? 'roamed' : (event.event_type === 'disconnected' ? 'disconnected' : ''));
+    const dateStr = new Date((event.connected_at || 0) * 1000).toLocaleString();
+    const item = document.createElement('div');
+    item.className = 'timeline-item';
+
+    const dot = document.createElement('span');
+    dot.className = `timeline-dot ${dotCls}`;
+    item.appendChild(dot);
+
+    const time = document.createElement('div');
+    time.className = 'timeline-time';
+    time.textContent = dateStr;
+    item.appendChild(time);
+
+    const desc = document.createElement('div');
+    desc.className = 'timeline-desc';
+    if (event.event_type === 'roamed') {
+      desc.appendChild(document.createTextNode('Roamed from '));
+      const from = document.createElement('strong');
+      from.textContent = event.from_switch_ip || 'Previous';
+      desc.appendChild(from);
+      desc.appendChild(document.createTextNode(' -> '));
+      const to = document.createElement('strong');
+      to.textContent = event.switch_name || event.switch_ip || '';
+      desc.appendChild(to);
+      desc.appendChild(document.createTextNode(` (Port ${event.port || ''})`));
+    } else {
+      desc.appendChild(document.createTextNode('Connected to '));
+      const target = document.createElement('strong');
+      target.textContent = event.switch_name || event.switch_ip || '';
+      desc.appendChild(target);
+      desc.appendChild(document.createTextNode(` (Port ${event.port || ''})`));
     }
-    const duration = e.duration_seconds > 0 ? `Duration: ${Math.round(e.duration_seconds / 60)} min` : '';
-    return `
-      <div class="timeline-item">
-        <span class="timeline-dot ${dotCls}"></span>
-        <div class="timeline-time">${dateStr}</div>
-        <div class="timeline-desc">${desc}</div>
-        <div class="timeline-meta">${e.ssid ? `SSID: ${e.ssid} &middot; ` : ''}${duration}</div>
-      </div>
-    `;
-  }).join('');
+    item.appendChild(desc);
+
+    const meta = document.createElement('div');
+    meta.className = 'timeline-meta';
+    if (event.ssid) {
+      meta.appendChild(document.createTextNode(`SSID: ${event.ssid} · `));
+    }
+    if ((event.duration_seconds || 0) > 0) {
+      meta.appendChild(document.createTextNode(`Duration: ${Math.round(event.duration_seconds / 60)} min`));
+    }
+    item.appendChild(meta);
+
+    container.appendChild(item);
+  });
 }
 
 function renderIpHistory(ips) {
   const tbody = document.getElementById('drawer-ip-history-tbody');
+  tbody.replaceChildren();
   if (!ips || ips.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="4" style="color:#8b949e;text-align:center;padding:12px;">No historical IP bindings.</td></tr>';
+    const row = document.createElement('tr');
+    const cell = document.createElement('td');
+    cell.colSpan = 4;
+    cell.style.color = '#8b949e';
+    cell.style.textAlign = 'center';
+    cell.style.padding = '12px';
+    cell.textContent = 'No historical IP bindings.';
+    row.appendChild(cell);
+    tbody.appendChild(row);
     return;
   }
-  tbody.innerHTML = ips.map(ip => `
-    <tr style="border-bottom: 1px solid #21262d;">
-      <td style="padding: 6px 8px; font-family: monospace; color: #58a6ff;">${ip.ip}</td>
-      <td style="padding: 6px 8px; color: #8b949e;">${escapeHtml(ip.hostname || '-')}</td>
-      <td style="padding: 6px 8px; color: #8b949e;">${new Date(ip.first_seen * 1000).toLocaleDateString()}</td>
-      <td style="padding: 6px 8px;">
-        <span style="font-size: 10px; padding: 2px 6px; border-radius: 4px; background:${ip.is_active ? 'rgba(63,185,80,0.15);color:#3fb950;' : 'rgba(139,148,158,0.15);color:#8b949e;'}">
-          ${ip.is_active ? 'Active' : 'Historical'}
-        </span>
-      </td>
-    </tr>
-  `).join('');
+  ips.forEach((entry) => {
+    const row = document.createElement('tr');
+    row.style.borderBottom = '1px solid #21262d';
+
+    const ipCell = document.createElement('td');
+    ipCell.style.padding = '6px 8px';
+    ipCell.style.fontFamily = 'monospace';
+    ipCell.style.color = '#58a6ff';
+    ipCell.textContent = entry.ip || '';
+    row.appendChild(ipCell);
+
+    const hostCell = document.createElement('td');
+    hostCell.style.padding = '6px 8px';
+    hostCell.style.color = '#8b949e';
+    hostCell.textContent = entry.hostname || '-';
+    row.appendChild(hostCell);
+
+    const seenCell = document.createElement('td');
+    seenCell.style.padding = '6px 8px';
+    seenCell.style.color = '#8b949e';
+    seenCell.textContent = new Date((entry.first_seen || 0) * 1000).toLocaleDateString();
+    row.appendChild(seenCell);
+
+    const statusCell = document.createElement('td');
+    statusCell.style.padding = '6px 8px';
+    const badge = document.createElement('span');
+    badge.style.fontSize = '10px';
+    badge.style.padding = '2px 6px';
+    badge.style.borderRadius = '4px';
+    if (entry.is_active) {
+      badge.style.background = 'rgba(63,185,80,0.15)';
+      badge.style.color = '#3fb950';
+      badge.textContent = 'Active';
+    } else {
+      badge.style.background = 'rgba(139,148,158,0.15)';
+      badge.style.color = '#8b949e';
+      badge.textContent = 'Historical';
+    }
+    statusCell.appendChild(badge);
+    row.appendChild(statusCell);
+    tbody.appendChild(row);
+  });
 }
 
 async function saveClientCustomName() {
@@ -988,14 +1203,22 @@ async function saveClientCustomName() {
   }
 }
 
-function escapeHtml(str) {
-  return String(str || '').replace(/[&<>"']/g, m => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-  })[m]);
-}
-
 // Auto-refresh cycle (every 10s)
 function init() {
+  document.getElementById('subnets-list').addEventListener('click', event => {
+    const card = event.target.closest('.subnet-card[data-cidr]');
+    if (card) selectSubnet(card.dataset.cidr, card);
+  });
+  document.getElementById('clients-tbody').addEventListener('click', event => {
+    const row = event.target.closest('tr[data-mac]');
+    if (!row) return;
+    const copyTarget = event.target.closest('[data-copy-value]');
+    if (copyTarget) {
+      copyToClipboard(copyTarget.dataset.copyValue);
+      return;
+    }
+    openDrawer(row.dataset.mac);
+  });
   loadSubnets();
   loadSummary();
   loadClients();

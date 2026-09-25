@@ -214,7 +214,7 @@ class HCSwitchProtocol(BaseProtocol):
                                 comment=None, comment_url=None, rest={}
                             )
                             self._cj.set_cookie(new_cookie)
-                            logger.info(f"[_raw_socket_fallback] Extracted and stored cookie: {c_name}={c_val}")
+                            logger.info("[_raw_socket_fallback] Extracted and stored authentication cookie")
                             
         # Redirect URL logic (if redirect found, e.g. Location header)
         final_url = req.full_url
@@ -288,7 +288,7 @@ class HCSwitchProtocol(BaseProtocol):
             post_data = {}
             
             auth_str = self.username + self.password
-            md5hash = hashlib.md5(auth_str.encode()).hexdigest()
+            md5hash = hashlib.md5(auth_str.encode()).hexdigest()  # nosec B324 - required by legacy device protocol
             
             for k, v in post_data_raw.items():
                 if isinstance(v, str):
@@ -351,7 +351,7 @@ class HCSwitchProtocol(BaseProtocol):
                     s.close()
                     
                     response_text = b"".join(response_parts).decode("latin-1")
-                    logger.debug(f"Raw socket response: {response_text}")
+                    logger.debug("Received raw socket login response")
                     
                     cookie_found = False
                     for line in response_text.splitlines():
@@ -374,7 +374,7 @@ class HCSwitchProtocol(BaseProtocol):
                                         comment=None, comment_url=None, rest={}
                                     )
                                     self._cj.set_cookie(new_cookie)
-                                    logger.info(f"Successfully extracted and set cookie via raw socket fallback: {c_name}={c_val}")
+                                    logger.info("Successfully extracted authentication cookie via raw socket fallback")
                                     cookie_found = True
                     if cookie_found:
                         return
@@ -387,7 +387,7 @@ class HCSwitchProtocol(BaseProtocol):
 
         logger.debug(f"[_login] Generating credentials MD5 hash for {self.username} on {self.ip}...")
         auth_str = self.username + self.password
-        md5hash = hashlib.md5(auth_str.encode()).hexdigest()
+        md5hash = hashlib.md5(auth_str.encode()).hexdigest()  # nosec B324 - required by legacy device protocol
 
         self._cj = CookieJar()
         self._opener = urllib.request.build_opener(
@@ -417,7 +417,7 @@ class HCSwitchProtocol(BaseProtocol):
             comment=None, comment_url=None, rest={}
         )
         self._cj.set_cookie(admin_c)
-        logger.debug(f"[_login] Authenticated cookie jar initialized. Admin cookie set to {md5hash}")
+        logger.debug("[_login] Authenticated cookie jar initialized")
 
         req_base = urllib.request.Request(f"{self.base_url}/")
         r = self._open_request_with_retry(req_base, timeout=45, max_retries=5)

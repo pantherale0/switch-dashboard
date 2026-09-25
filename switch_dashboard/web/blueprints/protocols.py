@@ -3,6 +3,7 @@ from switch_dashboard.protocols.registry import ProtocolRegistry
 from switch_dashboard.services.poller_service import get_poller_service
 from switch_dashboard.core.ports import normalize_port, format_port_display
 from switch_dashboard.config import get_config
+from switch_dashboard.security.network import validate_management_target
 
 protocols_bp = Blueprint("protocols", __name__)
 
@@ -32,6 +33,14 @@ def test_device_connection():
 
     if not ip:
         return jsonify({"success": False, "message": "IP address is required"}), 400
+    try:
+        validate_management_target(ip)
+    except ValueError as exc:
+        return jsonify({"success": False, "message": str(exc)}), 400
+
+    forbidden = {"scrape_command", "status_command", "key_filename", "bridge"}
+    if forbidden.intersection(data):
+        return jsonify({"success": False, "message": "Connection test contains restricted fields"}), 400
 
     # Validate against Voluptuous schema if defined
     is_valid, error, coerced = ProtocolRegistry.validate_config(proto_name, data)

@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="csrf-token" content="{{ csrf_token }}">
+<script src="/static/security.js"></script>
 <title>{{ title }} - Network Map</title>
 <link rel="icon" href="/static/logo.png" type="image/png">
 <style>
@@ -1256,49 +1258,15 @@
       if (!res.ok) return;
       deviceTypes = await res.json();
       
-      // Group icon names by prefix to make batch API calls
-      const prefixes = {}; // prefix -> { keys: [], iconNames: [] }
-      
+      // Only use validated path data from user-defined device types. Icon names
+      // are not fetched remotely or treated as markup.
       for (const [key, val] of Object.entries(deviceTypes)) {
         if (val.path) {
-          ICONS[key] = val.path;
-        } else if (val.icon) {
-          let parts = val.icon.split(':');
-          let prefix = 'mdi';
-          let iconName = val.icon;
-          if (parts.length === 2) {
-            prefix = parts[0];
-            iconName = parts[1];
+          const pathValue = String(val.path || '').trim();
+          if (/^[MmLlHhVvCcSsQqTtAaZz0-9,\.\-+\seE]+$/.test(pathValue) && /^[a-zA-Z0-9_-]+$/.test(key) && !['__proto__', 'prototype', 'constructor'].includes(key) && !Object.hasOwn(ICONS, key)) {
+            ICONS[key] = pathValue;
+            trustedIconKeys.add(key);
           }
-          if (!prefixes[prefix]) {
-            prefixes[prefix] = { keys: [], iconNames: [] };
-          }
-          prefixes[prefix].keys.push(key);
-          prefixes[prefix].iconNames.push(iconName);
-        }
-      }
-      
-      // Fetch icons from Iconify API for each prefix
-      for (const [prefix, data] of Object.entries(prefixes)) {
-        const uniqueIconNames = Array.from(new Set(data.iconNames));
-        const url = `https://api.iconify.design/${prefix}.json?icons=${uniqueIconNames.join(',')}`;
-        try {
-          const apiRes = await fetch(url);
-          if (apiRes.ok) {
-            const apiData = await apiRes.json();
-            if (apiData.icons) {
-              // Map retrieved icon bodies to our ICONS map
-              for (let i = 0; i < data.keys.length; i++) {
-                const key = data.keys[i];
-                const iconName = data.iconNames[i];
-                if (apiData.icons[iconName]) {
-                  ICONS[key] = apiData.icons[iconName].body;
-                }
-              }
-            }
-          }
-        } catch (apiErr) {
-          console.error(`Failed to fetch icons for prefix ${prefix}:`, apiErr);
         }
       }
     } catch (e) {
@@ -1344,6 +1312,36 @@
     dryer: `<path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-7-2c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>`,
     phone: `<path d="M19 2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 18H5V4h14v16zM7 6h10v6H7V6zm1 8h2v2H8v-2zm3 0h2v2h-2v-2zm3 0h2v2h-2v-2zm-6 3h2v2H8v-2zm3 0h2v2h-2v-2zm3 0h2v2h-2v-2z"/>`
   };
+  const trustedIconKeys = new Set(Object.keys(ICONS));
+
+  function getTrustedIcon(key, fallback = 'other') {
+    const icon = trustedIconKeys.has(key) ? ICONS[key] : null;
+    return typeof icon === 'string' ? icon : ICONS[fallback];
+  }
+
+  function isSafeSvgPathData(value) {
+    return typeof value === 'string' && /^[MmLlHhVvCcSsQqTtAaZz0-9,\.\-+\seE]+$/.test(value.trim());
+  }
+
+  function renderIconInto(iconWrapper, iconMarkup, fallbackColor) {
+    iconWrapper.replaceChildren();
+    const markup = String(iconMarkup || '').trim();
+    if (!markup) return;
+
+    let pathData = markup;
+    if (markup.startsWith('<')) {
+      const match = markup.match(/^<path\s+d=(['"])(.*?)\1\s*\/?\s*>$/s);
+      if (!match) return;
+      pathData = match[2];
+    }
+    if (!isSafeSvgPathData(pathData)) return;
+
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', pathData);
+    path.setAttribute('class', 'node-icon-svg');
+    path.setAttribute('fill', fallbackColor);
+    iconWrapper.appendChild(path);
+  }
 
   // Fetch topology data
   async function fetchTopology() {
@@ -2085,30 +2083,41 @@
       titleEl.textContent = `Path to Gateway (${hopCount} hop${hopCount === 1 ? '' : 's'})`;
     }
 
-    let routeHtml = '';
+    const routeFragment = document.createDocumentFragment();
     pathData.orderedNodeIds.forEach((id, idx) => {
       const n = rawNodes.find(node => node.id === id);
       if (!n) return;
       const name = n.name || n.host || formatMacAddress(n.mac) || id;
-      routeHtml += `<span class="hop-node">${name}</span>`;
+      const nameEl = document.createElement('span');
+      nameEl.className = 'hop-node';
+      nameEl.textContent = name;
+      routeFragment.appendChild(nameEl);
       if (idx < pathData.orderedNodeIds.length - 1) {
         const hop = pathData.hops[idx];
-        let portBadge = '';
         if (hop && hop.link) {
           const p = hop.link.source_port || hop.link.target_port;
-          if (p && p !== 'unknown') portBadge = `<span class="hop-port">[P${p}]</span>`;
+          if (p && p !== 'unknown') {
+            const portBadge = document.createElement('span');
+            portBadge.className = 'hop-port';
+            portBadge.textContent = `[P${p}]`;
+            routeFragment.appendChild(portBadge);
+          }
         }
-        routeHtml += `<span class="hop-arrow">➔</span>${portBadge} `;
+        const arrow = document.createElement('span');
+        arrow.className = 'hop-arrow';
+        arrow.textContent = '➔';
+        routeFragment.appendChild(arrow);
+        routeFragment.appendChild(document.createTextNode(' '));
       }
     });
 
-    routeEl.innerHTML = routeHtml;
+    routeEl.replaceChildren(routeFragment);
     hud.style.display = 'block';
   }
 
   function renderLinks(filteredLinks) {
     const container = document.getElementById('links-group');
-    container.innerHTML = '';
+    container.replaceChildren();
 
     filteredLinks.forEach((link, idx) => {
       const sourceNode = nodes[link.source];
@@ -2170,13 +2179,13 @@
         }
       }
 
-      const speedClass = `link-${(link.speed || '').toLowerCase().replace('/', '').replace('.', '_')}`;
+      const speedClass = `link-${safeCssToken((link.speed || '').toLowerCase().replace('/', '').replace('.', '_'))}`;
       let satClass = '';
-      const utilPct = link.utilization_pct || 0;
+      const utilPct = Math.max(0, Math.min(100, Number(link.utilization_pct) || 0));
       if (utilPct >= 80) satClass = 'link-saturated';
       else if (utilPct >= 50) satClass = 'link-moderate';
 
-      const typeClass = `link-type-${link.type || 'infra'}`;
+      const typeClass = `link-type-${safeCssToken(link.type || 'infra')}`;
 
       const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
       g.setAttribute('class', `link-group ${typeClass} ${speedClass} ${satClass}`.trim());
@@ -2324,17 +2333,17 @@
 
   function renderNodes(filteredNodes) {
     const container = document.getElementById('nodes-group');
-    container.innerHTML = '';
+    container.replaceChildren();
 
     filteredNodes.forEach(node => {
-      let typeClass = `node-${node.type}`;
+      let typeClass = `node-${safeCssToken(node.type)}`;
       if (node.type === 'switch' && node.model && node.model.toLowerCase() === 'fritzbox') {
         typeClass = 'node-router';
       }
       if (node.type === 'virtual_machine' || node.type === 'lxc_container') {
         typeClass = 'node-client';
       }
-      const statusClass = `node-${node.status}`;
+      const statusClass = `node-${safeCssToken(node.status)}`;
       const isClient = node.type === 'client' || node.type === 'virtual_machine' || node.type === 'lxc_container';
       
       const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
@@ -2377,16 +2386,8 @@
         iconWrapper.setAttribute('viewBox', '0 0 24 24');
         
         const dType = node.device_type || 'laptop';
-        let iconMarkup = ICONS[dType] || ICONS.laptop || ICONS.client;
-        if (!iconMarkup.trim().startsWith('<')) {
-          iconWrapper.innerHTML = `<path d="${iconMarkup}" class="node-icon-svg" fill="#34d399"/>`;
-        } else {
-          iconWrapper.innerHTML = iconMarkup;
-          Array.from(iconWrapper.children).forEach(child => {
-            child.classList.add('node-icon-svg');
-            if (!child.getAttribute('fill')) child.setAttribute('fill', '#34d399');
-          });
-        }
+        let iconMarkup = getTrustedIcon(dType, 'laptop') || ICONS.client;
+        renderIconInto(iconWrapper, iconMarkup, '#34d399');
         iconGroup.appendChild(iconWrapper);
         g.appendChild(iconGroup);
 
@@ -2469,18 +2470,10 @@
         } else if (node.type === 'distribution' || node.type === 'core' || node.type === 'access') {
           iconMarkup = ICONS.switch;
         } else {
-          iconMarkup = ICONS[node.type] || ICONS.other;
+          iconMarkup = getTrustedIcon(node.type);
         }
         
-        if (!iconMarkup.trim().startsWith('<')) {
-          iconWrapper.innerHTML = `<path d="${iconMarkup}" class="node-icon-svg" fill="currentColor"/>`;
-        } else {
-          iconWrapper.innerHTML = iconMarkup;
-          Array.from(iconWrapper.children).forEach(child => {
-            child.classList.add('node-icon-svg');
-            if (!child.getAttribute('fill')) child.setAttribute('fill', 'currentColor');
-          });
-        }
+        renderIconInto(iconWrapper, iconMarkup, 'currentColor');
         iconGroup.appendChild(iconWrapper);
         g.appendChild(iconGroup);
 
@@ -3019,7 +3012,7 @@
   function renderDetailCard(node) {
     const card = document.getElementById('detail-card');
     let avatarColor = '#10b981';
-    let iconSvg = ICONS.client;
+    let iconSvg = getTrustedIcon('client');
     
     if (node.type === 'internet') { avatarColor = '#06b6d4'; iconSvg = ICONS.internet; }
     else if (node.type === 'ont') { avatarColor = '#10b981'; iconSvg = ICONS.ont; }
@@ -3042,17 +3035,17 @@
     else if (node.type === 'repeater') { avatarColor = '#f97316'; iconSvg = ICONS.repeater; }
     else if (node.type === 'client') {
       const dType = node.device_type || 'laptop';
-      iconSvg = ICONS[dType] || ICONS.laptop || ICONS.client;
+      iconSvg = getTrustedIcon(dType, 'laptop') || getTrustedIcon('client');
     }
 
     const formattedMac = formatMacAddress(node.mac) || 'N/A';
     
-    let iconContent = iconSvg;
-    if (!iconContent.trim().startsWith('<')) {
-      iconContent = `<path d="${iconContent}"/>`;
-    }
+    const safeIconSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    safeIconSvg.setAttribute('viewBox', '0 0 24 24');
+    renderIconInto(safeIconSvg, iconSvg, 'currentColor');
+    const iconContent = safeIconSvg.innerHTML;
     
-    const roleTitle = (node.type === 'ont') ? 'OPTICAL NETWORK TERMINAL (ONT)' : (node.type === 'internet' ? 'INTERNET CLOUD' : (node.role ? node.role.toUpperCase() : (node.type === 'unmanaged_switch' ? 'UNMANAGED SWITCH' : (node.type === 'phone' ? 'VOIP DESK PHONE' : (node.model && node.model.toLowerCase() === 'fritzbox' ? 'ROUTER / GATEWAY' : String(node.type || 'device').toUpperCase())))));
+    const roleTitle = (node.type === 'ont') ? 'OPTICAL NETWORK TERMINAL (ONT)' : (node.type === 'internet' ? 'INTERNET CLOUD' : (node.role ? String(node.role).toUpperCase() : (node.type === 'unmanaged_switch' ? 'UNMANAGED SWITCH' : (node.type === 'phone' ? 'VOIP DESK PHONE' : (node.model && String(node.model).toLowerCase() === 'fritzbox' ? 'ROUTER / GATEWAY' : String(node.type || 'device').toUpperCase())))));
 
     let html = `
       <div class="detail-avatar-container">
@@ -3060,8 +3053,8 @@
           <svg viewBox="0 0 24 24" style="fill: currentColor;">${iconContent}</svg>
         </div>
         <div class="detail-title">
-          <h3>${node.name}</h3>
-          <p style="color: ${avatarColor};">${roleTitle}</p>
+          <h3>${escapeHtml(node.name)}</h3>
+          <p style="color: ${avatarColor};">${escapeHtml(roleTitle)}</p>
         </div>
       </div>
     `;
@@ -3071,20 +3064,20 @@
       html += `
         <div class="detail-item">
           <div class="label">IP Address</div>
-          <div class="value mono">${node.ip || 'N/A'}</div>
+          <div class="value mono">${escapeHtml(node.ip || 'N/A')}</div>
         </div>
         <div class="detail-item">
           <div class="label">MAC Address</div>
-          <div class="value mono">${formattedMac}</div>
+          <div class="value mono">${escapeHtml(formattedMac)}</div>
         </div>
         <div class="detail-item">
           <div class="label">Hardware Model</div>
-          <div class="value">${(node.model && node.model !== 'generic_switch') ? node.model : (node.type === 'virtualisation_host' ? 'Proxmox VE' : (node.type === 'switch' ? 'Managed Switch' : (node.type === 'router' ? 'Router' : (node.type === 'access_point' ? 'Access Point' : (node.type === 'ont' ? 'ONT' : 'Standard Device')))))}</div>
+          <div class="value">${escapeHtml((node.model && node.model !== 'generic_switch') ? node.model : (node.type === 'virtualisation_host' ? 'Proxmox VE' : (node.type === 'switch' ? 'Managed Switch' : (node.type === 'router' ? 'Router' : (node.type === 'access_point' ? 'Access Point' : (node.type === 'ont' ? 'ONT' : 'Standard Device')))))}</div>
         </div>
         <div class="detail-item">
           <div class="label">Status</div>
           <div class="value" style="color: ${node.status === 'online' ? '#3fb950' : '#f85149'}">
-            ${(node.status || 'unknown').toUpperCase()}
+            ${escapeHtml((node.status || 'unknown').toUpperCase())}
           </div>
         </div>
       `;
@@ -3094,11 +3087,11 @@
         html += `
           <div class="detail-item">
             <div class="label">Cluster</div>
-            <div class="value">${node.cluster_name || 'Standalone Proxmox'}</div>
+            <div class="value">${escapeHtml(node.cluster_name || 'Standalone Proxmox')}</div>
           </div>
           <div class="detail-item">
             <div class="label">Guests on Host</div>
-            <div class="value">${node.child_count || 0}</div>
+            <div class="value">${Number(node.child_count) || 0}</div>
           </div>
           <div class="detail-item">
             <div class="label">Resource Usage</div>
@@ -3114,9 +3107,9 @@
           hostInterfaces.forEach(i => {
             html += `
               <div class="port-row-detail">
-                <span class="port-num-badge">${i.name || 'Interface'}</span>
+                <span class="port-num-badge">${escapeHtml(i.name || 'Interface')}</span>
                 <span class="port-status-indicator ${i.active ? 'status-up' : 'status-down'}">${i.active ? 'UP' : 'DOWN'}</span>
-                <span class="port-speed-detail mono">${formatMacAddress(i.mac) || 'MAC unreported'}</span>
+                <span class="port-speed-detail mono">${escapeHtml(formatMacAddress(i.mac) || 'MAC unreported')}</span>
               </div>
             `;
           });
@@ -3134,16 +3127,16 @@
         node.ports.forEach(p => {
           const isUp = String(p.link_status || p.link || p.status || '').toLowerCase().includes('up');
           const role = p.role || (isUp ? 'access' : 'unused');
-          const roleClass = `role-${role}`;
+          const roleClass = `role-${safeCssToken(role)}`;
           const portLabel = p.name || (p.port ? ('Port ' + p.port) : (p.port_id ? ('Port ' + p.port_id) : 'Port'));
           const tx = (p.telemetry && p.telemetry.tx_bps) || p.speed_tx_bps || 0;
           const rx = (p.telemetry && p.telemetry.rx_bps) || p.speed_rx_bps || 0;
           html += `
             <div class="port-row-detail">
-              <span class="port-num-badge">${portLabel}</span>
+              <span class="port-num-badge">${escapeHtml(portLabel)}</span>
               <span class="port-status-indicator ${isUp ? 'status-up' : 'status-down'}">${isUp ? 'UP' : 'DOWN'}</span>
-              <span class="port-speed-detail">${p.speed || 'N/A'}</span>
-              <span class="role-badge ${roleClass}">${role}</span>
+              <span class="port-speed-detail">${escapeHtml(p.speed || 'N/A')}</span>
+              <span class="role-badge ${roleClass}">${escapeHtml(role)}</span>
               <span class="port-traffic-detail">Tx: ${formatTraffic(tx)} / Rx: ${formatTraffic(rx)}</span>
             </div>
           `;
@@ -3176,7 +3169,7 @@
               <h3 style="font-size: 11px; text-transform: uppercase; color: #8b949e; letter-spacing: 0.5px; font-weight: 600;">
                 Connected Clients (${switchClients.length})
               </h3>
-              <button type="button" onclick="toggleSwitchClients('${node.id}')" style="background: rgba(56, 139, 253, 0.15); border: 1px solid rgba(56, 139, 253, 0.4); color: #58a6ff; font-size: 10px; padding: 2px 8px; border-radius: 12px; cursor: pointer;">
+              <button type="button" onclick="toggleSwitchClients('${escapeJsString(node.id)}')" style="background: rgba(56, 139, 253, 0.15); border: 1px solid rgba(56, 139, 253, 0.4); color: #58a6ff; font-size: 10px; padding: 2px 8px; border-radius: 12px; cursor: pointer;">
                 ${isCurrentlyCollapsed ? 'Show on Map ▾' : 'Hide on Map ▸'}
               </button>
             </div>
@@ -3195,23 +3188,23 @@
           html += `
             <div style="background: rgba(13, 17, 23, 0.6); border: 1px solid rgba(48, 54, 61, 0.5); border-radius: 6px; padding: 8px;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 11px; font-weight: 600; color: #58a6ff;">
-                <span>${portLabel}</span>
+                <span>${escapeHtml(portLabel)}</span>
                 <span style="color: #8b949e; font-size: 10px;">${pClients.length} ${pClients.length === 1 ? 'device' : 'devices'}</span>
               </div>
               <div style="display: flex; flex-direction: column; gap: 4px;">
           `;
           pClients.forEach(c => {
             const dType = c.device_type || 'laptop';
-            const cIcon = ICONS[dType] || ICONS.client;
+            const cIcon = getTrustedIcon(dType, 'client') || ICONS.client;
             const cName = c.name || c.host || formatMacAddress(c.mac);
             const iconSvgMarkup = cIcon.startsWith('<') ? cIcon : `<path d="${cIcon}"/>`;
             html += `
-              <div onclick="selectNode(rawNodes.find(n => n.id === '${c.id}'))" style="display: flex; align-items: center; justify-content: space-between; padding: 4px 6px; background: rgba(22, 27, 34, 0.5); border-radius: 4px; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#21262d'" onmouseout="this.style.background='rgba(22, 27, 34, 0.5)'">
+              <div onclick="selectNode(rawNodes.find(n => n.id === '${escapeJsString(c.id)}'))" style="display: flex; align-items: center; justify-content: space-between; padding: 4px 6px; background: rgba(22, 27, 34, 0.5); border-radius: 4px; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#21262d'" onmouseout="this.style.background='rgba(22, 27, 34, 0.5)'">
                 <div style="display: flex; align-items: center; gap: 6px; overflow: hidden;">
                   <svg viewBox="0 0 24 24" width="13" height="13" style="fill: #34d399; flex-shrink: 0;">${iconSvgMarkup}</svg>
-                  <span style="font-size: 11px; color: #e1e4e8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 130px;">${cName}</span>
+                  <span style="font-size: 11px; color: #e1e4e8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 130px;">${escapeHtml(cName)}</span>
                 </div>
-                <span style="font-size: 9px; font-family: monospace; color: #8b949e;">${c.ip || formatMacAddress(c.mac).slice(-8)}</span>
+                <span style="font-size: 9px; font-family: monospace; color: #8b949e;">${escapeHtml(c.ip || formatMacAddress(c.mac).slice(-8))}</span>
               </div>
             `;
           });
@@ -3236,25 +3229,25 @@
       html += `
         <div class="detail-item">
           <div class="label">IP Address</div>
-          <div class="value mono">${node.ip || 'N/A'}</div>
+          <div class="value mono">${escapeHtml(node.ip || 'N/A')}</div>
         </div>
         <div class="detail-item">
           <div class="label">Parent Switch</div>
-          <div class="value">${node.parent_ip}</div>
+          <div class="value">${escapeHtml(node.parent_ip)}</div>
         </div>
         <div class="detail-item">
           <div class="label">Parent Port</div>
-          <div class="value">${formatPortDisplay(node.parent_port)}</div>
+          <div class="value">${escapeHtml(formatPortDisplay(node.parent_port))}</div>
         </div>
         <div class="detail-item">
           <div class="label">Wireless Clients</div>
-          <div class="value">${node.client_count || 0} active</div>
+          <div class="value">${Number(node.client_count) || 0} active</div>
         </div>
-        ${node.vendor ? `<div class="detail-item"><div class="label">Vendor</div><div class="value">${node.vendor}</div></div>` : ''}
+        ${node.vendor ? `<div class="detail-item"><div class="label">Vendor</div><div class="value">${escapeHtml(node.vendor)}</div></div>` : ''}
         <div class="detail-item">
           <div class="label">Status</div>
           <div class="value" style="color: ${node.status === 'online' ? '#3fb950' : '#f85149'}">
-            ${(node.status || 'unknown').toUpperCase()}
+            ${escapeHtml((node.status || 'unknown').toUpperCase())}
           </div>
         </div>
       `;
@@ -3262,16 +3255,16 @@
       html += `
         <div class="detail-item">
           <div class="label">Parent Switch</div>
-          <div class="value">${node.parent_ip}</div>
+          <div class="value">${escapeHtml(node.parent_ip)}</div>
         </div>
         <div class="detail-item">
           <div class="label">Parent Port</div>
-          <div class="value">${formatPortDisplay(node.parent_port)}</div>
+          <div class="value">${escapeHtml(formatPortDisplay(node.parent_port))}</div>
         </div>
         <div class="detail-item">
           <div class="label">Status</div>
           <div class="value" style="color: ${node.status === 'online' ? '#3fb950' : '#f85149'}">
-            ${(node.status || 'unknown').toUpperCase()}
+            ${escapeHtml((node.status || 'unknown').toUpperCase())}
           </div>
         </div>
       `;
@@ -3279,43 +3272,43 @@
       html += `
         <div class="detail-item">
           <div class="label">Parent Switch</div>
-          <div class="value">${node.parent_ip || 'N/A'}</div>
+          <div class="value">${escapeHtml(node.parent_ip || 'N/A')}</div>
         </div>
         <div class="detail-item">
           <div class="label">Parent Port</div>
-          <div class="value">${formatPortDisplay(node.parent_port)}</div>
+          <div class="value">${escapeHtml(formatPortDisplay(node.parent_port))}</div>
         </div>
         ${node.passthrough_port ? `
         <div class="detail-item">
           <div class="label">Passthrough Port</div>
-          <div class="value mono">${node.passthrough_port}</div>
+          <div class="value mono">${escapeHtml(node.passthrough_port)}</div>
         </div>` : ''}
         ${node.ip ? `
         <div class="detail-item">
           <div class="label">IP Address</div>
           <div class="value mono" style="color: #58a6ff; font-weight: 500;">
-            ${node.ip}
-            <button onclick="navigator.clipboard.writeText('${node.ip}')" title="Copy IP" style="background: none; border: none; color: #8b949e; cursor: pointer; margin-left: 6px; padding: 0 4px; font-size: 11px;">📋</button>
+            ${escapeHtml(node.ip)}
+            <button onclick="navigator.clipboard.writeText('${escapeJsString(node.ip)}')" title="Copy IP" style="background: none; border: none; color: #8b949e; cursor: pointer; margin-left: 6px; padding: 0 4px; font-size: 11px;">📋</button>
           </div>
         </div>` : ''}
         ${node.hostname ? `
         <div class="detail-item">
           <div class="label">Discovered Hostname</div>
           <div class="value" style="color: #f0f6fc; font-weight: 500;">
-            <span class="badge" style="background: rgba(56, 139, 253, 0.15); color: #58a6ff; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-family: monospace;">${node.hostname}</span>
+            <span class="badge" style="background: rgba(56, 139, 253, 0.15); color: #58a6ff; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-family: monospace;">${escapeHtml(node.hostname)}</span>
           </div>
         </div>` : ''}
         <div class="detail-item">
           <div class="label">MAC Address</div>
-          <div class="value mono">${formattedMac}</div>
+          <div class="value mono">${escapeHtml(formattedMac)}</div>
         </div>
-        ${node.vendor ? `<div class="detail-item"><div class="label">Vendor</div><div class="value">${node.vendor}</div></div>` : ''}
+        ${node.vendor ? `<div class="detail-item"><div class="label">Vendor</div><div class="value">${escapeHtml(node.vendor)}</div></div>` : ''}
         <div class="detail-item">
           <div class="label">Host Nickname</div>
           <div class="value" style="margin-top: 4px;">
-            <input type="text" id="inspect-host-input" value="${node.name || ''}" 
-                   placeholder="${node.hostname || 'Enter device nickname...'}" 
-                   onblur="updateClientHost('${node.mac || node.id}', this.value)"
+            <input type="text" id="inspect-host-input" value="${escapeHtml(node.name || '')}"
+                   placeholder="${escapeHtml(node.hostname || 'Enter device nickname...')}"
+                   onblur="updateClientHost('${escapeJsString(node.mac || node.id)}', this.value)"
                    style="width: 100%; background: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 6px 10px; color: #e1e4e8; font-size: 12px; outline: none; transition: border-color 0.2s;"
                    onfocus="this.style.borderColor='#58a6ff'" 
                    onblur="this.style.borderColor='#30363d'">
@@ -3324,7 +3317,7 @@
         <div class="detail-item" style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed rgba(48, 54, 61, 0.4);">
           <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 12px; color: #f0f6fc;">
             <input type="checkbox" id="inspect-mini-switch-checkbox" ${node.is_mini_switch ? 'checked' : ''} 
-                   onchange="updateClientPassthrough('${node.mac || node.id}', this.checked)"
+                   onchange="updateClientPassthrough('${escapeJsString(node.mac || node.id)}', this.checked)"
                    style="cursor: pointer; width: 14px; height: 14px; accent-color: #58a6ff;">
             <span style="font-weight: 500;">Ethernet Passthrough</span>
           </label>
@@ -3335,7 +3328,7 @@
         <div class="detail-item">
           <div class="label">Status</div>
           <div class="value" style="color: ${node.status === 'online' ? '#3fb950' : '#f85149'}">
-            ${(node.status || 'unknown').toUpperCase()}
+            ${escapeHtml((node.status || 'unknown').toUpperCase())}
           </div>
         </div>
       `;
@@ -3346,28 +3339,28 @@
       const txBytes = node.tx_bytes || 0;
       const downSpeed = node.speed_down || node.speed || '1G';
       const upSpeed = node.speed_up || node.speed || '300M';
-      const utilDown = node.utilization_down_pct || 0;
-      const utilUp = node.utilization_up_pct || 0;
+      const utilDown = Math.max(0, Math.min(100, Number(node.utilization_down_pct) || 0));
+      const utilUp = Math.max(0, Math.min(100, Number(node.utilization_up_pct) || 0));
       const downColor = utilDown >= 80 ? '#ef4444' : (utilDown >= 50 ? '#f59e0b' : '#34d399');
       const upColor = utilUp >= 80 ? '#ef4444' : (utilUp >= 50 ? '#f59e0b' : '#38bdf8');
 
       html += `
         <div class="detail-item">
           <div class="label">Downstream Device</div>
-          <div class="value" style="color: #34d399; font-weight: 500;">${node.parent_ip || 'N/A'}${node.parent_port ? ' : Port ' + formatPortDisplay(node.parent_port) : ''}</div>
+          <div class="value" style="color: #34d399; font-weight: 500;">${escapeHtml(node.parent_ip || 'N/A')}${node.parent_port ? ' : Port ' + escapeHtml(formatPortDisplay(node.parent_port)) : ''}</div>
         </div>
         <div class="detail-item">
           <div class="label">Provisioned PON Speed</div>
-          <div class="value mono">${downSpeed} &darr; / ${upSpeed} &uarr;</div>
+          <div class="value mono">${escapeHtml(downSpeed)} &darr; / ${escapeHtml(upSpeed)} &uarr;</div>
         </div>
         <div class="detail-item">
           <div class="label">Telemetry Source</div>
-          <div class="value mono" style="font-size: 11px;">${node.stats_device_ip || node.parent_ip || 'N/A'} : Port ${node.stats_port || node.parent_port || 'WAN'}</div>
+          <div class="value mono" style="font-size: 11px;">${escapeHtml(node.stats_device_ip || node.parent_ip || 'N/A')} : Port ${escapeHtml(node.stats_port || node.parent_port || 'WAN')}</div>
         </div>
         <div class="detail-item">
           <div class="label">Status</div>
           <div class="value" style="color: ${node.status === 'online' ? '#3fb950' : '#f85149'}">
-            ${(node.status || 'unknown').toUpperCase()}
+            ${escapeHtml((node.status || 'unknown').toUpperCase())}
           </div>
         </div>
 
@@ -3376,21 +3369,21 @@
           <div style="display: flex; flex-direction: column; gap: 8px;">
             <div>
               <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 2px;">
-                <span style="color: #34d399;">Download (${downSpeed})</span>
+                <span style="color: #34d399;">Download (${escapeHtml(downSpeed)})</span>
                 <span class="mono" style="color: ${downColor}; font-weight: 600;">${formatTraffic(rxBps)} (${utilDown.toFixed(1)}%)</span>
               </div>
               <div style="background: rgba(48, 54, 61, 0.5); height: 5px; border-radius: 3px; overflow: hidden;">
-                <div style="background: ${downColor}; width: ${Math.min(utilDown, 100)}%; height: 100%; transition: width 0.3s;"></div>
+                <div style="background: ${downColor}; width: ${utilDown}%; height: 100%; transition: width 0.3s;"></div>
               </div>
             </div>
 
             <div>
               <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 2px;">
-                <span style="color: #38bdf8;">Upload (${upSpeed})</span>
+                <span style="color: #38bdf8;">Upload (${escapeHtml(upSpeed)})</span>
                 <span class="mono" style="color: ${upColor}; font-weight: 600;">${formatTraffic(txBps)} (${utilUp.toFixed(1)}%)</span>
               </div>
               <div style="background: rgba(48, 54, 61, 0.5); height: 5px; border-radius: 3px; overflow: hidden;">
-                <div style="background: ${upColor}; width: ${Math.min(utilUp, 100)}%; height: 100%; transition: width 0.3s;"></div>
+                <div style="background: ${upColor}; width: ${utilUp}%; height: 100%; transition: width 0.3s;"></div>
               </div>
             </div>
           </div>
@@ -3477,25 +3470,25 @@
         </div>
         <div class="detail-item">
           <div class="label">VMID</div>
-          <div class="value mono">${node.native_id || 'N/A'}</div>
+          <div class="value mono">${escapeHtml(node.native_id || 'N/A')}</div>
         </div>
         <div class="detail-item">
           <div class="label">Proxmox Node</div>
-          <div class="value">${node.node || 'Cluster'}</div>
+          <div class="value">${escapeHtml(node.node || 'Cluster')}</div>
         </div>
         <div class="detail-item">
           <div class="label">Status</div>
           <div class="value" style="color: ${node.status === 'online' || node.status === 'running' ? '#3fb950' : '#f85149'}">
-            ${(node.status || 'unknown').toUpperCase()}
+            ${escapeHtml((node.status || 'unknown').toUpperCase())}
           </div>
         </div>
         <div class="detail-item">
           <div class="label">IP Address</div>
-          <div class="value mono">${ips}</div>
+          <div class="value mono">${escapeHtml(ips)}</div>
         </div>
         <div class="detail-item">
           <div class="label">MAC Address</div>
-          <div class="value mono">${formattedMac}</div>
+          <div class="value mono">${escapeHtml(formattedMac)}</div>
         </div>
         <div class="detail-item">
           <div class="label">Resource Usage</div>
@@ -3514,27 +3507,27 @@
       html += `
         <div class="detail-item">
           <div class="label">MAC Address</div>
-          <div class="value mono">${formattedMac}</div>
+          <div class="value mono">${escapeHtml(formattedMac)}</div>
         </div>
         <div class="detail-item">
           <div class="label">Status</div>
           <div class="value" style="color: ${node.status === 'online' ? '#3fb950' : '#f85149'}">
-            ${(node.status || 'unknown').toUpperCase()}
+            ${escapeHtml((node.status || 'unknown').toUpperCase())}
           </div>
         </div>
         ${node.ip ? `
         <div class="detail-item">
           <div class="label">IP Address</div>
           <div class="value mono" style="color: #58a6ff; font-weight: 500;">
-            ${node.ip}
-            <button onclick="navigator.clipboard.writeText('${node.ip}')" title="Copy IP" style="background: none; border: none; color: #8b949e; cursor: pointer; margin-left: 6px; padding: 0 4px; font-size: 11px;">📋</button>
+            ${escapeHtml(node.ip)}
+            <button onclick="navigator.clipboard.writeText('${escapeJsString(node.ip)}')" title="Copy IP" style="background: none; border: none; color: #8b949e; cursor: pointer; margin-left: 6px; padding: 0 4px; font-size: 11px;">📋</button>
           </div>
         </div>` : ''}
         ${node.hostname ? `
         <div class="detail-item">
           <div class="label">Discovered Hostname</div>
           <div class="value" style="color: #f0f6fc; font-weight: 500;">
-            <span class="badge" style="background: rgba(56, 139, 253, 0.15); color: #58a6ff; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-family: monospace;">${node.hostname}</span>
+            <span class="badge" style="background: rgba(56, 139, 253, 0.15); color: #58a6ff; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-family: monospace;">${escapeHtml(node.hostname)}</span>
           </div>
         </div>` : ''}
       `;
@@ -3542,7 +3535,7 @@
         html += `
           <div class="detail-item">
             <div class="label">Manufacturer Vendor</div>
-            <div class="value">${node.vendor}</div>
+            <div class="value">${escapeHtml(node.vendor)}</div>
           </div>
         `;
       }
@@ -3573,17 +3566,17 @@
         };
         
         for (const [key, val] of Object.entries(typesToRender)) {
-          const selected = node.device_type === key ? 'selected' : '';
-          dropdownHtml += `<option value="${key}" ${selected}>${val.label || key}</option>`;
+        const selected = node.device_type === key ? 'selected' : '';
+        dropdownHtml += `<option value="${escapeHtml(key)}" ${selected}>${escapeHtml(val.label || key)}</option>`;
         }
 
         html += `
           <div class="detail-item">
             <div class="label">Host Nickname</div>
             <div class="value" style="margin-top: 4px;">
-              <input type="text" id="inspect-host-input" value="${node.host || ''}" 
-                     placeholder="${node.hostname || 'Enter device nickname...'}" 
-                     onblur="updateClientHost('${node.id}', this.value)"
+              <input type="text" id="inspect-host-input" value="${escapeHtml(node.host || '')}"
+                     placeholder="${escapeHtml(node.hostname || 'Enter device nickname...')}"
+                     onblur="updateClientHost('${escapeJsString(node.id)}', this.value)"
                      style="width: 100%; background: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 6px 10px; color: #e1e4e8; font-size: 12px; outline: none; transition: border-color 0.2s;"
                      onfocus="this.style.borderColor='#58a6ff'" 
                      onblur="this.style.borderColor='#30363d'">
@@ -3592,7 +3585,7 @@
           <div class="detail-item">
             <div class="label">Device Type</div>
             <div class="value" style="margin-top: 4px;">
-              <select id="inspect-type-select" onchange="updateClientType('${node.id}', this.value)"
+              <select id="inspect-type-select" onchange="updateClientType('${escapeJsString(node.id)}', this.value)"
                       style="width: 100%; background: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 6px 10px; color: #e1e4e8; font-size: 12px; outline: none; cursor: pointer; transition: border-color 0.2s;"
                       onfocus="this.style.borderColor='#58a6ff'" 
                       onblur="this.style.borderColor='#30363d'">
@@ -3604,7 +3597,7 @@
           <div class="detail-item" style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed rgba(48, 54, 61, 0.4);">
             <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 12px; color: #f0f6fc;">
               <input type="checkbox" id="inspect-mini-switch-checkbox" ${node.is_mini_switch ? 'checked' : ''} 
-                     onchange="updateClientPassthrough('${node.id}', this.checked)"
+                     onchange="updateClientPassthrough('${escapeJsString(node.id)}', this.checked)"
                      style="cursor: pointer; width: 14px; height: 14px; accent-color: #58a6ff;">
               <span style="font-weight: 500;">Ethernet Passthrough</span>
             </label>
@@ -3615,17 +3608,17 @@
           ` : ''}
           <div class="detail-item">
             <div class="label">Last Location</div>
-            <div class="value">${node.last_seen_ip}:${node.last_seen_port}</div>
+            <div class="value">${escapeHtml(node.last_seen_ip)}:${escapeHtml(node.last_seen_port)}</div>
           </div>
           <div class="detail-item">
             <div class="label">Last Active</div>
-            <div class="value">${lastSeenStr}</div>
+            <div class="value">${escapeHtml(lastSeenStr)}</div>
           </div>
           <div class="control-row" style="margin-top: 18px; display: flex; flex-direction: column; gap: 8px;">
             <a href="/clients?search=${encodeURIComponent(node.mac || node.id)}" class="map-btn" style="width: 100%; background: #238636; border-color: #2ea043; height: auto; padding: 8px 12px; text-decoration: none; text-align: center; color: white; display: flex; align-items: center; justify-content: center; gap: 6px;" onmouseover="this.style.background='#2ea043'" onmouseout="this.style.background='#238636'">
               View Device Details
             </a>
-            <button type="button" onclick="forgetClient('${node.id}')" class="map-btn" style="width: 100%; background: #da3637; border-color: #f85149; height: auto; padding: 8px 12px;" onmouseover="this.style.background='#f85149'" onmouseout="this.style.background='#da3637'">
+            <button type="button" onclick="forgetClient('${escapeJsString(node.id)}')" class="map-btn" style="width: 100%; background: #da3637; border-color: #f85149; height: auto; padding: 8px 12px;" onmouseover="this.style.background='#f85149'" onmouseout="this.style.background='#da3637'">
               Forget Device
             </button>
           </div>
@@ -3667,7 +3660,7 @@
         if (hop && hop.link) {
           const p = hop.link.source_port || hop.link.target_port;
           const spd = hop.link.speed || '';
-          linkDetailHtml = `<div class="route-hop-badge">${p && p !== 'unknown' ? `Port ${p}` : 'Direct Link'}${spd ? ` · ${spd}` : ''}</div>`;
+          linkDetailHtml = `<div class="route-hop-badge">${p && p !== 'unknown' ? `Port ${escapeHtml(p)}` : 'Direct Link'}${spd ? ` · ${escapeHtml(spd)}` : ''}</div>`;
         }
 
         const roleText = stepNode.type === 'ont' ? 'Optical Terminal' : (stepNode.type === 'internet' ? 'WAN Gateway' : (stepNode.role || stepNode.type || 'Device'));
@@ -3680,14 +3673,14 @@
             </div>
             <div class="route-step-content">
               <div class="route-step-header">
-                <span class="route-step-name" onclick="selectNode(rawNodes.find(n => n.id === '${stepNode.id}'))" title="Click to view details">${stepName}</span>
+                <span class="route-step-name" onclick="selectNode(rawNodes.find(n => n.id === '${escapeJsString(stepNode.id)}'))" title="Click to view details">${escapeHtml(stepName)}</span>
                 <span style="font-size: 10px; color: ${isStepOrigin ? '#38bdf8' : (isStepDest ? '#10b981' : '#8b949e')}; font-weight: 600;">
                   ${isStepOrigin ? 'SOURCE' : (isStepDest ? (isPtp ? 'TARGET' : 'GATEWAY') : `HOP ${idx}`)}
                 </span>
               </div>
               <div class="route-step-sub">
-                <span>${roleText}</span>
-                ${stepNode.ip ? `<span class="mono" style="color: #6e7681;">${stepNode.ip}</span>` : ''}
+                <span>${escapeHtml(roleText)}</span>
+                ${stepNode.ip ? `<span class="mono" style="color: #6e7681;">${escapeHtml(stepNode.ip)}</span>` : ''}
               </div>
               ${linkDetailHtml}
             </div>
@@ -3703,7 +3696,7 @@
               Clear Highlighting
             </button>
             ${isPtp ? `
-              <button type="button" onclick="highlightConnectionPath('${node.id}')" class="map-btn" style="flex: 1; padding: 6px 10px; font-size: 11px; height: auto; background: rgba(56, 189, 248, 0.15); border-color: #38bdf8; color: #38bdf8;">
+              <button type="button" onclick="highlightConnectionPath('${escapeJsString(node.id)}')" class="map-btn" style="flex: 1; padding: 6px 10px; font-size: 11px; height: auto; background: rgba(56, 189, 248, 0.15); border-color: #38bdf8; color: #38bdf8;">
                 Trace to Gateway
               </button>
             ` : ''}
@@ -3718,7 +3711,7 @@
     } else if (node.type !== 'internet') {
       html += `
         <div style="border-top: 1px solid rgba(48, 54, 61, 0.4); margin-top: 14px; padding-top: 10px;">
-          <button type="button" onclick="highlightConnectionPath('${node.id}'); renderDetailCard(selectedNode);" class="map-btn" style="width: 100%; padding: 6px 12px; font-size: 11px; height: auto; background: rgba(56, 189, 248, 0.15); border-color: #38bdf8; color: #38bdf8; display: flex; align-items: center; justify-content: center; gap: 6px;">
+          <button type="button" onclick="highlightConnectionPath('${escapeJsString(node.id)}'); renderDetailCard(selectedNode);" class="map-btn" style="width: 100%; padding: 6px 12px; font-size: 11px; height: auto; background: rgba(56, 189, 248, 0.15); border-color: #38bdf8; color: #38bdf8; display: flex; align-items: center; justify-content: center; gap: 6px;">
             <span>⚡</span> Highlight Connection Path
           </button>
         </div>
@@ -3746,12 +3739,12 @@
         html += `
           <div style="background: rgba(13, 17, 23, 0.4); border: 1px solid rgba(48, 54, 61, 0.3); border-radius: 6px; padding: 8px; margin-bottom: 6px; font-size: 11px;">
             <div style="display: flex; justify-content: space-between; font-weight: 600; color: #f0f6fc;">
-              <span>${otherNode.name}</span>
-              <span style="color: #58a6ff;">${link.speed}</span>
+              <span>${escapeHtml(otherNode.name)}</span>
+              <span style="color: #58a6ff;">${escapeHtml(link.speed)}</span>
             </div>
             <div style="color: #8b949e; margin-top: 4px; display: flex; justify-content: space-between;">
-              <span>${portLabel ? portLabel : 'Direct'}</span>
-              <span>${otherPortLabel ? otherPortLabel : ''}</span>
+              <span>${escapeHtml(portLabel ? portLabel : 'Direct')}</span>
+              <span>${escapeHtml(otherPortLabel ? otherPortLabel : '')}</span>
             </div>
           </div>
         `;
@@ -3776,7 +3769,7 @@
 
     let trafficHtml = '';
     if (link.tx_bps || link.rx_bps || link.tx_bytes || link.rx_bytes || link.utilization_pct !== undefined) {
-      const util = link.utilization_pct || 0;
+      const util = Math.max(0, Math.min(100, Number(link.utilization_pct) || 0));
       const barColor = util >= 80 ? '#ef4444' : (util >= 50 ? '#f59e0b' : '#3fb950');
       let bytesHtml = '';
       if (link.tx_bytes || link.rx_bytes) {
@@ -3814,18 +3807,18 @@
     tooltip.innerHTML = `
       <div class="title">
         <span>Connection Link</span>
-        <span style="color: ${speedColor}">${link.speed}</span>
+        <span style="color: ${speedColor}">${escapeHtml(link.speed)}</span>
       </div>
       <div class="row">
         <span>Source:</span>
-        <span class="val">${source.name}</span>
+        <span class="val">${escapeHtml(source.name)}</span>
       </div>
-      ${link.source_port ? `<div class="row"><span>Port:</span><span class="val">${link.source_port}</span></div>` : ''}
+      ${link.source_port ? `<div class="row"><span>Port:</span><span class="val">${escapeHtml(link.source_port)}</span></div>` : ''}
       <div class="row" style="margin-top: 4px;">
         <span>Destination:</span>
-        <span class="val">${target.name}</span>
+        <span class="val">${escapeHtml(target.name)}</span>
       </div>
-      ${link.target_port ? `<div class="row"><span>Port:</span><span class="val">${link.target_port}</span></div>` : ''}
+      ${link.target_port ? `<div class="row"><span>Port:</span><span class="val">${escapeHtml(link.target_port)}</span></div>` : ''}
       ${trafficHtml}
     `;
     tooltip.style.display = 'block';
@@ -3843,6 +3836,7 @@
   }
 
   function formatTraffic(bps) {
+    bps = Number(bps) || 0;
     if (!bps) return '0 bps';
     if (bps >= 1000000000) return (bps / 1000000000).toFixed(1) + ' Gbps';
     if (bps >= 1000000) return (bps / 1000000).toFixed(1) + ' Mbps';
@@ -3883,21 +3877,40 @@
     });
 
     if (matches.length === 0) {
-      suggestionsPanel.innerHTML = '<div style="padding:8px 12px; font-size:11px; color:#8b949e;">No devices found</div>';
+      suggestionsPanel.replaceChildren();
+      const empty = document.createElement('div');
+      empty.style.padding = '8px 12px';
+      empty.style.fontSize = '11px';
+      empty.style.color = '#8b949e';
+      empty.textContent = 'No devices found';
+      suggestionsPanel.appendChild(empty);
       suggestionsPanel.style.display = 'block';
       return;
     }
 
-    let html = '';
+    suggestionsPanel.replaceChildren();
     matches.slice(0, 5).forEach(node => {
-      html += `
-        <div class="search-suggestion-item" onclick="triggerDeviceHighlight('${node.id}')">
-          <span>${node.name} <span style="font-size:10px; color:#8b949e; margin-left:6px;">(${node.type === 'switch' ? node.ip : (node.type === 'ont' ? (node.speed || 'ONT') : (node.type === 'unmanaged_switch' || node.type === 'phone' ? formatPortDisplay(node.parent_port) : (node.type === 'internet' ? 'WAN' : formatMacAddress(node.mac))))})</span></span>
-          <span class="type">${node.type}</span>
-        </div>
-      `;
+      const item = document.createElement('div');
+      item.className = 'search-suggestion-item';
+      item.addEventListener('click', () => triggerDeviceHighlight(node.id));
+
+      const primary = document.createElement('span');
+      primary.appendChild(document.createTextNode(node.name || ''));
+      const detail = document.createElement('span');
+      detail.style.fontSize = '10px';
+      detail.style.color = '#8b949e';
+      detail.style.marginLeft = '6px';
+      const detailValue = node.type === 'switch' ? node.ip : (node.type === 'ont' ? (node.speed || 'ONT') : (node.type === 'unmanaged_switch' || node.type === 'phone' ? formatPortDisplay(node.parent_port) : (node.type === 'internet' ? 'WAN' : formatMacAddress(node.mac))));
+      detail.textContent = `(${detailValue || ''})`;
+      primary.appendChild(detail);
+      item.appendChild(primary);
+
+      const type = document.createElement('span');
+      type.className = 'type';
+      type.textContent = node.type || '';
+      item.appendChild(type);
+      suggestionsPanel.appendChild(item);
     });
-    suggestionsPanel.innerHTML = html;
     suggestionsPanel.style.display = 'block';
   }
 

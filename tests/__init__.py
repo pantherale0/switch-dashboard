@@ -6,6 +6,7 @@ import atexit
 
 # Ensure TESTING environment flag is set immediately
 os.environ["TESTING"] = "1"
+os.environ["AUTH_DISABLED"] = "1"
 
 # Create a global isolated temporary directory for test execution
 _TEST_DATA_DIR = tempfile.mkdtemp(prefix="switch_dashboard_unittest_")

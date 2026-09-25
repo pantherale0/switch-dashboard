@@ -48,31 +48,26 @@ def test_ssh_schema_requires_command_and_coerces_numbers():
     assert "scrape_command" in error
 
 
-def test_ssh_host_key_policy_only_loads_known_hosts_in_strict_mode():
+def test_ssh_host_key_verification_is_mandatory():
     strict_driver = SSHProtocol({
         "ip": "192.0.2.30",
         "username": "monitor",
         "scrape_command": "status-json",
         "strict_host_key": True,
     })
-    relaxed_driver = SSHProtocol({
-        "ip": "192.0.2.31",
-        "username": "monitor",
-        "scrape_command": "status-json",
-        "strict_host_key": False,
-    })
-
     with patch("switch_dashboard.protocols.drivers.ssh.driver.paramiko.SSHClient") as client_cls:
         strict_client = client_cls.return_value
         strict_driver._create_client()
         strict_client.load_system_host_keys.assert_called_once_with()
         assert isinstance(strict_client.set_missing_host_key_policy.call_args.args[0], paramiko.RejectPolicy)
 
-    with patch("switch_dashboard.protocols.drivers.ssh.driver.paramiko.SSHClient") as client_cls:
-        relaxed_client = client_cls.return_value
-        relaxed_driver._create_client()
-        relaxed_client.load_system_host_keys.assert_not_called()
-        assert isinstance(relaxed_client.set_missing_host_key_policy.call_args.args[0], paramiko.AutoAddPolicy)
+    with pytest.raises(ValueError, match="host-key verification"):
+        SSHProtocol({
+            "ip": "192.0.2.31",
+            "username": "monitor",
+            "scrape_command": "status-json",
+            "strict_host_key": False,
+        })
 
 
 def test_ssh_strict_mode_reports_actionable_stale_host_key_error():

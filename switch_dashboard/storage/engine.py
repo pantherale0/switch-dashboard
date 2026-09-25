@@ -8,7 +8,8 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import NullPool, StaticPool
 
-from switch_dashboard.config import DATABASE_PATH, ensure_directories
+import switch_dashboard.config as dashboard_config
+from switch_dashboard.config import ensure_directories
 
 logger = logging.getLogger("switch_dashboard.storage.engine")
 
@@ -31,7 +32,7 @@ def get_database_url() -> str:
 
     ensure_directories()
     # Normalize Windows and POSIX paths for SQLite
-    normalized_path = os.path.abspath(DATABASE_PATH).replace("\\", "/")
+    normalized_path = os.path.abspath(dashboard_config.DATABASE_PATH).replace("\\", "/")
     return f"sqlite:///{normalized_path}"
 
 

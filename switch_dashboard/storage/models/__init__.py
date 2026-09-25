@@ -9,6 +9,7 @@ from switch_dashboard.storage.models.config import (
     ClientOverride,
     ConfigSetting,
     DeviceConfig,
+    DeviceSecret,
     PortNote,
 )
 from switch_dashboard.storage.models.mac import MacEntry
@@ -19,11 +20,13 @@ from switch_dashboard.storage.models.metrics import (
     MetricTrend,
 )
 from switch_dashboard.storage.models.scanner import ScannerHost, ScannerHostHistory
+from switch_dashboard.storage.models.auth import AuthSession, OidcLoginTransaction, SecurityAuditEvent
 
 __all__ = [
     "Base",
     "ConfigSetting",
     "DeviceConfig",
+    "DeviceSecret",
     "PortNote",
     "ClientOverride",
     "DiscoveredClient",
@@ -37,5 +40,7 @@ __all__ = [
     "MacEntry",
     "ScannerHost",
     "ScannerHostHistory",
+    "AuthSession",
+    "OidcLoginTransaction",
+    "SecurityAuditEvent",
 ]
-

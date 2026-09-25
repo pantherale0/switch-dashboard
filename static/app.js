@@ -97,7 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 
                 // Populate Table
-                diskTableBody.innerHTML = '';
+                diskTableBody.replaceChildren();
                 result.disks.forEach(disk => {
                     const row = document.createElement('tr');
                     
@@ -108,21 +108,39 @@ document.addEventListener('DOMContentLoaded', () => {
                         colorClass = 'color-warning';
                     }
                     
-                    row.innerHTML = `
-                        <td style="font-weight: 600; color: #fff;">${disk.filesystem}</td>
-                        <td>${disk.size}</td>
-                        <td>${disk.used}</td>
-                        <td>${disk.avail}</td>
-                        <td>
-                            <div class="progress-bar-container">
-                                <span style="min-width: 35px; text-align: right; font-weight: 600;">${disk.use_percent}%</span>
-                                <div class="progress-bar-bg">
-                                    <div class="progress-bar-fg ${colorClass}" style="width: ${disk.use_percent}%"></div>
-                                </div>
-                            </div>
-                        </td>
-                        <td style="color: var(--primary); font-weight: 600;">${disk.mounted_on}</td>
-                    `;
+                    const addTextCell = (value, styles = {}) => {
+                        const cell = document.createElement('td');
+                        Object.assign(cell.style, styles);
+                        cell.textContent = value == null ? '' : String(value);
+                        row.appendChild(cell);
+                        return cell;
+                    };
+                    addTextCell(disk.filesystem, {fontWeight: '600', color: '#fff'});
+                    addTextCell(disk.size);
+                    addTextCell(disk.used);
+                    addTextCell(disk.avail);
+
+                    const usageCell = document.createElement('td');
+                    const progressContainer = document.createElement('div');
+                    progressContainer.className = 'progress-bar-container';
+                    const percentage = document.createElement('span');
+                    percentage.style.minWidth = '35px';
+                    percentage.style.textAlign = 'right';
+                    percentage.style.fontWeight = '600';
+                    const usePercent = Math.max(0, Math.min(100, Number(disk.use_percent) || 0));
+                    percentage.textContent = `${usePercent}%`;
+                    const progressBg = document.createElement('div');
+                    progressBg.className = 'progress-bar-bg';
+                    const progressFg = document.createElement('div');
+                    progressFg.className = `progress-bar-fg ${colorClass}`;
+                    progressFg.style.width = `${usePercent}%`;
+                    progressBg.appendChild(progressFg);
+                    progressContainer.appendChild(percentage);
+                    progressContainer.appendChild(progressBg);
+                    usageCell.appendChild(progressContainer);
+                    row.appendChild(usageCell);
+
+                    addTextCell(disk.mounted_on, {color: 'var(--primary)', fontWeight: '600'});
                     diskTableBody.appendChild(row);
                 });
                 

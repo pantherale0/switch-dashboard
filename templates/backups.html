@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="csrf-token" content="{{ csrf_token }}">
+<script src="/static/security.js"></script>
 <title>{{ title }} - Backups Manager</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -486,6 +488,10 @@ styleSheet.innerText = `
 document.head.appendChild(styleSheet);
 
 document.addEventListener("DOMContentLoaded", loadBackups);
+document.getElementById("table-wrapper").addEventListener("click", event => {
+  const button = event.target.closest(".btn-delete[data-filename]");
+  if (button) confirmDelete(button.dataset.filename, button);
+});
 
 async function loadBackups() {
   const wrapper = document.getElementById("table-wrapper");
@@ -514,70 +520,144 @@ async function loadBackups() {
 
 function renderTable(backups) {
   const wrapper = document.getElementById("table-wrapper");
-  
-  let rows = backups.map(b => {
-    return `
-      <tr id="row-${b.filename.replace(/\./g, '_')}">
-        <td class="switch-ip">${b.ip}</td>
-        <td class="timestamp">${b.datetime}</td>
-        <td class="filename">${b.filename}</td>
-        <td class="file-size">${b.size_str}</td>
-        <td style="white-space: nowrap;">
-          <a class="btn-action btn-download" href="/api/backups/${b.filename}/download" title="Download backup file">
-            <span style="font-size: 13px;">⬇️</span> Download
-          </a>
-          <button class="btn-action btn-delete" onclick="confirmDelete('${b.filename}', this)" title="Delete backup file">
-            <span style="font-size: 13px;">🗑️</span> Delete
-          </button>
-        </td>
-      </tr>
-    `;
-  }).join('');
-  
-  wrapper.innerHTML = `
-    <div class="table-container">
-      <table>
-        <thead>
-          <tr>
-            <th style="width: 15%">Switch IP</th>
-            <th style="width: 20%">Date & Time</th>
-            <th style="width: 40%">Filename</th>
-            <th style="width: 10%">Size</th>
-            <th style="width: 15%">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rows}
-        </tbody>
-      </table>
-    </div>
-  `;
+  wrapper.replaceChildren();
+
+  const container = document.createElement("div");
+  container.className = "table-container";
+  const table = document.createElement("table");
+  const thead = document.createElement("thead");
+  const headerRow = document.createElement("tr");
+  const headers = [
+    { text: "Switch IP", width: "15%" },
+    { text: "Date & Time", width: "20%" },
+    { text: "Filename", width: "40%" },
+    { text: "Size", width: "10%" },
+    { text: "Actions", width: "15%" }
+  ];
+  headers.forEach((header) => {
+    const th = document.createElement("th");
+    th.style.width = header.width;
+    th.textContent = header.text;
+    headerRow.appendChild(th);
+  });
+  thead.appendChild(headerRow);
+
+  const tbody = document.createElement("tbody");
+  backups.forEach((backup) => {
+    const row = document.createElement("tr");
+
+    const ipCell = document.createElement("td");
+    ipCell.className = "switch-ip";
+    ipCell.textContent = backup.ip || "";
+    row.appendChild(ipCell);
+
+    const dateCell = document.createElement("td");
+    dateCell.className = "timestamp";
+    dateCell.textContent = backup.datetime || "";
+    row.appendChild(dateCell);
+
+    const nameCell = document.createElement("td");
+    nameCell.className = "filename";
+    nameCell.textContent = backup.filename || "";
+    row.appendChild(nameCell);
+
+    const sizeCell = document.createElement("td");
+    sizeCell.className = "file-size";
+    sizeCell.textContent = backup.size_str || "";
+    row.appendChild(sizeCell);
+
+    const actionsCell = document.createElement("td");
+    actionsCell.style.whiteSpace = "nowrap";
+
+    const downloadLink = document.createElement("a");
+    downloadLink.className = "btn-action btn-download";
+    downloadLink.href = `/api/backups/${encodeURIComponent(backup.filename || "")}/download`;
+    downloadLink.title = "Download backup file";
+    const downloadIcon = document.createElement("span");
+    downloadIcon.style.fontSize = "13px";
+    downloadIcon.textContent = "⬇️";
+    downloadLink.appendChild(downloadIcon);
+    downloadLink.appendChild(document.createTextNode(" Download"));
+    actionsCell.appendChild(downloadLink);
+
+    const deleteButton = document.createElement("button");
+    deleteButton.className = "btn-action btn-delete";
+    deleteButton.dataset.filename = backup.filename || "";
+    deleteButton.title = "Delete backup file";
+    const deleteIcon = document.createElement("span");
+    deleteIcon.style.fontSize = "13px";
+    deleteIcon.textContent = "🗑️";
+    deleteButton.appendChild(deleteIcon);
+    deleteButton.appendChild(document.createTextNode(" Delete"));
+    actionsCell.appendChild(deleteButton);
+
+    row.appendChild(actionsCell);
+    tbody.appendChild(row);
+  });
+
+  table.appendChild(thead);
+  table.appendChild(tbody);
+  container.appendChild(table);
+  wrapper.appendChild(container);
 }
 
 function renderEmptyState() {
   const wrapper = document.getElementById("table-wrapper");
-  wrapper.innerHTML = `
-    <div class="empty-state">
-      <div class="empty-icon">📂</div>
-      <h3>No backups archived</h3>
-      <p>Configure your switches in the settings and press the "💾 Backup" action next to any switch IP in the main dashboard to store automated binary backups here.</p>
-      <a href="/" style="margin-top: 8px;">&larr; Go to Dashboard</a>
-    </div>
-  `;
+  wrapper.replaceChildren();
+  const state = document.createElement("div");
+  state.className = "empty-state";
+
+  const icon = document.createElement("div");
+  icon.className = "empty-icon";
+  icon.textContent = "📂";
+  state.appendChild(icon);
+
+  const title = document.createElement("h3");
+  title.textContent = "No backups archived";
+  state.appendChild(title);
+
+  const description = document.createElement("p");
+  description.textContent = 'Configure your switches in the settings and press the "💾 Backup" action next to any switch IP in the main dashboard to store automated binary backups here.';
+  state.appendChild(description);
+
+  const link = document.createElement("a");
+  link.href = "/";
+  link.style.marginTop = "8px";
+  link.textContent = "← Go to Dashboard";
+  state.appendChild(link);
+
+  wrapper.appendChild(state);
 }
 
 function renderErrorState(msg) {
   const wrapper = document.getElementById("table-wrapper");
-  wrapper.innerHTML = `
-    <div class="empty-state" style="color: #ff7b72;">
-      <div class="empty-icon">⚠️</div>
-      <h3>System Error</h3>
-      <p>${msg}</p>
-      <button onclick="loadBackups()" class="btn-action btn-download" style="margin-top: 14px; padding: 10px 20px;">
-        🔄 Retry Connection
-      </button>
-    </div>
-  `;
+  wrapper.replaceChildren();
+  const state = document.createElement("div");
+  state.className = "empty-state";
+  state.style.color = "#ff7b72";
+
+  const icon = document.createElement("div");
+  icon.className = "empty-icon";
+  icon.textContent = "⚠️";
+  state.appendChild(icon);
+
+  const title = document.createElement("h3");
+  title.textContent = "System Error";
+  state.appendChild(title);
+
+  const message = document.createElement("p");
+  message.textContent = msg;
+  state.appendChild(message);
+
+  const retryButton = document.createElement("button");
+  retryButton.className = "btn-action btn-download";
+  retryButton.style.marginTop = "14px";
+  retryButton.style.padding = "10px 20px";
+  retryButton.textContent = "🔄 Retry Connection";
+  retryButton.addEventListener("click", loadBackups);
+  state.appendChild(retryButton);
+
+  wrapper.appendChild(state);
 }
 
 function confirmDelete(filename, btnElement) {
@@ -648,7 +728,7 @@ function showToast(message, type, icon) {
   const toastIcon = document.getElementById("toast-icon");
   const toastMsg = document.getElementById("toast-message");
   
-  toast.className = `toast ${type}`;
+  toast.className = `toast ${safeCssToken(type)}`;
   toastIcon.textContent = icon;
   toastMsg.textContent = message;
   

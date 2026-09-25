@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="csrf-token" content="{{ csrf_token }}">
+<script src="/static/security.js"></script>
 <title>{{ title }} - System Logs</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -550,27 +552,44 @@ function parseLogLine(line) {
   
   if (match) {
     const [_, time, module, level, message] = match;
-    const cleanLevel = level.toLowerCase();
-    
-    return `
-      <div class="log-line log-${cleanLevel}">
-        <span class="log-time">${time}</span>
-        <span class="level-tag">${level}</span>
-        <span class="log-module">[${module}]</span>
-        <span class="log-content">${escapeHtml(message)}</span>
-      </div>
-    `;
+    const cleanLevel = safeCssToken(level.toLowerCase());
+    const row = document.createElement('div');
+    row.className = `log-line log-${cleanLevel}`;
+
+    const timeSpan = document.createElement('span');
+    timeSpan.className = 'log-time';
+    timeSpan.textContent = time;
+    row.appendChild(timeSpan);
+
+    const levelSpan = document.createElement('span');
+    levelSpan.className = 'level-tag';
+    levelSpan.textContent = level;
+    row.appendChild(levelSpan);
+
+    const moduleSpan = document.createElement('span');
+    moduleSpan.className = 'log-module';
+    moduleSpan.textContent = `[${module}]`;
+    row.appendChild(moduleSpan);
+
+    const contentSpan = document.createElement('span');
+    contentSpan.className = 'log-content';
+    contentSpan.textContent = message;
+    row.appendChild(contentSpan);
+
+    return row;
   }
   
   // Fallback for lines that don't match format perfectly
-  let cleanLine = escapeHtml(line);
   let classLevel = "info";
   if (line.includes("DEBUG")) classLevel = "debug";
   else if (line.includes("WARNING") || line.includes("WARN")) classLevel = "warning";
   else if (line.includes("ERROR")) classLevel = "error";
   else if (line.includes("CRITICAL")) classLevel = "critical";
-  
-  return `<div class="log-line log-${classLevel}">${cleanLine}</div>`;
+
+  const fallbackRow = document.createElement('div');
+  fallbackRow.className = `log-line log-${safeCssToken(classLevel)}`;
+  fallbackRow.textContent = line;
+  return fallbackRow;
 }
 
 function renderLogs(lines) {
@@ -582,7 +601,7 @@ function renderLogs(lines) {
     emptyState.style.display = "flex";
     container.style.display = "none";
     lastRenderedLines = [];
-    container.innerHTML = "";
+    container.replaceChildren();
     return;
   }
   
@@ -621,9 +640,7 @@ function renderLogs(lines) {
       
       const fragment = document.createDocumentFragment();
       newLinesToAppend.forEach(line => {
-        const div = document.createElement("div");
-        div.innerHTML = parseLogLine(line).trim();
-        fragment.appendChild(div.firstElementChild || div);
+        fragment.appendChild(parseLogLine(line));
       });
       container.appendChild(fragment);
       
@@ -646,8 +663,11 @@ function renderLogs(lines) {
     }
   } else {
     // Fallback: render all lines
-    const parsedHtml = lines.map(parseLogLine).join('');
-    container.innerHTML = parsedHtml;
+    const fragment = document.createDocumentFragment();
+    lines.forEach(line => {
+      fragment.appendChild(parseLogLine(line));
+    });
+    container.replaceChildren(fragment);
     lastRenderedLines = [...lines];
     
     if (!isUserScrolledUp) {
@@ -697,7 +717,7 @@ async function clearLogs() {
     if (res.ok && data.status === "ok") {
       showToast("Logs successfully cleared on server", "success", "🗑️");
       lastRenderedLines = [];
-      document.getElementById("logs-container").innerHTML = "";
+      document.getElementById("logs-container").replaceChildren();
       document.getElementById("empty-state").style.display = "flex";
       document.getElementById("logs-container").style.display = "none";
     } else {
@@ -716,16 +736,6 @@ function resumeAutoscrollClick() {
   showToast("Auto-scroll resumed", "success", "⬇️");
 }
 
-// Helpers
-function escapeHtml(unsafe) {
-  return unsafe
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
 function showSuccessToast(message) {
   showToast(message, "success", "✓");
 }
@@ -739,7 +749,7 @@ function showToast(message, type, icon) {
   const toastIcon = document.getElementById("toast-icon");
   const toastMsg = document.getElementById("toast-message");
   
-  toast.className = `toast ${type}`;
+  toast.className = `toast ${safeCssToken(type)}`;
   toastIcon.textContent = icon;
   toastMsg.textContent = message;
   

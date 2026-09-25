@@ -1,7 +1,8 @@
 import time
 import logging
 from typing import Tuple
-import xml.etree.ElementTree as ET
+from urllib.parse import urlparse
+from defusedxml import ElementTree as ET
 
 try:
     import requests
@@ -111,12 +112,11 @@ class FritzBoxProtocol(BaseProtocol):
 </s:Envelope>"""
         
         auth = HTTPDigestAuth(self.username, self.password) if self.username else None
-        r = requests.post(url, data=envelope, headers=headers, auth=auth, timeout=5)
+        r = requests.post(url, data=envelope, headers=headers, auth=auth, timeout=5, allow_redirects=False)
         r.raise_for_status()
         return r.text
 
     def _scrape_fritzbox(self):
-        import xml.etree.ElementTree as ET
         import time
         import requests
         from requests.auth import HTTPDigestAuth
@@ -254,8 +254,12 @@ class FritzBoxProtocol(BaseProtocol):
                     else:
                         download_url = f"http://{ip_part}{path}"
                         
+                    expected = urlparse(f"//{ip_part}")
+                    target = urlparse(download_url)
+                    if target.scheme != "http" or target.hostname != expected.hostname or target.port != expected.port:
+                        raise ValueError("FRITZ!Box returned a host-list URL for a different origin")
                     auth = HTTPDigestAuth(self.username, self.password) if self.username else None
-                    r_list = requests.get(download_url, auth=auth, timeout=5)
+                    r_list = requests.get(download_url, auth=auth, timeout=5, allow_redirects=False)
                     r_list.raise_for_status()
                     
                     root_list = ET.fromstring(r_list.content)

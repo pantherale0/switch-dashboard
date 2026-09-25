@@ -55,6 +55,8 @@ class SSHProtocol(BaseProtocol):
         self.ssh_port = int(config.get("ssh_port", config.get("port", 22)))
         self.ssh_timeout = int(config.get("ssh_timeout", 10))
         self.strict_host_key = config.get("strict_host_key", True)
+        if not self.strict_host_key:
+            raise ValueError("SSH host-key verification cannot be disabled")
         self.scrape_command = config.get("scrape_command", "")
         self.mac_table_command = config.get("mac_table_command", "")
         self.neighbors_command = config.get("neighbors_command", "")
@@ -65,14 +67,8 @@ class SSHProtocol(BaseProtocol):
             raise RuntimeError("Paramiko is required for SSH protocol drivers")
 
         client = paramiko.SSHClient()
-        if self.strict_host_key:
-            client.load_system_host_keys()
-            client.set_missing_host_key_policy(paramiko.RejectPolicy())
-        else:
-            # Do not load known_hosts in non-strict mode. AutoAddPolicy only
-            # accepts unknown hosts; loaded stale entries still cause a
-            # BadHostKeyException before that policy is consulted.
-            client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        client.load_system_host_keys()
+        client.set_missing_host_key_policy(paramiko.RejectPolicy())
         return client
 
     def _connect(self):
@@ -84,8 +80,8 @@ class SSHProtocol(BaseProtocol):
             "timeout": self.ssh_timeout,
             "banner_timeout": self.ssh_timeout,
             "auth_timeout": self.ssh_timeout,
-            "look_for_keys": not bool(self.password or self.key_filename),
-            "allow_agent": not bool(self.password or self.key_filename),
+            "look_for_keys": False,
+            "allow_agent": False,
         }
         if self.password:
             connect_args["password"] = self.password

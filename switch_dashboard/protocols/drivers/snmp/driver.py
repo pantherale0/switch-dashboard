@@ -235,7 +235,7 @@ class SNMPProtocol(BaseProtocol):
             transport = await UdpTransportTarget.create((self.ip, self.snmp_port), timeout=timeout, retries=1)
             mp_model = 0 if self.version == "1" else 1
             auth = CommunityData(self.community, mpModel=mp_model)
-            logger.debug(f"SNMP GET {self.ip}:{self.snmp_port} OID={oid_str} (comm={self.community}, v={self.version})")
+            logger.debug(f"SNMP GET {self.ip}:{self.snmp_port} OID={oid_str} (v={self.version})")
             err_ind, err_stat, err_idx, var_binds = await get_cmd(
                 engine, auth, transport, ContextData(),
                 ObjectType(ObjectIdentity(oid_str))
@@ -315,7 +315,7 @@ class SNMPProtocol(BaseProtocol):
 
     def test_connection(self) -> Tuple[bool, str]:
         """Tests device SNMP reachability by querying sysDescr."""
-        logger.info(f"Testing SNMP connection to {self.ip}:{self.snmp_port} (version={self.version}, community={self.community})...")
+        logger.info(f"Testing SNMP connection to {self.ip}:{self.snmp_port} (version={self.version})...")
         ok, res = self._snmp_get(self.oid_sys_descr, timeout=2.0)
         if ok:
             clean_desc = str(res).replace("\r", " ").replace("\n", " ").strip()

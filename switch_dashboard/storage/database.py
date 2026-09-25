@@ -4,7 +4,8 @@ import logging
 from contextlib import contextmanager
 from typing import Generator, Optional
 
-from switch_dashboard.config import DATABASE_PATH, ensure_directories
+import switch_dashboard.config as dashboard_config
+from switch_dashboard.config import ensure_directories
 
 logger = logging.getLogger("switch_dashboard.storage.database")
 
@@ -13,7 +14,7 @@ SCHEMA_FILE = os.path.join(os.path.dirname(__file__), "schema.sql")
 
 class Database:
     def __init__(self, db_path: Optional[str] = None):
-        self.db_path = db_path or DATABASE_PATH
+        self.db_path = db_path or dashboard_config.DATABASE_PATH
         self._initialized = False
         self._mem_conn: Optional[sqlite3.Connection] = None
 
@@ -135,6 +136,13 @@ class Database:
 _default_db: Optional[Database] = None
 
 
+def reset_database():
+    global _default_db
+    if _default_db and _default_db._mem_conn:
+        _default_db._mem_conn.close()
+    _default_db = None
+
+
 def get_db(db_path: Optional[str] = None) -> Database:
     global _default_db
     if db_path is not None:
@@ -143,4 +151,3 @@ def get_db(db_path: Optional[str] = None) -> Database:
         _default_db = Database()
         _default_db.init_db()
     return _default_db
-

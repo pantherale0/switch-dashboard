@@ -19,6 +19,6 @@ app = create_app()
 
 if __name__ == "__main__":
     cfg = get_config()
-    host = os.environ.get("DASHBOARD_HOST", "0.0.0.0")
+    host = os.environ.get("DASHBOARD_HOST", "127.0.0.1")
     port = int(os.environ.get("DASHBOARD_PORT", cfg.get("web_port", 8080)))
     app.run(host=host, port=port, debug=False)

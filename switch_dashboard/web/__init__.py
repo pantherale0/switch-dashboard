@@ -40,6 +40,7 @@ def create_app(
     start_background_workers: bool = True,
 ) -> Flask:
     """Application Factory for switch-dashboard."""
+    os.umask(0o077)
     template_dir = os.path.join(PROJECT_ROOT, "templates")
     static_dir = os.path.join(PROJECT_ROOT, "static")
 
@@ -48,6 +49,11 @@ def create_app(
         template_folder=template_dir,
         static_folder=static_dir,
     )
+    app.testing = os.environ.get("TESTING") == "1"
+    app.config["MAX_CONTENT_LENGTH"] = int(os.environ.get("MAX_CONTENT_LENGTH", str(2 * 1024 * 1024)))
+    if not app.testing:
+        from switch_dashboard.security.crypto import get_key
+        get_key()
     from switch_dashboard import __version__
     app.version = os.environ.get("APP_VERSION", __version__)
     app.config["TEMPLATES_AUTO_RELOAD"] = True
@@ -65,7 +71,8 @@ def create_app(
         from switch_dashboard.storage.migrations import run_migrations
         run_migrations()
     except Exception as e:
-        logger.warning(f"Alembic auto-migration warning: {e}")
+        logger.critical(f"Database migration failed: {e}")
+        raise
 
     db = get_db()
     db.init_db()
@@ -108,6 +115,9 @@ def create_app(
     app.register_blueprint(protocols_bp)
     app.register_blueprint(docs_bp)
     app.register_blueprint(clients_bp)
+
+    from switch_dashboard.web.auth import init_auth
+    init_auth(app)
 
     # Start background services
     import sys

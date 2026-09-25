@@ -5,8 +5,43 @@ services:
     container_name: switch-dashboard
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "${DASHBOARD_BIND_IP:-127.0.0.1}:8080:8080"
     volumes:
-      - ./data:/data
+      - switch-dashboard-data:/data
     environment:
-      - DASHBOARD_DATA_DIR=/data
+      DASHBOARD_DATA_DIR: /data
+      DASHBOARD_ENCRYPTION_KEY: ${DASHBOARD_ENCRYPTION_KEY:?set DASHBOARD_ENCRYPTION_KEY}
+      DASHBOARD_ENCRYPTION_KEY_ID: ${DASHBOARD_ENCRYPTION_KEY_ID:-v1}
+      DASHBOARD_PREVIOUS_ENCRYPTION_KEYS: ${DASHBOARD_PREVIOUS_ENCRYPTION_KEYS:-}
+      OIDC_ISSUER: ${OIDC_ISSUER:?set OIDC_ISSUER}
+      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:?set OIDC_CLIENT_ID}
+      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-}
+      OIDC_REDIRECT_URI: ${OIDC_REDIRECT_URI:?set OIDC_REDIRECT_URI}
+      OIDC_ROLES_CLAIM: ${OIDC_ROLES_CLAIM:-groups}
+      OIDC_ADMIN_GROUP: ${OIDC_ADMIN_GROUP:-switch-dashboard-admin}
+      OIDC_OPERATOR_GROUP: ${OIDC_OPERATOR_GROUP:-switch-dashboard-operator}
+      OIDC_VIEWER_GROUP: ${OIDC_VIEWER_GROUP:-switch-dashboard-viewer}
+      OIDC_TOKEN_AUTH_METHOD: ${OIDC_TOKEN_AUTH_METHOD:-client_secret_basic}
+      ALLOW_INSECURE_HTTP: ${ALLOW_INSECURE_HTTP:-false}
+      TRUSTED_PROXY_COUNT: ${TRUSTED_PROXY_COUNT:-0}
+      MANAGEMENT_NETWORKS: ${MANAGEMENT_NETWORKS:-10.0.0.0/8,172.16.0.0/12,192.168.0.0/16}
+    user: "10001:10001"
+    read_only: true
+    tmpfs:
+      - /tmp:mode=700,size=64m
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_RAW
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 256
+    mem_limit: 512m
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/healthz', timeout=2)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  switch-dashboard-data:

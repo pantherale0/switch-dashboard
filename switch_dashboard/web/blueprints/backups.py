@@ -1,8 +1,8 @@
-import os
+import io
 import logging
-from flask import Blueprint, render_template, jsonify, send_from_directory, current_app
+from flask import Blueprint, render_template, jsonify, send_file, current_app
 
-from switch_dashboard.config import BACKUP_DIR, load_config
+from switch_dashboard.config import load_config
 from switch_dashboard.services.backup_service import get_backup_service
 
 logger = logging.getLogger("switch_dashboard.web.backups")
@@ -64,11 +64,20 @@ def download_backup_file(filename: str):
     if ".." in filename or "/" in filename or "\\" in filename:
         return jsonify({"error": "Invalid filename"}), 400
 
-    filepath = os.path.join(BACKUP_DIR, filename)
-    if not os.path.exists(filepath) or not os.path.isfile(filepath):
+    try:
+        data = get_backup_service().read_backup(filename)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except FileNotFoundError:
         return jsonify({"error": "File not found"}), 404
-
-    return send_from_directory(BACKUP_DIR, filename, as_attachment=True)
+    except Exception:
+        logger.exception("Backup decryption failed")
+        return jsonify({"error": "Unable to decrypt backup"}), 500
+    return send_file(
+        io.BytesIO(data),
+        as_attachment=True,
+        download_name=filename.removesuffix(".enc"),
+    )
 
 
 @backups_bp.route("/api/backups/<filename>", methods=["DELETE"])

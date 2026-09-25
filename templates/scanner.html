@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="csrf-token" content="{{ csrf_token }}">
+<script src="/static/security.js"></script>
 <title>{{ title }} - Subnet Scanner</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -798,7 +800,12 @@ const COLUMN_DEFS = {
     label: 'Actions',
     render: (cell, h) => {
       cell.className = 'action-cell';
-      cell.innerHTML = `<span class="mdi mdi-delete delete-icon" title="Delete host ${h.ip_address || h.mac_address}" data-ip="${h.mac_address}"></span>`;
+      cell.replaceChildren();
+      const deleteIcon = document.createElement('span');
+      deleteIcon.className = 'mdi mdi-delete delete-icon';
+      deleteIcon.title = `Delete host ${h.ip_address || h.mac_address}`;
+      deleteIcon.dataset.ip = h.mac_address || '';
+      cell.appendChild(deleteIcon);
     }
   },
   ip_address: {
@@ -847,20 +854,34 @@ const COLUMN_DEFS = {
     render: (cell, h) => {
       cell.style.textAlign = 'center';
       const isKnown = h.known_host == 1;
-      cell.innerHTML = `
-        <label class="switch">
-          <input type="checkbox" class="known-switch-checkbox" data-ip="${h.mac_address}" ${isKnown ? 'checked' : ''}>
-          <span class="slider"></span>
-        </label>
-      `;
+      cell.replaceChildren();
+      const label = document.createElement('label');
+      label.className = 'switch';
+      const input = document.createElement('input');
+      input.type = 'checkbox';
+      input.className = 'known-switch-checkbox';
+      input.dataset.ip = h.mac_address || '';
+      input.checked = isKnown;
+      const slider = document.createElement('span');
+      slider.className = 'slider';
+      label.appendChild(input);
+      label.appendChild(slider);
+      cell.appendChild(label);
     }
   },
   status: {
     label: 'Status',
     filterPlaceholder: 'Filter...',
     render: (cell, h) => {
-      const cls = h.status === 'ONLINE' ? 'online' : 'offline';
-      cell.innerHTML = `<span class="status-badge ${cls}"><span class="status-dot ${cls}"></span>${h.status}</span>`;
+      const cls = safeCssToken(h.status === 'ONLINE' ? 'online' : 'offline');
+      cell.replaceChildren();
+      const badge = document.createElement('span');
+      badge.className = `status-badge ${cls}`;
+      const dot = document.createElement('span');
+      dot.className = `status-dot ${cls}`;
+      badge.appendChild(dot);
+      badge.appendChild(document.createTextNode(h.status || ''));
+      cell.appendChild(badge);
     }
   },
   ports: {
@@ -953,7 +974,7 @@ function showToast(message, type = 'success', icon = '✓') {
   const toastIcon = document.getElementById("toast-icon");
   const toastMsg = document.getElementById("toast-message");
   if (!toast) return;
-  toast.className = `toast ${type}`;
+  toast.className = `toast ${safeCssToken(type)}`;
   toastIcon.textContent = icon;
   toastMsg.textContent = message;
   toast.classList.add("show");
@@ -1051,9 +1072,13 @@ async function fetchScannerConfigAndStatus() {
     const threadStatusVal = document.getElementById('info-thread-status');
     if (threadStatusVal) {
       if (settings.scanner_enabled) {
-        threadStatusVal.innerHTML = '<span style="color:#3fb950;font-weight:600;">RUNNING</span>';
+        threadStatusVal.textContent = 'RUNNING';
+        threadStatusVal.style.color = '#3fb950';
+        threadStatusVal.style.fontWeight = '600';
       } else {
-        threadStatusVal.innerHTML = '<span style="color:#8b949e;font-weight:600;">DISABLED</span>';
+        threadStatusVal.textContent = 'DISABLED';
+        threadStatusVal.style.color = '#8b949e';
+        threadStatusVal.style.fontWeight = '600';
       }
     }
   } catch(e) {}
@@ -1080,7 +1105,16 @@ async function fetchHosts() {
   } catch (error) {
     console.error("Fetch hosts error:", error);
     if (tableBody && allHostsData.length === 0) {
-      tableBody.innerHTML = `<tr><td colspan="${columnOrder.length}" style="color:#f85149;text-align:center;padding:16px;">Error loading data: ${error.message}</td></tr>`;
+      tableBody.replaceChildren();
+      const row = document.createElement('tr');
+      const cell = document.createElement('td');
+      cell.colSpan = columnOrder.length;
+      cell.style.color = '#f85149';
+      cell.style.textAlign = 'center';
+      cell.style.padding = '16px';
+      cell.textContent = `Error loading data: ${error.message}`;
+      row.appendChild(cell);
+      tableBody.appendChild(row);
     }
   }
 }
@@ -1130,11 +1164,19 @@ function applyFiltersAndRender() {
 
 function renderTable(hosts) {
   if (!tableBody) return;
-  tableBody.innerHTML = '';
+  tableBody.replaceChildren();
   const visibleColumnCount = columnOrder.filter(colId => columnVisibilityState[colId] !== false).length;
   
   if (hosts.length === 0) {
-    tableBody.innerHTML = `<tr><td colspan="${visibleColumnCount || 12}" style="padding: 24px; text-align: center; color: #8b949e;">No matching hosts found.</td></tr>`;
+    const row = document.createElement('tr');
+    const cell = document.createElement('td');
+    cell.colSpan = visibleColumnCount || 12;
+    cell.style.padding = '24px';
+    cell.style.textAlign = 'center';
+    cell.style.color = '#8b949e';
+    cell.textContent = 'No matching hosts found.';
+    row.appendChild(cell);
+    tableBody.appendChild(row);
     return;
   }
   
@@ -1190,7 +1232,7 @@ async function handleKnownSwitchChange(event) {
   const state = cb.checked ? 1 : 0;
   cb.disabled = true;
   try {
-    const res = await fetch(`/api/scanner/hosts/${mac}/known`, {
+    const res = await fetch(`/api/scanner/hosts/${encodeURIComponent(mac)}/known`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ known: state })
@@ -1220,7 +1262,7 @@ async function handleDeleteHost(target) {
   target.style.opacity = '0.5';
   target.style.pointerEvents = 'none';
   try {
-    const res = await fetch(`/api/scanner/hosts/${mac}`, { method: 'DELETE' });
+    const res = await fetch(`/api/scanner/hosts/${encodeURIComponent(mac)}`, { method: 'DELETE' });
     const result = await res.json();
     if (!res.ok || !result.success) throw new Error(result.error || "Delete failed");
     
@@ -1250,7 +1292,7 @@ function makeCellEditable(cell) {
   input.className = 'inline-edit-input';
   input.value = originalVal;
   
-  cell.innerHTML = '';
+  cell.replaceChildren();
   cell.appendChild(input);
   input.focus();
   input.select();
@@ -1263,7 +1305,7 @@ function makeCellEditable(cell) {
     if (save && newVal !== originalVal) {
       cell.textContent = "Saving...";
       try {
-        const res = await fetch(`/api/scanner/hosts/${mac}/update`, {
+        const res = await fetch(`/api/scanner/hosts/${encodeURIComponent(mac)}/update`, {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({ field: field, value: newVal })
@@ -1407,7 +1449,7 @@ function initTableHeaders() {
     colgroupEl = document.createElement('colgroup');
     table.insertBefore(colgroupEl, table.firstChild);
   }
-  colgroupEl.innerHTML = '';
+  colgroupEl.replaceChildren();
   columnOrder.forEach(colId => {
     const col = document.createElement('col');
     col.dataset.colId = colId;
@@ -1430,7 +1472,7 @@ function initTableHeaders() {
     theadEl = document.createElement('thead');
     table.insertBefore(theadEl, table.querySelector('tbody'));
   }
-  theadEl.innerHTML = '';
+  theadEl.replaceChildren();
 
   const tr1 = document.createElement('tr');
   columnOrder.forEach(colId => {
@@ -1448,7 +1490,10 @@ function initTableHeaders() {
     th.addEventListener('dragend', (e) => handleDragEnd(e));
     th.addEventListener('drop', (e) => handleDrop(e, colId));
 
-    th.innerHTML = `<span class="column-title-text">${COLUMN_DEFS[colId].label}</span>`;
+    const titleSpan = document.createElement('span');
+    titleSpan.className = 'column-title-text';
+    titleSpan.textContent = COLUMN_DEFS[colId].label;
+    th.appendChild(titleSpan);
     
     // Click to sort
     if (colId !== 'del') {
@@ -1683,7 +1728,7 @@ function handleVisibilityToggle(e) {
 
 function generateVisibilityToggles() {
   if (!columnToggleList) return;
-  columnToggleList.innerHTML = '';
+  columnToggleList.replaceChildren();
   
   columnOrder.forEach(colId => {
     if (colId === 'del') return;
@@ -1691,13 +1736,16 @@ function generateVisibilityToggles() {
     const isVisible = columnVisibilityState[colId] !== false;
     
     const li = document.createElement('li');
-    li.innerHTML = `
-      <label class="col-toggle-label">
-        <input type="checkbox" data-col-id="${colId}" ${isVisible ? 'checked' : ''}>
-        ${label}
-      </label>
-    `;
-    li.querySelector('input').addEventListener('change', handleVisibilityToggle);
+    const labelEl = document.createElement('label');
+    labelEl.className = 'col-toggle-label';
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.dataset.colId = colId;
+    input.checked = isVisible;
+    input.addEventListener('change', handleVisibilityToggle);
+    labelEl.appendChild(input);
+    labelEl.appendChild(document.createTextNode(` ${label}`));
+    li.appendChild(labelEl);
     columnToggleList.appendChild(li);
   });
   

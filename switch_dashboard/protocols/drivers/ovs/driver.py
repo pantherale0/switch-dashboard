@@ -3,6 +3,7 @@ import re
 import json
 import time
 import logging
+import re
 from typing import Tuple
 
 import voluptuous as vol
@@ -30,19 +31,21 @@ class OVSProtocol(SSHProtocol):
         vol.Optional("bridge", default="vmbr0", description="OVS Bridge Name"): str,
         vol.Optional("ssh_port", default=22, description="SSH Port"): vol.Coerce(int),
         vol.Optional("ssh_timeout", default=15, description="SSH and Command Timeout (seconds)"): vol.Coerce(int),
-        vol.Optional("strict_host_key", default=False, description="Require a trusted SSH host key"): bool,
+        vol.Optional("strict_host_key", default=True, description="Require a trusted SSH host key"): bool,
         vol.Optional("key_filename", default="", description="Path to SSH Private Key (optional)"): str,
     })
 
     def __init__(self, config):
         config = dict(config)
-        config.setdefault("strict_host_key", False)
+        config.setdefault("strict_host_key", True)
         super().__init__(config)
         self.name = config.get("name", config.get("ip", "OVS"))
         self.ip = config["ip"]
         self.username = config.get("username", "ovs-monitor")
         self.password = config.get("password", "")
         self.bridge = config.get("bridge", "vmbr0")
+        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}", self.bridge):
+            raise ValueError("Invalid OVS bridge name")
         self.port_count = config.get("port_count", 24)
         self.model = config.get("model", "openvswitch")
         self._cached_data = None
@@ -155,8 +158,8 @@ try:
         uptime_str = str(hours) + "h " + str(minutes) + "m"
     else:
         uptime_str = str(minutes) + "m"
-except:
-    pass
+except (OSError, ValueError):
+    uptime_str = ""
 data["uptime"] = uptime_str
 
 # bridge mac
@@ -164,7 +167,7 @@ bridge_mac = ""
 try:
     with open("/sys/class/net/" + bridge + "/address") as f:
         bridge_mac = f.read().strip().upper()
-except:
+except (OSError, ValueError):
     pass
 data["mac"] = bridge_mac
 
@@ -178,21 +181,21 @@ for dev in os.listdir("/sys/class/net/"):
             try:
                 with open(stat_path + "/" + sfile) as f:
                     stats[sfile] = int(f.read().strip())
-            except:
+            except (OSError, ValueError):
                 stats[sfile] = 0
                 
         speed = 0
         try:
             with open("/sys/class/net/" + dev + "/speed") as f:
                 speed = int(f.read().strip())
-        except:
+        except (OSError, ValueError):
             pass
             
         operstate = "unknown"
         try:
             with open("/sys/class/net/" + dev + "/operstate") as f:
                 operstate = f.read().strip()
-        except:
+        except (OSError, ValueError):
             pass
             
         interfaces[dev] = {

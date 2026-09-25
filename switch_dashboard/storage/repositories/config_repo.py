@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-import shutil
 import time
 from typing import Any, Dict, List, Optional
 
@@ -14,8 +13,10 @@ from switch_dashboard.storage.models.config import (
     ClientOverride,
     ConfigSetting,
     DeviceConfig,
+    DeviceSecret,
     PortNote,
 )
+from switch_dashboard.security.crypto import decrypt_json, encrypt_json, redact_tree, split_secrets
 
 logger = logging.getLogger("switch_dashboard.storage.repositories.config_repo")
 
@@ -52,13 +53,18 @@ class ConfigRepository:
             self.save_full_config(cfg)
             logger.info("Successfully imported legacy configuration into the database.")
 
-            # Create backup of config.json
-            backup_path = json_path + ".bak"
-            if not os.path.exists(backup_path):
-                shutil.copy2(json_path, backup_path)
+            sanitized = redact_tree(cfg)
+            temp_path = f"{json_path}.tmp"
+            with open(temp_path, "w", encoding="utf-8") as f:
+                json.dump(sanitized, f, indent=2)
+            os.chmod(temp_path, 0o600)
+            os.replace(temp_path, json_path)
             return True
         except Exception as e:
             logger.error(f"Failed to import legacy config from {json_path}: {e}", exc_info=True)
+            from switch_dashboard.security.crypto import CryptoConfigurationError
+            if isinstance(e, CryptoConfigurationError):
+                raise
             return False
 
     def load_full_config(self) -> Dict[str, Any]:
@@ -78,6 +84,7 @@ class ConfigRepository:
         }
 
         with get_db_session(self.db_url) as session:
+            encrypted_secrets = {secret.device_id: secret for secret in session.scalars(select(DeviceSecret))}
             # 1. Load Config Settings
             for setting in session.scalars(select(ConfigSetting)):
                 try:
@@ -125,6 +132,30 @@ class ConfigRepository:
                                 d_dict.setdefault(k, v)
                     except Exception:
                         pass
+                legacy_public, legacy_extra_secrets = split_secrets(d_dict)
+                legacy_secrets = dict(legacy_extra_secrets)
+                if dev.password:
+                    legacy_secrets["password"] = dev.password
+                if dev.community and dev.community != "public":
+                    legacy_secrets["community"] = dev.community
+
+                encrypted = encrypted_secrets.get(dev.id)
+                if encrypted:
+                    legacy_secrets.update(decrypt_json(encrypted.ciphertext, f"device:{dev.id}"))
+                elif legacy_secrets:
+                    key_id, ciphertext = encrypt_json(legacy_secrets, f"device:{dev.id}")
+                    session.add(DeviceSecret(
+                        device_id=dev.id,
+                        key_id=key_id,
+                        ciphertext=ciphertext,
+                        updated_at=time.time(),
+                    ))
+                    dev.password = ""
+                    dev.community = ""
+                    dev.config_json = json.dumps(legacy_public)
+
+                d_dict = legacy_public
+                d_dict.update(legacy_secrets)
                 devices_list.append(d_dict)
 
             cfg["devices"] = devices_list
@@ -204,9 +235,9 @@ class ConfigRepository:
             self._upsert_setting(session, "settings", settings_payload, now)
 
             if "proxmox_nodes" in cfg:
-                self._upsert_setting(session, "proxmox_nodes", cfg["proxmox_nodes"], now)
+                self._upsert_setting(session, "proxmox_nodes", redact_tree(cfg["proxmox_nodes"]), now)
             if "unifi_nodes" in cfg:
-                self._upsert_setting(session, "unifi_nodes", cfg["unifi_nodes"], now)
+                self._upsert_setting(session, "unifi_nodes", redact_tree(cfg["unifi_nodes"]), now)
             if "custom_vendors" in cfg:
                 self._upsert_setting(session, "custom_vendors", cfg["custom_vendors"], now)
             if "ignored_macs" in cfg:
@@ -239,6 +270,13 @@ class ConfigRepository:
             active_device_ips = set()
             active_device_ids = set()
             for idx, d in enumerate(raw_devices):
+                public_device, submitted_secrets = split_secrets(d)
+                clear_fields = public_device.get("clear_secrets", [])
+                public_device.pop("clear_secrets", None)
+                for field in list(public_device):
+                    if field.endswith("_configured"):
+                        public_device.pop(field)
+                d = public_device
                 dev_id = str(d.get("id") or f"dev_{idx}").strip()
                 active_device_ids.add(dev_id)
                 ip = str(d.get("ip") or "").strip()
@@ -288,10 +326,8 @@ class ConfigRepository:
                     existing_dev.enabled = bool(d.get("enabled", True))
                     if "username" in d:
                         existing_dev.username = str(d["username"])
-                    if "password" in d:
-                        existing_dev.password = str(d["password"])
-                    if "community" in d:
-                        existing_dev.community = str(d["community"])
+                    existing_dev.password = ""
+                    existing_dev.community = ""
                     if "snmp_version" in d:
                         existing_dev.snmp_version = str(d["snmp_version"])
                     if "parent_ip" in d:
@@ -315,8 +351,8 @@ class ConfigRepository:
                         port_count=int(d.get("port_count", 8)),
                         enabled=bool(d.get("enabled", True)),
                         username=str(d.get("username", "admin")),
-                        password=str(d.get("password", "")),
-                        community=str(d.get("community", "public")),
+                        password="",
+                        community="",
                         snmp_version=str(d.get("snmp_version", "2c")),
                         parent_ip=str(d.get("parent_ip", "")),
                         parent_port=str(d.get("parent_port", "")),
@@ -325,9 +361,38 @@ class ConfigRepository:
                     )
                     session.add(new_dev)
 
+                existing_secret = session.get(DeviceSecret, dev_id)
+                current_secrets = {}
+                if existing_secret:
+                    current_secrets = decrypt_json(existing_secret.ciphertext, f"device:{dev_id}")
+                current_secrets.update(submitted_secrets)
+                if isinstance(clear_fields, list):
+                    for field in clear_fields:
+                        if str(field) in submitted_secrets or str(field) in current_secrets:
+                            current_secrets.pop(str(field), None)
+                if current_secrets:
+                    key_id, ciphertext = encrypt_json(current_secrets, f"device:{dev_id}")
+                    if existing_secret:
+                        existing_secret.key_id = key_id
+                        existing_secret.ciphertext = ciphertext
+                        existing_secret.updated_at = now
+                    else:
+                        session.add(DeviceSecret(
+                            device_id=dev_id,
+                            key_id=key_id,
+                            ciphertext=ciphertext,
+                            updated_at=now,
+                        ))
+                elif existing_secret:
+                    session.delete(existing_secret)
+
             # Delete devices that were removed from the configuration
             if active_device_ids:
                 session.execute(delete(DeviceConfig).where(DeviceConfig.id.not_in(active_device_ids)))
+                session.execute(delete(DeviceSecret).where(DeviceSecret.device_id.not_in(active_device_ids)))
+            else:
+                session.execute(delete(DeviceConfig))
+                session.execute(delete(DeviceSecret))
 
             # 3. Persist Port Notes
             notes_payload = cfg.get("port_notes") or cfg.get("notes") or {}

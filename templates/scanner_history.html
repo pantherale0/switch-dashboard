@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="csrf-token" content="{{ csrf_token }}">
+<script src="/static/security.js"></script>
 <title>{{ title }} - Host Connection History</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -733,7 +735,7 @@ function showToast(message, type = 'success', icon = '✓') {
   const toastIcon = document.getElementById("toast-icon");
   const toastMsg = document.getElementById("toast-message");
   if (!toast) return;
-  toast.className = `toast ${type}`;
+  toast.className = `toast ${safeCssToken(type)}`;
   toastIcon.textContent = icon;
   toastMsg.textContent = message;
   toast.classList.add("show");
@@ -822,7 +824,7 @@ function filterAndRender() {
 // --- Rendering Table ---
 function renderHistoryTable(filterStartUTC, filterEndUTC) {
   if (!tableBody) return;
-  tableBody.innerHTML = '';
+  tableBody.replaceChildren();
 
   // Sort IP Addresses numerically
   const sortedIPs = filteredHostsList.sort((a, b) => {
@@ -836,7 +838,15 @@ function renderHistoryTable(filterStartUTC, filterEndUTC) {
   });
 
   if (sortedIPs.length === 0) {
-    tableBody.innerHTML = '<tr><td colspan="4" style="padding: 24px; text-align: center; color:#8b949e;">No host history matches current filters.</td></tr>';
+    const row = document.createElement('tr');
+    const cell = document.createElement('td');
+    cell.colSpan = 4;
+    cell.style.padding = '24px';
+    cell.style.textAlign = 'center';
+    cell.style.color = '#8b949e';
+    cell.textContent = 'No host history matches current filters.';
+    row.appendChild(cell);
+    tableBody.appendChild(row);
     return;
   }
 
@@ -847,7 +857,11 @@ function renderHistoryTable(filterStartUTC, filterEndUTC) {
     // Delete column
     const delCell = row.insertCell(0);
     delCell.className = 'action-cell';
-    delCell.innerHTML = `<span class="mdi mdi-delete delete-icon history-delete-icon" title="Clear history for ${ip}" data-ip="${ip}"></span>`;
+    const deleteIcon = document.createElement('span');
+    deleteIcon.className = 'mdi mdi-delete delete-icon history-delete-icon';
+    deleteIcon.title = `Clear history for ${ip}`;
+    deleteIcon.dataset.ip = ip;
+    delCell.appendChild(deleteIcon);
     
     // IP
     const ipCell = row.insertCell(1);
@@ -914,7 +928,16 @@ async function fetchHistory() {
   } catch(err) {
     console.error("Fetch history error:", err);
     if (tableBody && Object.keys(allHistoryData).length === 0) {
-      tableBody.innerHTML = `<tr><td colspan="4" style="color:#f85149;text-align:center;padding:16px;">Error loading data: ${err.message}</td></tr>`;
+      tableBody.replaceChildren();
+      const row = document.createElement('tr');
+      const cell = document.createElement('td');
+      cell.colSpan = 4;
+      cell.style.color = '#f85149';
+      cell.style.textAlign = 'center';
+      cell.style.padding = '16px';
+      cell.textContent = `Error loading data: ${err.message}`;
+      row.appendChild(cell);
+      tableBody.appendChild(row);
     }
   }
 }
@@ -922,7 +945,7 @@ async function fetchHistory() {
 async function handleDeleteHistory(ip) {
   if (!ip || !window.confirm(`Delete ALL connection history events for ${ip}? This action is permanent.`)) return;
   try {
-    const res = await fetch(`/api/scanner/history/${ip}`, { method: 'DELETE' });
+    const res = await fetch(`/api/scanner/history/${encodeURIComponent(ip)}`, { method: 'DELETE' });
     const result = await res.json();
     if (!res.ok || !result.success) throw new Error(result.error || "Clear failed");
     
@@ -952,7 +975,11 @@ async function handleClearAllHistory() {
     showToast(`Clear all failed: ${err.message}`, 'error', '⚠️');
   } finally {
     clearHistoryButton.disabled = false;
-    clearHistoryButton.innerHTML = '<span class="mdi mdi-delete-sweep"></span> Clear All History';
+    clearHistoryButton.replaceChildren();
+    const icon = document.createElement('span');
+    icon.className = 'mdi mdi-delete-sweep';
+    clearHistoryButton.appendChild(icon);
+    clearHistoryButton.appendChild(document.createTextNode(' Clear All History'));
   }
 }
 

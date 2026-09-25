@@ -27,10 +27,9 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest pytest-cov
+          python -m pip install uv==0.11.16
+          uv sync --frozen
 
       - name: Run pytest test suite
         run: |
-          pytest --cov=switch_dashboard tests/
+          uv run pytest --cov=switch_dashboard tests/

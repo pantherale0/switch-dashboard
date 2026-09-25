@@ -43,6 +43,16 @@ class DeviceConfig(Base):
     status = Column(String(32), default="unknown")
 
 
+class DeviceSecret(Base):
+    """Authenticated encrypted credentials for one managed device."""
+    __tablename__ = "device_secrets"
+
+    device_id = Column(String(128), primary_key=True)
+    key_id = Column(String(64), nullable=False)
+    ciphertext = Column(Text, nullable=False)
+    updated_at = Column(Float, nullable=False, default=0.0)
+
+
 class PortNote(Base):
     """Custom user notes and annotations for switch and device ports."""
     __tablename__ = "port_notes"

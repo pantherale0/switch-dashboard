@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="csrf-token" content="{{ csrf_token }}">
+<script src="/static/security.js"></script>
 <title>{{ title }}</title>
 <link rel="icon" href="/static/logo.png" type="image/png">
 <style>
@@ -882,9 +884,9 @@ const COLUMN_DEFS = {
     render: (p, sw) => {
       const isRouter = (sw.role === 'router' || sw.device_type === 'router');
       if (isRouter && p.interface && p.interface !== p.port) {
-        return `<span style="font-weight:600;">${p.interface}</span><span style="display:block;font-size:10px;color:#8b949e;">Port ${p.port}</span>`;
+        return `<span style="font-weight:600;">${escapeHtml(p.interface)}</span><span style="display:block;font-size:10px;color:#8b949e;">Port ${escapeHtml(p.port)}</span>`;
       }
-      return p.port;
+      return escapeHtml(p.port);
     }
   },
   status: {
@@ -892,6 +894,8 @@ const COLUMN_DEFS = {
     thStyle: 'width:145px',
     render: (p, sw) => {
       const status = (p.status || p.link || 'unknown').toLowerCase();
+      const statusClass = safeCssToken(status);
+      const openGraphCall = `openGraph('${escapeJsString(sw.ip)}','${escapeJsString(p.port)}','${escapeJsString(sw.name)}','${escapeJsString('Port ' + (p.port || ''))}', ${Math.max(0, p.cum_tx || p.tx_bytes || 0)}, ${Math.max(0, p.cum_rx || p.rx_bytes || 0)})`;
       // DHCP Snooping port trust badges
       let trustBadgeHtml = '';
       if (sw.dhcp_snooping && sw.dhcp_snooping.enabled) {
@@ -913,10 +917,10 @@ const COLUMN_DEFS = {
       return `
         <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start;">
           <div style="display: flex; align-items: center; gap: 6px;">
-            <span class="status-badge ${status}" onclick="openGraph('${sw.ip}','${p.port}','${sw.name}','Port ${p.port}', ${Math.max(0, p.cum_tx || p.tx_bytes || 0)}, ${Math.max(0, p.cum_rx || p.rx_bytes || 0)})"><span class="status-dot ${status}"></span>${status.toUpperCase()}</span>
+            <span class="status-badge ${statusClass}" onclick="${openGraphCall}"><span class="status-dot ${statusClass}"></span>${escapeHtml(status.toUpperCase())}</span>
             ${trustBadgeHtml}
           </div>
-          <div style="font-size: 10px; color: #8b949e; padding-left: 4px; font-weight: 500;">${duplexText}</div>
+          <div style="font-size: 10px; color: #8b949e; padding-left: 4px; font-weight: 500;">${escapeHtml(duplexText)}</div>
         </div>
       `;
     }
@@ -930,9 +934,9 @@ const COLUMN_DEFS = {
       const isSfp = (p.port === '9' || (p.speed || '').toLowerCase().includes('10g') || p.port === 'SFP' || p.port === '9/SFP');
       const speed = p.speed || 'Auto';
       if (isSfp) {
-        return `<span class="sfp-speed-link" onclick="openTransceiver('${sw.ip}','${p.port}','${sw.name}')" title="Click to view SFP+ Transceiver Diagnostics">${speed} <svg viewBox="0 0 24 24" style="width: 10px; height: 10px; fill: currentColor; display: inline-block;"><path d="M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6zm0-7C7 2 2.73 5.11 1 9.5 2.73 13.89 7 17 12 17s9.27-3.11 11-7.5C21.27 5.11 17 2 12 2zm0 13a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11z"/></svg></span>`;
+        return `<span class="sfp-speed-link" onclick="openTransceiver('${escapeJsString(sw.ip)}','${escapeJsString(p.port)}','${escapeJsString(sw.name)}')" title="Click to view SFP+ Transceiver Diagnostics">${escapeHtml(speed)} <svg viewBox="0 0 24 24" style="width: 10px; height: 10px; fill: currentColor; display: inline-block;"><path d="M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6zm0-7C7 2 2.73 5.11 1 9.5 2.73 13.89 7 17 12 17s9.27-3.11 11-7.5C21.27 5.11 17 2 12 2zm0 13a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11z"/></svg></span>`;
       } else {
-        return speed;
+        return escapeHtml(speed);
       }
     }
   },
@@ -971,7 +975,7 @@ const COLUMN_DEFS = {
     label: 'Notes',
     tdClass: 'col-note',
     render: (p, sw) => {
-      return `<input class="note-input" type="text" placeholder="-" value="${p.note || ''}" data-key="${sw.ip}:${p.port}" onfocus="pausePolling()" onblur="saveNote(this)">`;
+      return `<input class="note-input" type="text" placeholder="-" value="${escapeHtml(p.note || '')}" data-key="${escapeHtml(`${sw.ip}:${p.port}`)}" onfocus="pausePolling()" onblur="saveNote(this)">`;
     }
   }
 };
@@ -1139,8 +1143,8 @@ function toggleMacTable(ip) {
   state.expanded = !state.expanded;
   saveMacStatesToStorage();
   
-  const content = document.querySelector(`.mac-content-${CSS.escape(ip)}`);
-  const arrow = document.querySelector(`.mac-toggle-arrow-${CSS.escape(ip)}`);
+  const content = document.querySelector(`.mac-content-${safeCssToken(ip)}`);
+  const arrow = document.querySelector(`.mac-toggle-arrow-${safeCssToken(ip)}`);
   
   if (content && arrow) {
     if (state.expanded) {
@@ -1180,8 +1184,8 @@ function toggleIgmpTable(ip) {
   states[ip].expanded = !states[ip].expanded;
   localStorage.setItem('igmp_states', JSON.stringify(states));
   
-  const content = document.querySelector(`.igmp-content-${CSS.escape(ip)}`);
-  const arrow = document.querySelector(`.igmp-toggle-arrow-${CSS.escape(ip)}`);
+  const content = document.querySelector(`.igmp-content-${safeCssToken(ip)}`);
+  const arrow = document.querySelector(`.igmp-toggle-arrow-${safeCssToken(ip)}`);
   
   if (content && arrow) {
     if (states[ip].expanded) {
@@ -1196,12 +1200,12 @@ function toggleIgmpTable(ip) {
 
 function filterMacTable(ip) {
   const state = getMacState(ip);
-  const fMac = document.querySelector(`.mac-filter-mac-${CSS.escape(ip)}`);
-  const fHost = document.querySelector(`.mac-filter-host-${CSS.escape(ip)}`);
-  const fVendor = document.querySelector(`.mac-filter-vendor-${CSS.escape(ip)}`);
-  const fType = document.querySelector(`.mac-filter-type-${CSS.escape(ip)}`);
-  const fPort = document.querySelector(`.mac-filter-port-${CSS.escape(ip)}`);
-  const fVlan = document.querySelector(`.mac-filter-vlan-${CSS.escape(ip)}`);
+  const fMac = document.querySelector(`.mac-filter-mac-${safeCssToken(ip)}`);
+  const fHost = document.querySelector(`.mac-filter-host-${safeCssToken(ip)}`);
+  const fVendor = document.querySelector(`.mac-filter-vendor-${safeCssToken(ip)}`);
+  const fType = document.querySelector(`.mac-filter-type-${safeCssToken(ip)}`);
+  const fPort = document.querySelector(`.mac-filter-port-${safeCssToken(ip)}`);
+  const fVlan = document.querySelector(`.mac-filter-vlan-${safeCssToken(ip)}`);
   
   if (fMac) state.filters.mac = fMac.value.trim().toLowerCase();
   if (fHost) state.filters.host = fHost.value.trim().toLowerCase();
@@ -1228,22 +1232,22 @@ function sortMac(ip, col) {
 
 function manualRefreshMac(ip) {
   const state = getMacState(ip);
-  const spinner = document.querySelector(`.mac-spinner-${CSS.escape(ip)}`);
-  const btnText = document.querySelector(`.mac-refresh-btn-${CSS.escape(ip)} span:not(.mac-spinner-${CSS.escape(ip)})`);
+  const spinner = document.querySelector(`.mac-spinner-${safeCssToken(ip)}`);
+  const btnText = document.querySelector(`.mac-refresh-btn-${safeCssToken(ip)} span:not(.mac-spinner-${safeCssToken(ip)})`);
   
   if (spinner) spinner.style.display = 'inline-block';
   if (btnText) btnText.textContent = 'Refreshing...';
   
-  fetch(`/api/switches/${ip}/refresh_mac`, { method: 'POST' })
+  fetch(`/api/switches/${encodeURIComponent(ip)}/refresh_mac`, { method: 'POST' })
     .then(r => r.json())
     .then(data => {
       if (data.status === 'ok') {
         state.data = data.mac_table || [];
-        const headerTime = document.querySelector(`.mac-time-${CSS.escape(ip)}`);
+        const headerTime = document.querySelector(`.mac-time-${safeCssToken(ip)}`);
         if (headerTime) {
           headerTime.textContent = 'Last Scraped: ' + formatTime(Date.now() / 1000);
         }
-        const titleCount = document.querySelector(`.mac-count-${CSS.escape(ip)}`);
+        const titleCount = document.querySelector(`.mac-count-${safeCssToken(ip)}`);
         if (titleCount) {
           titleCount.textContent = `${state.data.length} entries`;
         }
@@ -1264,30 +1268,30 @@ function manualRefreshMac(ip) {
 function backupConfig(ip, element) {
   if (element.dataset.loading === 'true') return;
   element.dataset.loading = 'true';
-  const originalText = element.innerHTML;
-  element.innerHTML = '⏳ Backing up...';
+  const originalContent = Array.from(element.childNodes, node => node.cloneNode(true));
+  element.textContent = '⏳ Backing up...';
   element.style.color = '#8b949e';
 
-  fetch(`/api/switches/${ip}/backup`, { method: 'POST' })
+  fetch(`/api/switches/${encodeURIComponent(ip)}/backup`, { method: 'POST' })
     .then(r => r.json())
     .then(data => {
       if (data.status === 'ok') {
-        element.innerHTML = '✓ Backed up!';
+        element.textContent = '✓ Backed up!';
         element.style.color = '#3fb950';
       } else {
         alert('Failed to backup config: ' + (data.error || 'Unknown error'));
-        element.innerHTML = '❌ Failed';
+        element.textContent = '❌ Failed';
         element.style.color = '#ff7b72';
       }
     })
     .catch(err => {
       alert('Error during backup: ' + err.message);
-      element.innerHTML = '❌ Failed';
+      element.textContent = '❌ Failed';
       element.style.color = '#ff7b72';
     })
     .finally(() => {
       setTimeout(() => {
-        element.innerHTML = originalText;
+        element.replaceChildren(...originalContent.map(node => node.cloneNode(true)));
         element.style.color = '#58a6ff';
         delete element.dataset.loading;
       }, 3000);
@@ -1296,11 +1300,11 @@ function backupConfig(ip, element) {
 
 function renderMacTable(ip) {
   const state = getMacState(ip);
-  const tbody = document.querySelector(`.mac-tbody-${CSS.escape(ip)}`);
+  const tbody = document.querySelector(`.mac-tbody-${safeCssToken(ip)}`);
   if (!tbody) return;
   
   ['mac', 'host', 'vendor', 'type', 'port', 'vlan'].forEach(col => {
-    const indicator = document.querySelector(`.sort-indicator-${CSS.escape(ip)}-${col}`);
+    const indicator = document.querySelector(`.sort-indicator-${safeCssToken(ip)}-${col}`);
     if (indicator) {
       if (state.sortBy === col) {
         indicator.textContent = state.sortAsc ? ' ▴' : ' ▾';
@@ -1346,43 +1350,103 @@ function renderMacTable(ip) {
   });
 
   if (rows.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" style="padding: 12px; text-align: center; color: #8b949e;">No MAC entries found</td></tr>`;
-    const container = document.querySelector(`.mac-scroll-container-${CSS.escape(ip)}`);
+    tbody.replaceChildren();
+    const row = document.createElement('tr');
+    const cell = document.createElement('td');
+    cell.colSpan = 6;
+    cell.style.padding = '12px';
+    cell.style.textAlign = 'center';
+    cell.style.color = '#8b949e';
+    cell.textContent = 'No MAC entries found';
+    row.appendChild(cell);
+    tbody.appendChild(row);
+    const container = document.querySelector(`.mac-scroll-container-${safeCssToken(ip)}`);
     if (container) {
       container.scrollTop = state.scrollTop || 0;
     }
     return;
   }
 
-  tbody.innerHTML = rows.map(r => {
-    const vendorHtml = r.vendor ? r.vendor : `<a href="/config#vendor-editor-card" style="color: #8b949e; text-decoration: underline;" title="Edit custom vendor list">Unknown</a>`;
-    const ipBadge = r.ip ? `<span style="display: inline-block; font-size: 10px; font-family: monospace; color: #58a6ff; background: rgba(56, 139, 253, 0.1); padding: 1px 5px; border-radius: 3px;" title="IP Address">${r.ip}</span>` : '';
-    const discoveredBadge = (r.hostname && r.hostname !== r.host) ? `<span style="display: inline-block; font-size: 10px; color: #8b949e;" title="Discovered Hostname: ${r.hostname}">(${r.hostname})</span>` : '';
-    const hostInputHtml = `
-      <div style="display: flex; flex-direction: column; gap: 3px;">
-        <input type="text" value="${r.host || ''}" 
-               placeholder="${r.hostname || 'Enter nickname...'}" 
-               onfocus="pausePolling()" 
-               onblur="saveHost(this, '${r.mac}')" 
-               style="width: 100%; max-width: 100%; background: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 4px 8px; color: #e1e4e8; font-size: 11px; outline: none; transition: border-color 0.2s;" 
-               onfocus="this.style.borderColor='#58a6ff'" 
-               onblur="this.style.borderColor='#30363d'">
-        ${(ipBadge || discoveredBadge) ? `<div style="display: flex; align-items: center; flex-wrap: wrap; gap: 4px; line-height: 1;">${ipBadge}${discoveredBadge}</div>` : ''}
-      </div>
-    `;
-    return `
-      <tr style="border-bottom: 1px solid #21262d; transition: background 0.15s;" onmouseover="this.style.background='#1c2128'" onmouseout="this.style.background='transparent'">
-        <td style="padding: 8px 12px; font-family: 'SF Mono', Monaco, monospace; color: #c9d1d9;">${r.mac}</td>
-        <td style="padding: 4px 12px; color: #b1bac4;">${hostInputHtml}</td>
-        <td style="padding: 8px 12px; color: #b1bac4;">${vendorHtml}</td>
-        <td style="padding: 8px 12px; color: #8b949e;">${r.type}</td>
-        <td style="padding: 8px 12px; font-weight: 600; color: #58a6ff;">${r.port}</td>
-        <td style="padding: 8px 12px; color: #b1bac4;">VLAN ${r.vlan}</td>
-      </tr>
-    `;
-  }).join('');
+  tbody.replaceChildren();
+  rows.forEach(r => {
+    const row = document.createElement('tr');
+    row.style.borderBottom = '1px solid #21262d';
+    row.style.transition = 'background 0.15s';
+    row.addEventListener('mouseover', () => { row.style.background = '#1c2128'; });
+    row.addEventListener('mouseout', () => { row.style.background = 'transparent'; });
 
-  const container = document.querySelector(`.mac-scroll-container-${CSS.escape(ip)}`);
+    const macCell = row.insertCell();
+    macCell.style.cssText = 'padding: 8px 12px; font-family: "SF Mono", Monaco, monospace; color: #c9d1d9;';
+    macCell.textContent = r.mac || '';
+
+    const hostCell = row.insertCell();
+    hostCell.style.cssText = 'padding: 4px 12px; color: #b1bac4;';
+    const hostWrapper = document.createElement('div');
+    hostWrapper.style.cssText = 'display: flex; flex-direction: column; gap: 3px;';
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = r.host || '';
+    input.placeholder = r.hostname || 'Enter nickname...';
+    input.dataset.mac = r.mac || '';
+    input.style.cssText = 'width: 100%; max-width: 100%; background: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 4px 8px; color: #e1e4e8; font-size: 11px; outline: none; transition: border-color 0.2s;';
+    input.addEventListener('focus', () => {
+      pausePolling();
+      input.style.borderColor = '#58a6ff';
+    });
+    input.addEventListener('blur', () => {
+      input.style.borderColor = '#30363d';
+      saveHost(input, input.dataset.mac);
+    });
+    hostWrapper.appendChild(input);
+
+    if (r.ip || (r.hostname && r.hostname !== r.host)) {
+      const badges = document.createElement('div');
+      badges.style.cssText = 'display: flex; align-items: center; flex-wrap: wrap; gap: 4px; line-height: 1;';
+      if (r.ip) {
+        const ipBadge = document.createElement('span');
+        ipBadge.style.cssText = 'display: inline-block; font-size: 10px; font-family: monospace; color: #58a6ff; background: rgba(56, 139, 253, 0.1); padding: 1px 5px; border-radius: 3px;';
+        ipBadge.title = 'IP Address';
+        ipBadge.textContent = r.ip;
+        badges.appendChild(ipBadge);
+      }
+      if (r.hostname && r.hostname !== r.host) {
+        const hostBadge = document.createElement('span');
+        hostBadge.style.cssText = 'display: inline-block; font-size: 10px; color: #8b949e;';
+        hostBadge.title = `Discovered Hostname: ${r.hostname}`;
+        hostBadge.textContent = `(${r.hostname})`;
+        badges.appendChild(hostBadge);
+      }
+      hostWrapper.appendChild(badges);
+    }
+    hostCell.appendChild(hostWrapper);
+
+    const vendorCell = row.insertCell();
+    vendorCell.style.cssText = 'padding: 8px 12px; color: #b1bac4;';
+    if (r.vendor) {
+      vendorCell.textContent = r.vendor;
+    } else {
+      const vendorLink = document.createElement('a');
+      vendorLink.href = '/config#vendor-editor-card';
+      vendorLink.style.cssText = 'color: #8b949e; text-decoration: underline;';
+      vendorLink.title = 'Edit custom vendor list';
+      vendorLink.textContent = 'Unknown';
+      vendorCell.appendChild(vendorLink);
+    }
+
+    const typeCell = row.insertCell();
+    typeCell.style.cssText = 'padding: 8px 12px; color: #8b949e;';
+    typeCell.textContent = r.type || '';
+    const portCell = row.insertCell();
+    portCell.style.cssText = 'padding: 8px 12px; font-weight: 600; color: #58a6ff;';
+    portCell.textContent = r.port == null ? '' : String(r.port);
+    const vlanCell = row.insertCell();
+    vlanCell.style.cssText = 'padding: 8px 12px; color: #b1bac4;';
+    vlanCell.textContent = `VLAN ${r.vlan == null ? '' : r.vlan}`;
+
+    tbody.appendChild(row);
+  });
+
+  const container = document.querySelector(`.mac-scroll-container-${safeCssToken(ip)}`);
   if (container) {
     container.scrollTop = state.scrollTop || 0;
   }
@@ -1439,6 +1503,7 @@ function formatBytes(n) {
 }
 
 function formatBps(n, unit) {
+  n = Number(n) || 0;
   if (!n) return unit === 'Bps' ? '0 B/s' : '0 bps';
   const v = unit === 'Bps' ? n / 8 : n;
   const suf = unit === 'Bps' ? ['B/s', 'KB/s', 'MB/s', 'GB/s'] : ['bps', 'Kbps', 'Mbps', 'Gbps'];
@@ -1456,6 +1521,7 @@ function toggleSpeedUnit(event) {
 }
 
 function formatPkts(n) {
+  n = Number(n) || 0;
   if (!n) return '0';
   if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
   if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
@@ -1670,18 +1736,18 @@ function clearDeviceFilter() {
 function renderVirtualisationCard(sw) {
   const nodes = sw.cluster_nodes || [];
   const guests = sw.child_devices || [];
-  const nodeCount = sw.node_count || nodes.length || 1;
-  const onlineNodeCount = sw.online_node_count !== undefined ? sw.online_node_count : nodes.filter(n => n.status === 'online').length;
-  const guestCount = sw.guest_count !== undefined ? sw.guest_count : guests.length;
+  const nodeCount = Math.max(1, Number(sw.node_count) || nodes.length || 1);
+  const onlineNodeCount = Math.max(0, Number(sw.online_node_count !== undefined ? sw.online_node_count : nodes.filter(n => n.status === 'online').length) || 0);
+  const guestCount = Math.max(0, Number(sw.guest_count !== undefined ? sw.guest_count : guests.length) || 0);
   const isCardCollapsed = getCardCollapsedState(sw.ip);
   const displayCardBody = isCardCollapsed ? 'none' : 'block';
   const cardChevronRotate = isCardCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
 
   const nodeMetersHtml = nodes.map(node => {
     const isOnline = (node.status === 'online');
-    const cpuPct = Math.min(100, Math.max(0, (node.cpu || 0) * 100)).toFixed(1);
-    const memUsed = node.memory || 0;
-    const memMax = node.max_memory || 0;
+    const cpuPct = Math.min(100, Math.max(0, (Number(node.cpu) || 0) * 100)).toFixed(1);
+    const memUsed = Math.max(0, Number(node.memory) || 0);
+    const memMax = Math.max(0, Number(node.max_memory) || 0);
     const memPct = memMax > 0 ? Math.min(100, Math.max(0, (memUsed / memMax) * 100)).toFixed(1) : 0;
     const uptimeStr = node.uptime ? formatSeconds(node.uptime) : '0s';
     const cpuBarColor = cpuPct > 85 ? '#f85149' : (cpuPct > 70 ? '#f08a24' : '#3fb950');
@@ -1692,14 +1758,14 @@ function renderVirtualisationCard(sw) {
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
           <div style="display: flex; align-items: center; gap: 8px;">
             <span class="status-dot ${isOnline ? 'up' : 'down'}"></span>
-            <span style="font-weight: 600; color: #e1e4e8; font-size: 13px;">${node.name}</span>
+            <span style="font-weight: 600; color: #e1e4e8; font-size: 13px;">${escapeHtml(node.name)}</span>
             ${node.local ? '<span style="font-size: 9px; background: rgba(56, 139, 253, 0.2); color: #58a6ff; padding: 1px 5px; border-radius: 4px; font-weight: 600;">LOCAL</span>' : ''}
           </div>
           <span style="font-size: 10px; color: #8b949e;">Up ${uptimeStr}</span>
         </div>
         <div style="font-size: 10px; color: #8b949e; margin-bottom: 8px; font-family: 'SF Mono', Monaco, monospace; display: flex; gap: 10px; flex-wrap: wrap;">
-          ${node.ip ? `<span>IP: <strong style="color: #c9d1d9;">${node.ip}</strong></span>` : ''}
-          ${node.mac ? `<span>MAC: <strong style="color: #8b949e;">${node.mac}</strong></span>` : ''}
+          ${node.ip ? `<span>IP: <strong style="color: #c9d1d9;">${escapeHtml(node.ip)}</strong></span>` : ''}
+          ${node.mac ? `<span>MAC: <strong style="color: #8b949e;">${escapeHtml(node.mac)}</strong></span>` : ''}
         </div>
         <!-- CPU Meter -->
         <div style="margin-bottom: 8px;">
@@ -1735,27 +1801,27 @@ function renderVirtualisationCard(sw) {
     const kindBadge = g.kind === 'lxc'
       ? '<span style="background: rgba(163, 113, 247, 0.2); color: #d2a8ff; border: 1px solid rgba(163, 113, 247, 0.4); padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 700;">LXC</span>'
       : '<span style="background: rgba(56, 139, 253, 0.2); color: #58a6ff; border: 1px solid rgba(56, 139, 253, 0.4); padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 700;">VM</span>';
-    const cumTx = Math.max(0, g.cum_tx !== undefined && g.cum_tx !== null ? g.cum_tx : (g.tx_bytes || g.netout || 0));
-    const cumRx = Math.max(0, g.cum_rx !== undefined && g.cum_rx !== null ? g.cum_rx : (g.rx_bytes || g.netin || 0));
-    const speedTx = g.speed_tx_bps || 0;
-    const speedRx = g.speed_rx_bps || 0;
-    const safeGuestName = String(g.name || `Guest ${g.native_id}`).replace(/'/g, "\\'");
-    const openGraphCall = `openGraph('${sw.ip}','${g.native_id}','${sw.name} - ${safeGuestName}','Guest ${g.native_id}',${cumTx},${cumRx})`;
-    const statusBadge = `<span class="status-badge ${isRunning ? 'up' : 'down'}" style="cursor: pointer;" onclick="${openGraphCall}" title="Click to view guest network bandwidth graph"><span class="status-dot ${isRunning ? 'up' : 'down'}"></span>${(g.status || 'stopped').toUpperCase()}</span>`;
-    const cpuStr = g.cpu ? (g.cpu * 100).toFixed(1) + '%' : '0%';
-    const ramStr = g.memory ? formatBytes(g.memory) : '0 B';
-    const ipList = (g.ips || []).filter(ip => !ip.includes(':')).join(', ') || '-';
-    const macList = (g.macs || []).join(', ') || '-';
+    const cumTx = Math.max(0, Number(g.cum_tx !== undefined && g.cum_tx !== null ? g.cum_tx : (g.tx_bytes || g.netout || 0)) || 0);
+    const cumRx = Math.max(0, Number(g.cum_rx !== undefined && g.cum_rx !== null ? g.cum_rx : (g.rx_bytes || g.netin || 0)) || 0);
+    const speedTx = Math.max(0, Number(g.speed_tx_bps) || 0);
+    const speedRx = Math.max(0, Number(g.speed_rx_bps) || 0);
+    const safeGuestName = String(g.name || `Guest ${g.native_id}`);
+    const openGraphCall = `openGraph('${escapeJsString(sw.ip)}','${escapeJsString(g.native_id)}','${escapeJsString(`${sw.name} - ${safeGuestName}`)}','${escapeJsString(`Guest ${g.native_id}`)}',${cumTx},${cumRx})`;
+    const statusBadge = `<span class="status-badge ${isRunning ? 'up' : 'down'}" style="cursor: pointer;" onclick="${openGraphCall}" title="Click to view guest network bandwidth graph"><span class="status-dot ${isRunning ? 'up' : 'down'}"></span>${escapeHtml(String(g.status || 'stopped').toUpperCase())}</span>`;
+    const cpuStr = Number(g.cpu) ? (Number(g.cpu) * 100).toFixed(1) + '%' : '0%';
+    const ramStr = Number(g.memory) ? formatBytes(Number(g.memory)) : '0 B';
+    const ipList = (Array.isArray(g.ips) ? g.ips : []).filter(ip => typeof ip === 'string' && !ip.includes(':')).join(', ') || '-';
+    const macList = (Array.isArray(g.macs) ? g.macs : []).filter(mac => typeof mac === 'string').join(', ') || '-';
 
     return `
       <tr style="border-bottom: 1px solid #21262d; font-size: 11px; transition: background 0.15s;" onmouseover="this.style.background='#1c2128'" onmouseout="this.style.background='transparent'">
-        <td style="padding: 8px 12px; font-weight: 600; color: #58a6ff; font-family: 'SF Mono', Monaco, monospace; width: 60px; cursor: pointer;" onclick="${openGraphCall}" title="Click to view guest network bandwidth graph">${g.native_id || '-'}</td>
-        <td style="padding: 8px 12px; font-weight: 600; color: #e1e4e8; cursor: pointer;" onclick="${openGraphCall}" title="Click to view guest network bandwidth graph">${g.name}</td>
+        <td style="padding: 8px 12px; font-weight: 600; color: #58a6ff; font-family: 'SF Mono', Monaco, monospace; width: 60px; cursor: pointer;" onclick="${openGraphCall}" title="Click to view guest network bandwidth graph">${escapeHtml(g.native_id || '-')}</td>
+        <td style="padding: 8px 12px; font-weight: 600; color: #e1e4e8; cursor: pointer;" onclick="${openGraphCall}" title="Click to view guest network bandwidth graph">${escapeHtml(g.name)}</td>
         <td style="padding: 8px 12px; width: 60px;">${kindBadge}</td>
-        <td style="padding: 8px 12px; color: #8b949e; width: 110px;">${g.node || '-'}</td>
+        <td style="padding: 8px 12px; color: #8b949e; width: 110px;">${escapeHtml(g.node || '-')}</td>
         <td style="padding: 8px 12px; width: 100px;">${statusBadge}</td>
-        <td style="padding: 8px 12px; font-family: 'SF Mono', Monaco, monospace; color: #c9d1d9;">${ipList}</td>
-        <td style="padding: 8px 12px; font-family: 'SF Mono', Monaco, monospace; color: #8b949e;">${macList}</td>
+        <td style="padding: 8px 12px; font-family: 'SF Mono', Monaco, monospace; color: #c9d1d9;">${escapeHtml(ipList)}</td>
+        <td style="padding: 8px 12px; font-family: 'SF Mono', Monaco, monospace; color: #8b949e;">${escapeHtml(macList)}</td>
         <td style="padding: 8px 12px; font-family: 'SF Mono', Monaco, monospace; color: #c9d1d9; width: 120px; cursor: pointer;" onclick="${openGraphCall}" title="Click to view guest network bandwidth graph">
           ${isRunning ? `TX ${formatBytes(cumTx)}<br>RX ${formatBytes(cumRx)}` : '<span style="color:#57606a">-</span>'}
         </td>
@@ -1769,11 +1835,11 @@ function renderVirtualisationCard(sw) {
     `;
   }).join('');
 
-  const errorBlock = sw.error ? `<div class="error-card">Error: ${sw.error}</div>` : '';
-  const summaryBadge = `<span class="card-collapsed-summary-${sw.ip}" style="display: ${isCardCollapsed ? 'inline-block' : 'none'}; font-size: 11px; color: #8b949e; background: #0d1117; padding: 2px 8px; border-radius: 12px; border: 1px solid #30363d;">${onlineNodeCount}/${nodeCount} Nodes &middot; ${guestCount} Guests</span>`;
+  const errorBlock = sw.error ? `<div class="error-card">Error: ${escapeHtml(sw.error)}</div>` : '';
+  const summaryBadge = `<span class="card-collapsed-summary-${escapeHtml(sw.ip)}" style="display: ${isCardCollapsed ? 'inline-block' : 'none'}; font-size: 11px; color: #8b949e; background: #0d1117; padding: 2px 8px; border-radius: 12px; border: 1px solid #30363d;">${onlineNodeCount}/${nodeCount} Nodes &middot; ${guestCount} Guests</span>`;
 
   return `
-    <div class="switch-card" data-switch-ip="${sw.ip}">
+    <div class="switch-card" data-switch-ip="${escapeHtml(sw.ip)}">
       <div class="switch-header">
         <div style="display: flex; align-items: center; gap: 12px;">
           <svg viewBox="0 0 24 24" style="width: 26px; height: 26px; fill: #e1e4e8; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));">
@@ -1781,11 +1847,11 @@ function renderVirtualisationCard(sw) {
           </svg>
           <div>
             <div style="display: flex; align-items: center; gap: 8px;">
-              <h2>${sw.name}</h2>
+              <h2>${escapeHtml(sw.name)}</h2>
               ${summaryBadge}
             </div>
             <span style="font-size:12px;color:#b1bac4;display:flex;align-items:center;gap:8px;">
-              <a href="https://${sw.ip}:8006/" target="_blank" style="color:#58a6ff;text-decoration:none" title="Open Proxmox VE Web UI">${sw.ip}:8006</a>
+              <a href="https://${escapeHtml(sw.ip)}:8006/" target="_blank" style="color:#58a6ff;text-decoration:none" title="Open Proxmox VE Web UI">${escapeHtml(sw.ip)}:8006</a>
               <span style="color:#30363d">|</span>
               <span style="color: #3fb950; font-weight: 600;">Proxmox Cluster</span>
             </span>
@@ -1794,20 +1860,20 @@ function renderVirtualisationCard(sw) {
         
         <div style="display: flex; align-items: center; gap: 12px;">
           <div class="meta" style="text-align: right;">
-            <div>${(sw.model && sw.model !== 'generic_switch') ? sw.model : 'Proxmox VE'}</div>
+            <div>${escapeHtml((sw.model && sw.model !== 'generic_switch') ? sw.model : 'Proxmox VE')}</div>
             <div style="color: #58a6ff; font-weight: 600;">${onlineNodeCount}/${nodeCount} Nodes Online</div>
           </div>
-          <button onclick="toggleCardCollapse('${sw.ip}')" style="background: #21262d; border: 1px solid #30363d; border-radius: 6px; color: #8b949e; cursor: pointer; padding: 4px 8px; display: inline-flex; align-items: center; gap: 4px; font-size: 11px; transition: all 0.2s;" title="Collapse / Expand card">
-            <span class="card-chevron-${sw.ip}" style="display: inline-block; transition: transform 0.2s; transform: ${cardChevronRotate}; font-size: 9px;">&#9660;</span>
+          <button onclick="toggleCardCollapse('${escapeJsString(sw.ip)}')" style="background: #21262d; border: 1px solid #30363d; border-radius: 6px; color: #8b949e; cursor: pointer; padding: 4px 8px; display: inline-flex; align-items: center; gap: 4px; font-size: 11px; transition: all 0.2s;" title="Collapse / Expand card">
+            <span class="card-chevron-${escapeHtml(sw.ip)}" style="display: inline-block; transition: transform 0.2s; transform: ${cardChevronRotate}; font-size: 9px;">&#9660;</span>
           </button>
         </div>
       </div>
 
-      <div class="card-body-${sw.ip}" style="display: ${displayCardBody};">
+      <div class="card-body-${escapeHtml(sw.ip)}" style="display: ${displayCardBody};">
         <div class="device-bar">
-          <span><span class="label">Cluster:</span> <span class="value" style="color: #58a6ff; font-weight: 600;">${sw.cluster_name || sw.name}</span></span>
-          <span><span class="label">Release:</span> <span class="value">${sw.firmware || 'PVE'}</span></span>
-          <span><span class="label">Uptime:</span> <span class="value">${sw.uptime || '-'}</span></span>
+          <span><span class="label">Cluster:</span> <span class="value" style="color: #58a6ff; font-weight: 600;">${escapeHtml(sw.cluster_name || sw.name)}</span></span>
+          <span><span class="label">Release:</span> <span class="value">${escapeHtml(sw.firmware || 'PVE')}</span></span>
+          <span><span class="label">Uptime:</span> <span class="value">${escapeHtml(sw.uptime || '-')}</span></span>
           <span><span class="label">Nodes:</span> <span class="value" style="color: #3fb950; font-weight: 600;">${onlineNodeCount}/${nodeCount} Online</span></span>
           <span><span class="label">Guests:</span> <span class="value" style="color: #d2a8ff; font-weight: 600;">${guestCount} VMs &amp; LXCs</span></span>
         </div>
@@ -1822,13 +1888,13 @@ function renderVirtualisationCard(sw) {
 
         <!-- Collapsible Virtual Machines & Containers Drawer -->
         <div class="guests-section" style="padding: 12px 20px; background: rgba(22, 27, 34, 0.2);">
-          <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;" onclick="toggleGuestsTable('${sw.ip}')">
+          <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;" onclick="toggleGuestsTable('${escapeJsString(sw.ip)}')">
             <h4 style="font-size: 12px; font-weight: 600; color: #8b949e; display: flex; align-items: center; gap: 6px; margin: 0;">
-              <span class="guests-toggle-arrow-${sw.ip}" style="display: inline-block; transition: transform 0.2s; transform: ${guestsArrowTransform}; font-size: 10px;">&gt;</span>
+              <span class="guests-toggle-arrow-${escapeHtml(sw.ip)}" style="display: inline-block; transition: transform 0.2s; transform: ${guestsArrowTransform}; font-size: 10px;">&gt;</span>
               <span>🖥️ Virtual Machines &amp; Containers (<span style="color: #e1e4e8;">${guests.length} guests</span>)</span>
             </h4>
           </div>
-          <div class="guests-content-${sw.ip}" style="display: ${guestsDisplayStyle}; margin-top: 12px;">
+          <div class="guests-content-${escapeHtml(sw.ip)}" style="display: ${guestsDisplayStyle}; margin-top: 12px;">
             <div style="border: 1px solid #30363d; border-radius: 8px; background: #0d1117; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);">
               <table style="width: 100%; border-collapse: collapse; text-align: left;">
                 <thead>
@@ -1866,12 +1932,12 @@ function renderSwitch(sw) {
   }
 
   const renderMacTh = (colId, label) => {
-    const savedWidth = columnWidths[`mac-${colId}`];
-    const styleStr = `position: relative; padding: 8px 12px; cursor: pointer; color: #8b949e; user-select: none; font-weight: 600;${savedWidth ? ` width: ${savedWidth}px;` : ''}`;
+    const savedWidth = Number(columnWidths[`mac-${colId}`]);
+    const styleStr = `position: relative; padding: 8px 12px; cursor: pointer; color: #8b949e; user-select: none; font-weight: 600;${Number.isFinite(savedWidth) && savedWidth > 0 ? ` width: ${Math.min(1000, Math.max(30, savedWidth))}px;` : ''}`;
     return `
-      <th style="${styleStr}" onclick="sortMac('${sw.ip}', '${colId}')" data-col-id="mac-${colId}">
-        ${label} <span class="sort-indicator-${sw.ip}-${colId}"></span>
-        <div class="resizer" onmousedown="handleResizeStart(event, 'mac-${colId}')" style="position: absolute; top: 0; right: 0; width: 6px; height: 100%; cursor: col-resize; user-select: none; z-index: 10;"></div>
+      <th style="${styleStr}" onclick="sortMac('${escapeJsString(sw.ip)}', '${escapeJsString(colId)}')" data-col-id="mac-${escapeHtml(colId)}">
+        ${escapeHtml(label)} <span class="sort-indicator-${escapeHtml(sw.ip)}-${escapeHtml(colId)}"></span>
+                <div class="resizer" onmousedown="handleResizeStart(event, 'mac-${escapeJsString(colId)}')" style="position: absolute; top: 0; right: 0; width: 6px; height: 100%; cursor: col-resize; user-select: none; z-index: 10;"></div>
       </th>
     `;
   };
@@ -1921,7 +1987,7 @@ function renderSwitch(sw) {
       tooltipParts.push(p.interface);
     }
     const details = tooltipParts.length > 0 ? ` (${tooltipParts.join(' / ')})` : '';
-    const statusText = (p.status || p.link || 'down').toUpperCase();
+    const statusText = String(p.status || p.link || 'down').toUpperCase();
     const titleText = `Port ${p.port}${details}: ${statusText} ${p.speed || ''} (${p.duplex || ''}) - Click to view graph`;
     const path = isSfp 
       ? 'M 4,5 h 3 v 3 h 10 v -3 h 3 v 14 h -16 z' // SFP (Fiber)
@@ -1930,9 +1996,9 @@ function renderSwitch(sw) {
     const portLabel = ((sw.role === 'router' || sw.device_type === 'router') && p.interface) ? p.interface : p.port;
     return `
       <div style="display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; min-width: 22px;" 
-           title="${titleText}"
-           onclick="openGraph('${sw.ip}','${p.port}','${sw.name}','Port ${p.port}', ${Math.max(0, p.cum_tx || p.tx_bytes || 0)}, ${Math.max(0, p.cum_rx || p.rx_bytes || 0)})">
-        <span style="font-size: 10px; color: #8b949e; font-weight: 700; margin-bottom: 2px;">${portLabel}</span>
+            title="${escapeHtml(titleText)}"
+           onclick="openGraph('${escapeJsString(sw.ip)}','${escapeJsString(p.port)}','${escapeJsString(sw.name)}','${escapeJsString('Port ' + (p.port || ''))}', ${Math.max(0, p.cum_tx || p.tx_bytes || 0)}, ${Math.max(0, p.cum_rx || p.rx_bytes || 0)})">
+        <span style="font-size: 10px; color: #8b949e; font-weight: 700; margin-bottom: 2px;">${escapeHtml(portLabel)}</span>
         <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: ${color}; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4)); transition: all 0.15s ease-in-out; transform: scale(1);"
              onmouseover="this.style.transform='scale(1.2)';"
              onmouseout="this.style.transform='scale(1)';">
@@ -1988,6 +2054,7 @@ function renderSwitch(sw) {
     `;
   }
 
+  const macHeight = /^\d+(?:px)?$/.test(String(macState.height || '')) ? `${parseInt(macState.height, 10)}px` : '450px';
   const portBar = (portsForGraphic.length > 0) ? `
     <div style="background: rgba(13, 17, 23, 0.75); border: 1px solid #30363d; border-radius: 12px; padding: 8px 14px; display: inline-flex; flex-direction: column; gap: 6px; align-items: center; justify-content: center; box-shadow: inset 0 2px 4px rgba(0,0,0,0.4), 0 4px 10px rgba(0,0,0,0.3); margin: 4px 0; max-width: 100%; overflow-x: auto;">
       ${rowsHtml}
@@ -1999,21 +2066,21 @@ function renderSwitch(sw) {
   const theadCols = activeColumnOrder.map(colId => {
     const colDef = COLUMN_DEFS[colId];
     const label = colDef.getLabel ? colDef.getLabel() : colDef.label;
-    const savedWidth = columnWidths[colId];
-    const styleWidth = savedWidth ? `width: ${savedWidth}px;` : (colDef.thStyle || '');
+    const savedWidth = Number(columnWidths[colId]);
+    const styleWidth = Number.isFinite(savedWidth) && savedWidth > 0 ? `width: ${Math.min(1000, Math.max(30, savedWidth))}px;` : (colDef.thStyle || '');
     
     return `<th draggable="true"
-                ondragstart="handleDragStart(event, '${colId}')"
+                ondragstart="handleDragStart(event, '${escapeJsString(colId)}')"
                 ondragover="handleDragOver(event)"
-                ondragenter="handleDragEnter(event, '${colId}')"
+                ondragenter="handleDragEnter(event, '${escapeJsString(colId)}')"
                 ondragleave="handleDragLeave(event)"
                 ondragend="handleDragEnd(event)"
-                ondrop="handleDrop(event, '${colId}')"
-                data-col-id="${colId}"
+                ondrop="handleDrop(event, '${escapeJsString(colId)}')"
+                data-col-id="${escapeHtml(colId)}"
                 style="cursor: move; user-select: none; ${styleWidth}"
-                class="${colDef.thClass || ''}">
+                class="${escapeHtml(colDef.thClass || '')}">
               ${label}
-              <div class="resizer" onmousedown="handleResizeStart(event, '${colId}')"></div>
+              <div class="resizer" onmousedown="handleResizeStart(event, '${escapeJsString(colId)}')"></div>
             </th>`;
   }).join('');
 
@@ -2031,8 +2098,8 @@ function renderSwitch(sw) {
         const content = colDef.render(p, sw);
         const tdClass = colDef.tdClassFn ? colDef.tdClassFn(p) : (colDef.tdClass || '');
         const tdTitle = colDef.tdTitleFn ? colDef.tdTitleFn(p) : (colDef.tdTitle || '');
-        const classAttr = tdClass ? `class="${tdClass}"` : '';
-        const titleAttr = tdTitle ? `title="${tdTitle}"` : '';
+        const classAttr = tdClass ? `class="${escapeHtml(tdClass)}"` : '';
+        const titleAttr = tdTitle ? `title="${escapeHtml(tdTitle)}"` : '';
         
         return `<td ${classAttr} ${titleAttr}>${content}</td>`;
       }).join('');
@@ -2042,10 +2109,10 @@ function renderSwitch(sw) {
     portRows = `<tr><td colspan="${activeColumnOrder.length}" style="padding:16px;text-align:center;color:#8b949e">No active ports (all ports down/disabled). <a href="#" onclick="toggleActivePortsOnly(); return false;" style="color:#58a6ff">Show all ports</a></td></tr>`;
   }
 
-  const errorBlock = sw.error ? `<div class="error-card">Error: ${sw.error}</div>` : '';
-  const uptime = sw.uptime ? `<span><span class="label">Uptime:</span> <span class="value">${sw.uptime}</span></span>` : '';
-  const mac = sw.mac ? `<span><span class="label">MAC:</span> <span class="value">${sw.mac}</span></span>` : '';
-  const fw = sw.firmware ? `<span><span class="label">Firmware:</span> <span class="value">${sw.firmware}</span></span>` : '';
+  const errorBlock = sw.error ? `<div class="error-card">Error: ${escapeHtml(sw.error)}</div>` : '';
+  const uptime = sw.uptime ? `<span><span class="label">Uptime:</span> <span class="value">${escapeHtml(sw.uptime)}</span></span>` : '';
+  const mac = sw.mac ? `<span><span class="label">MAC:</span> <span class="value">${escapeHtml(sw.mac)}</span></span>` : '';
+  const fw = sw.firmware ? `<span><span class="label">Firmware:</span> <span class="value">${escapeHtml(sw.firmware)}</span></span>` : '';
 
   let dhcpBadge = '';
   if (sw.dhcp_snooping) {
@@ -2062,7 +2129,7 @@ function renderSwitch(sw) {
   let jumboBadge = '';
   if (sw.jumbo_frame) {
     const isActive = sw.jumbo_frame.enabled;
-    const sizeVal = sw.jumbo_frame.size;
+    const sizeVal = Number(sw.jumbo_frame.size) || 0;
     jumboBadge = `<span><span class="label">Jumbo Frame:</span> <span class="value" style="color: ${isActive ? '#56d364' : '#8b949e'}">${isActive ? '🟢 Active (' + sizeVal + ')' : '⚪ Inactive'}</span></span>`;
   }
 
@@ -2075,22 +2142,22 @@ function renderSwitch(sw) {
 
   const macSectionHtml = `
     <div class="mac-section" style="border-top: 1px solid #30363d; padding: 12px 20px; background: rgba(22, 27, 34, 0.2);">
-      <div class="mac-header" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;" onclick="toggleMacTable('${sw.ip}')">
+      <div class="mac-header" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;" onclick="toggleMacTable('${escapeJsString(sw.ip)}')">
         <h4 style="font-size: 12px; font-weight: 600; color: #8b949e; display: flex; align-items: center; gap: 6px; margin: 0;">
-          <span class="mac-toggle-arrow-${sw.ip}" style="display: inline-block; transition: transform 0.2s; transform: ${arrowTransform}; font-size: 10px;">&gt;</span>
-          <span>📁 MAC Address Table (<span class="mac-count-${sw.ip}">${macCount} entries</span>)</span>
+          <span class="mac-toggle-arrow-${escapeHtml(sw.ip)}" style="display: inline-block; transition: transform 0.2s; transform: ${arrowTransform}; font-size: 10px;">&gt;</span>
+          <span>📁 MAC Address Table (<span class="mac-count-${escapeHtml(sw.ip)}">${macCount} entries</span>)</span>
         </h4>
-        <span class="mac-time-${sw.ip}" style="font-size: 10px; color: #8b949e;">Last Scraped: ${lastScrapedStr}</span>
+        <span class="mac-time-${escapeHtml(sw.ip)}" style="font-size: 10px; color: #8b949e;">Last Scraped: ${escapeHtml(lastScrapedStr)}</span>
       </div>
       
-      <div class="mac-content-${sw.ip}" style="display: ${displayStyle}; margin-top: 12px;">
+      <div class="mac-content-${escapeHtml(sw.ip)}" style="display: ${displayStyle}; margin-top: 12px;">
         <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
-          <button class="mac-refresh-btn-${sw.ip}" onclick="manualRefreshMac('${sw.ip}')" style="background: #21262d; border: 1px solid #30363d; border-radius: 6px; padding: 6px 12px; color: #c9d1d9; font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px;" onmouseover="this.style.background='#30363d'; this.style.borderColor='#8b949e';" onmouseout="this.style.background='#21262d'; this.style.borderColor='#30363d';">
-            <span class="mac-spinner-${sw.ip}" style="display: none; width: 12px; height: 12px; border: 2px solid transparent; border-top-color: #58a6ff; border-radius: 50%; animation: spin .8s linear infinite; box-sizing: border-box;"></span>
+          <button class="mac-refresh-btn-${escapeHtml(sw.ip)}" onclick="manualRefreshMac('${escapeJsString(sw.ip)}')" style="background: #21262d; border: 1px solid #30363d; border-radius: 6px; padding: 6px 12px; color: #c9d1d9; font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px;" onmouseover="this.style.background='#30363d'; this.style.borderColor='#8b949e';" onmouseout="this.style.background='#21262d'; this.style.borderColor='#30363d';">
+            <span class="mac-spinner-${escapeHtml(sw.ip)}" style="display: none; width: 12px; height: 12px; border: 2px solid transparent; border-top-color: #58a6ff; border-radius: 50%; animation: spin .8s linear infinite; box-sizing: border-box;"></span>
             <span>Refresh MACs</span>
           </button>
         </div>
-        <div class="mac-scroll-container-${sw.ip}" onscroll="saveMacScroll('${sw.ip}', this)" onmouseup="saveMacHeight('${sw.ip}', this)" ontouchend="saveMacHeight('${sw.ip}', this)" style="height: ${macState.height || '450px'}; min-height: 150px; max-height: 1200px; resize: vertical; overflow-y: auto; border: 1px solid #30363d; border-radius: 8px; background: #0d1117; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);">
+        <div class="mac-scroll-container-${escapeHtml(sw.ip)}" onscroll="saveMacScroll('${escapeJsString(sw.ip)}', this)" onmouseup="saveMacHeight('${escapeJsString(sw.ip)}', this)" ontouchend="saveMacHeight('${escapeJsString(sw.ip)}', this)" style="height: ${macHeight}; min-height: 150px; max-height: 1200px; resize: vertical; overflow-y: auto; border: 1px solid #30363d; border-radius: 8px; background: #0d1117; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);">
           <table class="mac-table" style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: left; table-layout: fixed;">
             <thead>
               <tr style="background: #161b22; position: sticky; top: 0; z-index: 2; border-bottom: 1px solid #30363d;">
@@ -2102,15 +2169,15 @@ function renderSwitch(sw) {
                 ${renderMacTh('vlan', 'VLAN')}
               </tr>
               <tr style="background: #0d1117; position: sticky; top: 31px; z-index: 2; border-bottom: 1px solid #30363d;">
-                <th style="padding: 4px 6px;"><input type="text" class="mac-filter-mac-${sw.ip}" placeholder="Filter MAC..." value="${macState.filters ? macState.filters.mac : ''}" onfocus="focusMacSearch()" onblur="blurMacSearch()" oninput="filterMacTable('${sw.ip}')" style="width: 100%; background: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 4px 8px; color: #e1e4e8; font-size: 11px; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='#58a6ff'" onblur="this.style.borderColor='#30363d'"></th>
-                <th style="padding: 4px 6px;"><input type="text" class="mac-filter-host-${sw.ip}" placeholder="Filter Host..." value="${macState.filters ? macState.filters.host : ''}" onfocus="focusMacSearch()" onblur="blurMacSearch()" oninput="filterMacTable('${sw.ip}')" style="width: 100%; background: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 4px 8px; color: #e1e4e8; font-size: 11px; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='#58a6ff'" onblur="this.style.borderColor='#30363d'"></th>
-                <th style="padding: 4px 6px;"><input type="text" class="mac-filter-vendor-${sw.ip}" placeholder="Filter Vendor..." value="${macState.filters ? macState.filters.vendor : ''}" onfocus="focusMacSearch()" onblur="blurMacSearch()" oninput="filterMacTable('${sw.ip}')" style="width: 100%; background: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 4px 8px; color: #e1e4e8; font-size: 11px; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='#58a6ff'" onblur="this.style.borderColor='#30363d'"></th>
-                <th style="padding: 4px 6px;"><input type="text" class="mac-filter-type-${sw.ip}" placeholder="Filter Type..." value="${macState.filters ? macState.filters.type : ''}" onfocus="focusMacSearch()" onblur="blurMacSearch()" oninput="filterMacTable('${sw.ip}')" style="width: 100%; background: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 4px 8px; color: #e1e4e8; font-size: 11px; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='#58a6ff'" onblur="this.style.borderColor='#30363d'"></th>
-                <th style="padding: 4px 6px;"><input type="text" class="mac-filter-port-${sw.ip}" placeholder="Port..." value="${macState.filters ? macState.filters.port : ''}" onfocus="focusMacSearch()" onblur="blurMacSearch()" oninput="filterMacTable('${sw.ip}')" style="width: 100%; background: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 4px 8px; color: #e1e4e8; font-size: 11px; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='#58a6ff'" onblur="this.style.borderColor='#30363d'"></th>
-                <th style="padding: 4px 6px;"><input type="text" class="mac-filter-vlan-${sw.ip}" placeholder="VLAN..." value="${macState.filters ? macState.filters.vlan : ''}" onfocus="focusMacSearch()" onblur="blurMacSearch()" oninput="filterMacTable('${sw.ip}')" style="width: 100%; background: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 4px 8px; color: #e1e4e8; font-size: 11px; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='#58a6ff'" onblur="this.style.borderColor='#30363d'"></th>
+                <th style="padding: 4px 6px;"><input type="text" class="mac-filter-mac-${escapeHtml(sw.ip)}" placeholder="Filter MAC..." value="${escapeHtml(macState.filters ? macState.filters.mac : '')}" onfocus="focusMacSearch()" onblur="blurMacSearch()" oninput="filterMacTable('${escapeJsString(sw.ip)}')" style="width: 100%; background: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 4px 8px; color: #e1e4e8; font-size: 11px; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='#58a6ff'" onblur="this.style.borderColor='#30363d'"></th>
+                <th style="padding: 4px 6px;"><input type="text" class="mac-filter-host-${escapeHtml(sw.ip)}" placeholder="Filter Host..." value="${escapeHtml(macState.filters ? macState.filters.host : '')}" onfocus="focusMacSearch()" onblur="blurMacSearch()" oninput="filterMacTable('${escapeJsString(sw.ip)}')" style="width: 100%; background: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 4px 8px; color: #e1e4e8; font-size: 11px; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='#58a6ff'" onblur="this.style.borderColor='#30363d'"></th>
+                <th style="padding: 4px 6px;"><input type="text" class="mac-filter-vendor-${escapeHtml(sw.ip)}" placeholder="Filter Vendor..." value="${escapeHtml(macState.filters ? macState.filters.vendor : '')}" onfocus="focusMacSearch()" onblur="blurMacSearch()" oninput="filterMacTable('${escapeJsString(sw.ip)}')" style="width: 100%; background: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 4px 8px; color: #e1e4e8; font-size: 11px; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='#58a6ff'" onblur="this.style.borderColor='#30363d'"></th>
+                <th style="padding: 4px 6px;"><input type="text" class="mac-filter-type-${escapeHtml(sw.ip)}" placeholder="Filter Type..." value="${escapeHtml(macState.filters ? macState.filters.type : '')}" onfocus="focusMacSearch()" onblur="blurMacSearch()" oninput="filterMacTable('${escapeJsString(sw.ip)}')" style="width: 100%; background: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 4px 8px; color: #e1e4e8; font-size: 11px; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='#58a6ff'" onblur="this.style.borderColor='#30363d'"></th>
+                <th style="padding: 4px 6px;"><input type="text" class="mac-filter-port-${escapeHtml(sw.ip)}" placeholder="Port..." value="${escapeHtml(macState.filters ? macState.filters.port : '')}" onfocus="focusMacSearch()" onblur="blurMacSearch()" oninput="filterMacTable('${escapeJsString(sw.ip)}')" style="width: 100%; background: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 4px 8px; color: #e1e4e8; font-size: 11px; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='#58a6ff'" onblur="this.style.borderColor='#30363d'"></th>
+                <th style="padding: 4px 6px;"><input type="text" class="mac-filter-vlan-${escapeHtml(sw.ip)}" placeholder="VLAN..." value="${escapeHtml(macState.filters ? macState.filters.vlan : '')}" onfocus="focusMacSearch()" onblur="blurMacSearch()" oninput="filterMacTable('${escapeJsString(sw.ip)}')" style="width: 100%; background: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 4px 8px; color: #e1e4e8; font-size: 11px; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='#58a6ff'" onblur="this.style.borderColor='#30363d'"></th>
               </tr>
             </thead>
-            <tbody class="mac-tbody-${sw.ip}">
+            <tbody class="mac-tbody-${escapeHtml(sw.ip)}">
               <!-- Populate via Javascript -->
             </tbody>
           </table>
@@ -2130,23 +2197,23 @@ function renderSwitch(sw) {
   if (igmpEntries.length > 0) {
     igmpRows = igmpEntries.map(e => `
       <tr style="border-bottom: 1px solid #21262d; transition: background 0.15s;" onmouseover="this.style.background='#1c2128'" onmouseout="this.style.background='transparent'">
-        <td style="padding: 8px 12px; color: #58a6ff; font-weight: 600; font-family: 'SF Mono', Monaco, monospace;">${e.ip}</td>
-        <td style="padding: 8px 12px; color: #c9d1d9; font-weight: 600;">${e.ports}</td>
-        <td style="padding: 8px 12px; color: #8b949e;">VLAN ${e.vlan}</td>
+        <td style="padding: 8px 12px; color: #58a6ff; font-weight: 600; font-family: 'SF Mono', Monaco, monospace;">${escapeHtml(e.ip)}</td>
+        <td style="padding: 8px 12px; color: #c9d1d9; font-weight: 600;">${escapeHtml(e.ports)}</td>
+        <td style="padding: 8px 12px; color: #8b949e;">VLAN ${escapeHtml(e.vlan)}</td>
       </tr>
     `).join('');
   }
 
   const igmpSectionHtml = `
     <div class="igmp-section" style="border-top: 1px solid #30363d; padding: 12px 20px; background: rgba(22, 27, 34, 0.2);">
-      <div class="igmp-header" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;" onclick="toggleIgmpTable('${sw.ip}')">
+      <div class="igmp-header" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;" onclick="toggleIgmpTable('${escapeJsString(sw.ip)}')">
         <h4 style="font-size: 12px; font-weight: 600; color: #8b949e; display: flex; align-items: center; gap: 6px; margin: 0;">
-          <span class="igmp-toggle-arrow-${sw.ip}" style="display: inline-block; transition: transform 0.2s; transform: ${igmpArrowTransform}; font-size: 10px;">&gt;</span>
-          <span>📁 IGMP Multicast Groups (<span class="igmp-count-${sw.ip}">${igmpCount} entries</span>)</span>
+          <span class="igmp-toggle-arrow-${escapeHtml(sw.ip)}" style="display: inline-block; transition: transform 0.2s; transform: ${igmpArrowTransform}; font-size: 10px;">&gt;</span>
+          <span>📁 IGMP Multicast Groups (<span class="igmp-count-${escapeHtml(sw.ip)}">${igmpCount} entries</span>)</span>
         </h4>
       </div>
       
-      <div class="igmp-content-${sw.ip}" style="display: ${igmpDisplayStyle}; margin-top: 12px;">
+        <div class="igmp-content-${escapeHtml(sw.ip)}" style="display: ${igmpDisplayStyle}; margin-top: 12px;">
         <div style="border: 1px solid #30363d; border-radius: 8px; background: #0d1117; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);">
           <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: left;">
             <thead>
@@ -2175,17 +2242,17 @@ function renderSwitch(sw) {
 
     const wirelessRows = wirelessPorts.map(p => {
       const isUp = (p.status || '').toLowerCase() === 'up';
-      const statusBadge = `<span class="status-badge ${isUp ? 'up' : 'down'}"><span class="status-dot ${isUp ? 'up' : 'down'}"></span>${(p.status || 'down').toUpperCase()}</span>`;
+      const statusBadge = `<span class="status-badge ${isUp ? 'up' : 'down'}"><span class="status-dot ${isUp ? 'up' : 'down'}"></span>${escapeHtml((p.status || 'down').toUpperCase())}</span>`;
       const radioBand = p.radio ? ({"ng": "2.4 GHz", "na": "5 GHz", "6e": "6 GHz"}[p.radio] || p.radio.toUpperCase()) : '-';
-      const clientCount = p.client_count !== undefined ? p.client_count : 0;
+      const clientCount = Math.max(0, Number(p.client_count) || 0);
       const tx = Math.max(0, p.cum_tx !== undefined && p.cum_tx !== null ? p.cum_tx : (p.tx_bytes || 0));
       const rx = Math.max(0, p.cum_rx !== undefined && p.cum_rx !== null ? p.cum_rx : (p.rx_bytes || 0));
       return `
         <tr style="border-bottom: 1px solid #21262d; font-size: 11px; transition: background 0.15s;" onmouseover="this.style.background='#1c2128'" onmouseout="this.style.background='transparent'">
-          <td style="padding: 8px 12px; font-weight: 600; color: #58a6ff;">${p.ssid || p.name || p.port}</td>
-          <td style="padding: 8px 12px; color: #8b949e; font-family: 'SF Mono', Monaco, monospace;">${p.port}</td>
-          <td style="padding: 8px 12px; color: #c9d1d9; font-weight: 500;">${radioBand}</td>
-          <td style="padding: 8px 12px; color: #8b949e;">${p.channel || '-'}</td>
+          <td style="padding: 8px 12px; font-weight: 600; color: #58a6ff;">${escapeHtml(p.ssid || p.name || p.port)}</td>
+          <td style="padding: 8px 12px; color: #8b949e; font-family: 'SF Mono', Monaco, monospace;">${escapeHtml(p.port)}</td>
+          <td style="padding: 8px 12px; color: #c9d1d9; font-weight: 500;">${escapeHtml(radioBand)}</td>
+          <td style="padding: 8px 12px; color: #8b949e;">${escapeHtml(p.channel || '-')}</td>
           <td style="padding: 8px 12px;">${statusBadge}</td>
           <td style="padding: 8px 12px; font-weight: 600; color: #3fb950;">${clientCount} ${clientCount === 1 ? 'client' : 'clients'}</td>
           <td style="padding: 8px 12px; font-family: 'SF Mono', Monaco, monospace; color: #b1bac4;">TX ${formatBytes(tx)}<br>RX ${formatBytes(rx)}</td>
@@ -2195,13 +2262,13 @@ function renderSwitch(sw) {
 
     wirelessSectionHtml = `
       <div class="wireless-section" style="border-top: 1px solid #30363d; padding: 12px 20px; background: rgba(22, 27, 34, 0.2);">
-        <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;" onclick="toggleWirelessTable('${sw.ip}')">
+        <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;" onclick="toggleWirelessTable('${escapeJsString(sw.ip)}')">
           <h4 style="font-size: 12px; font-weight: 600; color: #8b949e; display: flex; align-items: center; gap: 6px; margin: 0;">
-            <span class="wireless-toggle-arrow-${sw.ip}" style="display: inline-block; transition: transform 0.2s; transform: ${wirelessArrowTransform}; font-size: 10px;">&gt;</span>
+            <span class="wireless-toggle-arrow-${escapeHtml(sw.ip)}" style="display: inline-block; transition: transform 0.2s; transform: ${wirelessArrowTransform}; font-size: 10px;">&gt;</span>
             <span>📶 Wireless Networks &amp; SSIDs (<span style="color: #e1e4e8;">${wirelessPorts.length} Virtual APs</span>)</span>
           </h4>
         </div>
-        <div class="wireless-content-${sw.ip}" style="display: ${wirelessDisplayStyle}; margin-top: 12px;">
+        <div class="wireless-content-${escapeHtml(sw.ip)}" style="display: ${wirelessDisplayStyle}; margin-top: 12px;">
           <div style="border: 1px solid #30363d; border-radius: 8px; background: #0d1117; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);">
             <table style="width: 100%; border-collapse: collapse; text-align: left;">
               <thead>
@@ -2230,23 +2297,23 @@ function renderSwitch(sw) {
   const cardChevronRotate = isCardCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
   const activeCount = rawPorts.filter(p => (p.status || p.link || '').toLowerCase() === 'up').length;
   const portSummaryBadge = rawPorts.length > 0
-    ? `<span class="card-collapsed-summary-${sw.ip}" style="display: ${isCardCollapsed ? 'inline-block' : 'none'}; font-size: 11px; color: #8b949e; background: #0d1117; padding: 2px 8px; border-radius: 12px; border: 1px solid #30363d;">${activeCount}/${rawPorts.length} Ports Up</span>`
+    ? `<span class="card-collapsed-summary-${escapeHtml(sw.ip)}" style="display: ${isCardCollapsed ? 'inline-block' : 'none'}; font-size: 11px; color: #8b949e; background: #0d1117; padding: 2px 8px; border-radius: 12px; border: 1px solid #30363d;">${activeCount}/${rawPorts.length} Ports Up</span>`
     : '';
 
-  return `<div class="switch-card" data-switch-ip="${sw.ip}">
+  return `<div class="switch-card" data-switch-ip="${escapeHtml(sw.ip)}">
     <div class="switch-header">
       <div style="display: flex; align-items: center; gap: 12px;">
-        <img src="/api/switches/${sw.ip}/image" alt="Switch" style="height: 24px; width: auto; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));">
+        <img src="/api/switches/${encodeURIComponent(sw.ip)}/image" alt="Switch" style="height: 24px; width: auto; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));">
         <div>
           <div style="display: flex; align-items: center; gap: 8px;">
-            <h2>${sw.name}</h2>
+            <h2>${escapeHtml(sw.name)}</h2>
             ${portSummaryBadge}
           </div>
           <span style="font-size:12px;color:#b1bac4;display:flex;align-items:center;gap:8px;">
-            <a href="http://${sw.ip}/" target="_blank" style="color:#58a6ff;text-decoration:none" title="Open switch web UI">${sw.ip}</a>
+            <a href="http://${escapeHtml(sw.ip)}/" target="_blank" style="color:#58a6ff;text-decoration:none" title="Open switch web UI">${escapeHtml(sw.ip)}</a>
             ${sw.can_backup ? `
             <span style="color:#30363d">|</span>
-            <a href="#" onclick="backupConfig('${sw.ip}', this); return false;" style="color:#58a6ff;text-decoration:none;font-weight:600;display:inline-flex;align-items:center;gap:4px;" title="Backup configuration on server">💾 Backup</a>
+            <a href="#" onclick="backupConfig('${escapeJsString(sw.ip)}', this); return false;" style="color:#58a6ff;text-decoration:none;font-weight:600;display:inline-flex;align-items:center;gap:4px;" title="Backup configuration on server">💾 Backup</a>
             ` : ''}
           </span>
         </div>
@@ -2256,14 +2323,14 @@ function renderSwitch(sw) {
       ${portBar}
       
       <div style="display: flex; align-items: center; gap: 12px;">
-        <div class="meta">${(sw.model && sw.model !== 'generic_switch') ? sw.model : ''}</div>
-        <button onclick="toggleCardCollapse('${sw.ip}')" style="background: #21262d; border: 1px solid #30363d; border-radius: 6px; color: #8b949e; cursor: pointer; padding: 4px 8px; display: inline-flex; align-items: center; gap: 4px; font-size: 11px; transition: all 0.2s;" title="Collapse / Expand card">
-          <span class="card-chevron-${sw.ip}" style="display: inline-block; transition: transform 0.2s; transform: ${cardChevronRotate}; font-size: 9px;">&#9660;</span>
+        <div class="meta">${escapeHtml((sw.model && sw.model !== 'generic_switch') ? sw.model : '')}</div>
+        <button onclick="toggleCardCollapse('${escapeJsString(sw.ip)}')" style="background: #21262d; border: 1px solid #30363d; border-radius: 6px; color: #8b949e; cursor: pointer; padding: 4px 8px; display: inline-flex; align-items: center; gap: 4px; font-size: 11px; transition: all 0.2s;" title="Collapse / Expand card">
+          <span class="card-chevron-${escapeHtml(sw.ip)}" style="display: inline-block; transition: transform 0.2s; transform: ${cardChevronRotate}; font-size: 9px;">&#9660;</span>
         </button>
       </div>
     </div>
     
-    <div class="card-body-${sw.ip}" style="display: ${displayCardBody};">
+    <div class="card-body-${escapeHtml(sw.ip)}" style="display: ${displayCardBody};">
       <div class="device-bar">
         ${uptime}
         ${fw}
@@ -2304,12 +2371,33 @@ function renderDashboardData() {
 
   if (filteredData.length === 0) {
     app.className = 'switches';
-    app.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #8b949e; background: #161b22; border: 1px solid #30363d; border-radius: 12px;">No devices match "${currentDeviceFilter}". <a href="#" onclick="clearDeviceFilter(); return false;" style="color: #58a6ff;">Clear search</a></div>`;
+    app.replaceChildren();
+    const empty = document.createElement('div');
+    empty.style.gridColumn = '1 / -1';
+    empty.style.textAlign = 'center';
+    empty.style.padding = '40px';
+    empty.style.color = '#8b949e';
+    empty.style.background = '#161b22';
+    empty.style.border = '1px solid #30363d';
+    empty.style.borderRadius = '12px';
+    empty.appendChild(document.createTextNode(`No devices match "${currentDeviceFilter}". `));
+    const clearLink = document.createElement('a');
+    clearLink.href = '#';
+    clearLink.style.color = '#58a6ff';
+    clearLink.textContent = 'Clear search';
+    clearLink.addEventListener('click', event => {
+      event.preventDefault();
+      clearDeviceFilter();
+    });
+    empty.appendChild(clearLink);
+    app.appendChild(empty);
     return;
   }
 
   app.className = 'switches';
-  app.innerHTML = filteredData.map(renderSwitch).join('');
+  const renderedCards = document.createElement('div');
+  renderedCards.innerHTML = filteredData.map(renderSwitch).join('');
+  app.replaceChildren(...Array.from(renderedCards.childNodes));
 
   // Re-render active MAC tables
   filteredData.forEach(sw => {
@@ -2332,7 +2420,18 @@ async function updateDashboard() {
     const data = await r.json();
     const app = document.getElementById('app');
     if (!data || data.length === 0) {
-      app.innerHTML = '<div style="text-align:center;padding:40px;color:#b1bac4">No nodes configured. <a href="/config" style="color:#58a6ff">Configure now</a></div>';
+      app.replaceChildren();
+      const empty = document.createElement('div');
+      empty.style.textAlign = 'center';
+      empty.style.padding = '40px';
+      empty.style.color = '#b1bac4';
+      empty.appendChild(document.createTextNode('No nodes configured. '));
+      const configureLink = document.createElement('a');
+      configureLink.href = '/config';
+      configureLink.style.color = '#58a6ff';
+      configureLink.textContent = 'Configure now';
+      empty.appendChild(configureLink);
+      app.appendChild(empty);
       app.className = '';
       liveDot.style.background = '#f85149';
       liveText.textContent = 'No nodes';
@@ -2363,16 +2462,22 @@ async function updateDashboard() {
         if (currentPortObj) {
           const totalTx = Math.max(0, currentPortObj.cum_tx !== undefined && currentPortObj.cum_tx !== null ? currentPortObj.cum_tx : (currentPortObj.tx_bytes || 0));
           const totalRx = Math.max(0, currentPortObj.cum_rx !== undefined && currentPortObj.cum_rx !== null ? currentPortObj.cum_rx : (currentPortObj.rx_bytes || 0));
-          document.getElementById('graph-total-tx').innerHTML = `${totalTx.toLocaleString()} bytes <span style="font-weight:400;color:#8b949e">(${formatBytes(totalTx)})</span>`;
-          document.getElementById('graph-total-rx').innerHTML = `${totalRx.toLocaleString()} bytes <span style="font-weight:400;color:#8b949e">(${formatBytes(totalRx)})</span>`;
+          document.getElementById('graph-total-tx').textContent = `${totalTx.toLocaleString()} bytes (${formatBytes(totalTx)})`;
+          document.getElementById('graph-total-rx').textContent = `${totalRx.toLocaleString()} bytes (${formatBytes(totalRx)})`;
         }
       }
     }
     liveDot.style.background = '#3fb950';
     resetCountdown();
   } catch (e) {
-    document.getElementById('app').innerHTML =
-      `<div style="text-align:center;padding:40px;color:#f85149">Connection error: ${e.message}</div>`;
+    const app = document.getElementById('app');
+    app.replaceChildren();
+    const error = document.createElement('div');
+    error.style.textAlign = 'center';
+    error.style.padding = '40px';
+    error.style.color = '#f85149';
+    error.textContent = `Connection error: ${e.message}`;
+    app.appendChild(error);
     liveDot.style.background = '#f85149';
     liveText.textContent = 'Error';
   }
@@ -2391,8 +2496,8 @@ function openGraph(ip, port, name, label, totalTx = 0, totalRx = 0) {
   document.getElementById('graph-overlay').classList.add('open');
   
   // Update cumulative traffic display
-  document.getElementById('graph-total-tx').innerHTML = `${totalTx.toLocaleString()} bytes <span style="font-weight:400;color:#8b949e">(${formatBytes(totalTx)})</span>`;
-  document.getElementById('graph-total-rx').innerHTML = `${totalRx.toLocaleString()} bytes <span style="font-weight:400;color:#8b949e">(${formatBytes(totalRx)})</span>`;
+  document.getElementById('graph-total-tx').textContent = `${totalTx.toLocaleString()} bytes (${formatBytes(totalTx)})`;
+  document.getElementById('graph-total-rx').textContent = `${totalRx.toLocaleString()} bytes (${formatBytes(totalRx)})`;
   
   setGraphRange(currentGraphRange); // trigger render
 }
@@ -2465,11 +2570,19 @@ function renderGraph(ip, port) {
   const plotW = W - pad.left - pad.right;
   const plotH = H - pad.top - pad.bottom;
 
-  fetch(`/api/history?ip=${ip}&port=${port}&range=${currentGraphRange}`)
+  fetch(`/api/history?${new URLSearchParams({ip, port, range: currentGraphRange})}`)
     .then(r => r.json())
     .then(data => {
-      if (!data || !data.tx || data.tx.length < 2) {
-        svg.innerHTML = `<text x="${W/2}" y="${H/2}" text-anchor="middle" fill="#b1bac4" font-size="14">No history data available for this range yet</text>`;
+      if (!data || !Array.isArray(data.tx) || !Array.isArray(data.rx) || !Array.isArray(data.timestamps) || data.tx.length < 2 || data.tx.length !== data.rx.length || data.tx.length !== data.timestamps.length) {
+        svg.replaceChildren();
+        const emptyText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        emptyText.setAttribute('x', String(W / 2));
+        emptyText.setAttribute('y', String(H / 2));
+        emptyText.setAttribute('text-anchor', 'middle');
+        emptyText.setAttribute('fill', '#b1bac4');
+        emptyText.setAttribute('font-size', '14');
+        emptyText.textContent = 'No history data available for this range yet';
+        svg.appendChild(emptyText);
         document.getElementById('graph-peak-tx').textContent = '-';
         document.getElementById('graph-peak-rx').textContent = '-';
         document.getElementById('graph-now-tx').textContent = '-';
@@ -2477,9 +2590,9 @@ function renderGraph(ip, port) {
         return;
       }
 
-      const txPoints = data.tx;
-      const rxPoints = data.rx;
-      const tss = data.timestamps;
+      const txPoints = data.tx.map(value => Math.max(0, Number(value) || 0));
+      const rxPoints = data.rx.map(value => Math.max(0, Number(value) || 0));
+      const tss = data.timestamps.map(value => Number(value) || 0);
       const len = txPoints.length;
 
       let maxVal = 0;
@@ -2651,11 +2764,17 @@ function renderGraph(ip, port) {
           timeStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
         }
 
-        tooltip.innerHTML = `
-          <div class="time">${timeStr}</div>
-          <div class="tx">TX: ${formatBps(txPoints[idx], speedUnit)}</div>
-          <div class="rx">RX: ${formatBps(rxPoints[idx], speedUnit)}</div>
-        `;
+        tooltip.replaceChildren();
+        const timeEl = document.createElement('div');
+        timeEl.className = 'time';
+        timeEl.textContent = timeStr;
+        const txEl = document.createElement('div');
+        txEl.className = 'tx';
+        txEl.textContent = `TX: ${formatBps(txPoints[idx], speedUnit)}`;
+        const rxEl = document.createElement('div');
+        rxEl.className = 'rx';
+        rxEl.textContent = `RX: ${formatBps(rxPoints[idx], speedUnit)}`;
+        tooltip.append(timeEl, txEl, rxEl);
 
         // Position tooltip relatively to the cursor position
         const svgContainerRect = svg.parentElement.getBoundingClientRect();
@@ -2675,7 +2794,15 @@ function renderGraph(ip, port) {
       });
     })
     .catch(e => {
-      svg.innerHTML = `<text x="${W/2}" y="${H/2}" text-anchor="middle" fill="#f85149" font-size="14">Error loading history: ${e.message}</text>`;
+      svg.replaceChildren();
+      const errorText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      errorText.setAttribute('x', String(W / 2));
+      errorText.setAttribute('y', String(H / 2));
+      errorText.setAttribute('text-anchor', 'middle');
+      errorText.setAttribute('fill', '#f85149');
+      errorText.setAttribute('font-size', '14');
+      errorText.textContent = `Error loading history: ${e.message}`;
+      svg.appendChild(errorText);
     });
 }
 
@@ -2707,7 +2834,7 @@ function openTransceiver(ip, port, switchName) {
   
   overlay.classList.add('open');
   
-  fetch(`/api/switches/${ip}/transceiver`)
+  fetch(`/api/switches/${encodeURIComponent(ip)}/transceiver`)
     .then(r => {
       if (!r.ok) {
         return r.json().then(err => { throw new Error(err.error || 'Request failed'); });
@@ -2721,7 +2848,7 @@ function openTransceiver(ip, port, switchName) {
       content.innerHTML = `
         <div class="error-card" style="margin: 20px 0; font-size: 13px;">
           <strong>No SFP module detected or telemetry unavailable</strong><br>
-          <span style="opacity: 0.8; font-size: 11px;">${err.message}</span>
+          <span style="opacity: 0.8; font-size: 11px;">${escapeHtml(err.message)}</span>
         </div>
       `;
     });
@@ -2775,19 +2902,19 @@ function renderTransceiverData(data, container) {
           <svg viewBox="0 0 24 24" style="width: 14px; height: 14px; fill: currentColor; display: inline-block; vertical-align: middle;"><path d="M4,5 h3 v3 h10 v -3 h 3 v 14 h -16 z" /></svg>
           SFP Module Details
         </h4>
-        <div class="transceiver-item"><span class="label">OE Present</span><span class="val">${data.oe_present || 'Unknown'}</span></div>
-        <div class="transceiver-item"><span class="label">Loss of Signal</span><span class="val">${data.loss_of_signal || 'Unknown'}</span></div>
-        <div class="transceiver-item"><span class="label">Transceiver Type</span><span class="val">${data.transceiver_type || 'Unknown'}</span></div>
-        <div class="transceiver-item"><span class="label">Connector Type</span><span class="val">${data.connector_type || 'Unknown'}</span></div>
-        <div class="transceiver-item"><span class="label">Compliance Codes</span><span class="val">${data.eth_compliance_codes || 'Unknown'}</span></div>
-        <div class="transceiver-item"><span class="label">Wavelength</span><span class="val">${data.wavelength || 'Unknown'}</span></div>
-        <div class="transceiver-item"><span class="label">Bitrate</span><span class="val">${data.bitrate || 'Unknown'}</span></div>
-        <div class="transceiver-item"><span class="label">Vendor Name</span><span class="val">${(data.vendor_name || 'Unknown').trim()}</span></div>
-        <div class="transceiver-item"><span class="label">Vendor OUI</span><span class="val">${data.vendor_oui || 'Unknown'}</span></div>
-        <div class="transceiver-item"><span class="label">Part Number</span><span class="val">${(data.vendor_pn || 'Unknown').trim()}</span></div>
-        <div class="transceiver-item"><span class="label">Revision</span><span class="val">${(data.vendor_revision || 'Unknown').trim()}</span></div>
-        <div class="transceiver-item"><span class="label">Serial Number</span><span class="val">${(data.vendor_sn || 'Unknown').trim()}</span></div>
-        <div class="transceiver-item"><span class="label">Date Code</span><span class="val">${data.date_code || 'Unknown'}</span></div>
+        <div class="transceiver-item"><span class="label">OE Present</span><span class="val">${escapeHtml(data.oe_present || 'Unknown')}</span></div>
+        <div class="transceiver-item"><span class="label">Loss of Signal</span><span class="val">${escapeHtml(data.loss_of_signal || 'Unknown')}</span></div>
+        <div class="transceiver-item"><span class="label">Transceiver Type</span><span class="val">${escapeHtml(data.transceiver_type || 'Unknown')}</span></div>
+        <div class="transceiver-item"><span class="label">Connector Type</span><span class="val">${escapeHtml(data.connector_type || 'Unknown')}</span></div>
+        <div class="transceiver-item"><span class="label">Compliance Codes</span><span class="val">${escapeHtml(data.eth_compliance_codes || 'Unknown')}</span></div>
+        <div class="transceiver-item"><span class="label">Wavelength</span><span class="val">${escapeHtml(data.wavelength || 'Unknown')}</span></div>
+        <div class="transceiver-item"><span class="label">Bitrate</span><span class="val">${escapeHtml(data.bitrate || 'Unknown')}</span></div>
+        <div class="transceiver-item"><span class="label">Vendor Name</span><span class="val">${escapeHtml((data.vendor_name || 'Unknown').trim())}</span></div>
+        <div class="transceiver-item"><span class="label">Vendor OUI</span><span class="val">${escapeHtml(data.vendor_oui || 'Unknown')}</span></div>
+        <div class="transceiver-item"><span class="label">Part Number</span><span class="val">${escapeHtml((data.vendor_pn || 'Unknown').trim())}</span></div>
+        <div class="transceiver-item"><span class="label">Revision</span><span class="val">${escapeHtml((data.vendor_revision || 'Unknown').trim())}</span></div>
+        <div class="transceiver-item"><span class="label">Serial Number</span><span class="val">${escapeHtml((data.vendor_sn || 'Unknown').trim())}</span></div>
+        <div class="transceiver-item"><span class="label">Date Code</span><span class="val">${escapeHtml(data.date_code || 'Unknown')}</span></div>
       </div>
       
       <!-- DDMI Real-Time Telemetry Card -->
@@ -2801,7 +2928,7 @@ function renderTransceiverData(data, container) {
         <div class="telemetry-row">
           <div class="header-row">
             <span class="label">🌡️ Temperature</span>
-            <span class="val" style="color: ${tempColor};">${data.temperature || 'N/A'}</span>
+            <span class="val" style="color: ${tempColor};">${escapeHtml(data.temperature || 'N/A')}</span>
           </div>
           <div class="telemetry-bar-bg">
             <div class="telemetry-bar-fill" style="width: ${tempPct}%; background: ${tempColor};"></div>
@@ -2812,7 +2939,7 @@ function renderTransceiverData(data, container) {
         <div class="telemetry-row">
           <div class="header-row">
             <span class="label">⚡ Supply Voltage</span>
-            <span class="val" style="color: ${voltColor};">${data.voltage || 'N/A'}</span>
+            <span class="val" style="color: ${voltColor};">${escapeHtml(data.voltage || 'N/A')}</span>
           </div>
           <div class="telemetry-bar-bg">
             <div class="telemetry-bar-fill" style="width: ${voltPct}%; background: ${voltColor};"></div>
@@ -2823,7 +2950,7 @@ function renderTransceiverData(data, container) {
         <div class="telemetry-row">
           <div class="header-row">
             <span class="label">🔋 Bias Current</span>
-            <span class="val" style="color: ${currColor};">${data.current || 'N/A'}</span>
+            <span class="val" style="color: ${currColor};">${escapeHtml(data.current || 'N/A')}</span>
           </div>
           <div class="telemetry-bar-bg">
             <div class="telemetry-bar-fill" style="width: ${currPct}%; background: ${currColor};"></div>
@@ -2834,7 +2961,7 @@ function renderTransceiverData(data, container) {
         <div class="telemetry-row">
           <div class="header-row">
             <span class="label">📤 Optical TX Power</span>
-            <span class="val" style="color: ${txColor};">${data.tx_power || 'N/A'}</span>
+            <span class="val" style="color: ${txColor};">${escapeHtml(data.tx_power || 'N/A')}</span>
           </div>
           <div class="telemetry-bar-bg">
             <div class="telemetry-bar-fill" style="width: ${txPct}%; background: ${txColor};"></div>
@@ -2845,7 +2972,7 @@ function renderTransceiverData(data, container) {
         <div class="telemetry-row">
           <div class="header-row">
             <span class="label">📥 Optical RX Power</span>
-            <span class="val" style="color: ${rxColor};">${data.rx_power || 'N/A'}</span>
+            <span class="val" style="color: ${rxColor};">${escapeHtml(data.rx_power || 'N/A')}</span>
           </div>
           <div class="telemetry-bar-bg">
             <div class="telemetry-bar-fill" style="width: ${rxPct}%; background: ${rxColor};"></div>

@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="csrf-token" content="{{ csrf_token }}">
+<script src="/static/security.js"></script>
 <title>{{ title }} - Settings</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>&#128252;</text></svg>">
 <!-- CodeMirror Styles and Scripts from CDN for YAML Syntax Highlighting -->
@@ -1862,6 +1864,15 @@ let wizardEditingDeviceId = null;
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
   fetchProtocolsAndInit();
+  document.getElementById('device-roster-tbody')?.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-device-action]');
+    if (!button) return;
+    const id = button.dataset.deviceId;
+    if (button.dataset.deviceAction === 'test') testDeviceConnectionById(id);
+    else if (button.dataset.deviceAction === 'edit') editDeviceById(id);
+    else if (button.dataset.deviceAction === 'reboot') openRebootModal(button.dataset.deviceIp, button.dataset.deviceName);
+    else if (button.dataset.deviceAction === 'delete') deleteDeviceById(id);
+  });
 });
 
 async function fetchProtocolsAndInit() {
@@ -1896,7 +1907,7 @@ function syncDevicesJson() {
 function populateProtocolDropdown() {
   const select = document.getElementById('managed-input-protocol');
   if (!select) return;
-  select.innerHTML = '';
+  select.replaceChildren();
   registeredProtocols.forEach(p => {
     const opt = document.createElement('option');
     opt.value = p.name;
@@ -1931,7 +1942,7 @@ function populateUpstreamDropdowns(currentDevId = null) {
   [unmanagedSelect, managedSelect, ontStatsSelect].forEach(sel => {
     if (!sel) return;
     const currentVal = sel.value;
-    sel.innerHTML = '';
+    sel.replaceChildren();
     options.forEach(optData => {
       const opt = document.createElement('option');
       opt.value = optData.value;
@@ -1996,20 +2007,40 @@ function renderDevicesTable() {
   }
 
   if (devicesData.length === 0) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="7" style="text-align: center; padding: 40px 20px; color: #8b949e;">
-          <div style="font-size: 32px; margin-bottom: 10px;">🔌</div>
-          <p style="font-size: 14px; font-weight: 500; color: #c9d1d9; margin-bottom: 6px;">No devices configured yet</p>
-          <p style="font-size: 12px; margin-bottom: 16px;">Add your managed switches, routers, or unmanaged switches to build your network topology.</p>
-          <button type="button" class="btn-add-device" onclick="openDeviceWizard()" style="margin: 0 auto;">+ Add First Device</button>
-        </td>
-      </tr>
-    `;
+    tbody.replaceChildren();
+    const row = document.createElement('tr');
+    const cell = document.createElement('td');
+    cell.colSpan = 7;
+    cell.style.textAlign = 'center';
+    cell.style.padding = '40px 20px';
+    cell.style.color = '#8b949e';
+    const icon = document.createElement('div');
+    icon.style.fontSize = '32px';
+    icon.style.marginBottom = '10px';
+    icon.textContent = '🔌';
+    const title = document.createElement('p');
+    title.style.fontSize = '14px';
+    title.style.fontWeight = '500';
+    title.style.color = '#c9d1d9';
+    title.style.marginBottom = '6px';
+    title.textContent = 'No devices configured yet';
+    const description = document.createElement('p');
+    description.style.fontSize = '12px';
+    description.style.marginBottom = '16px';
+    description.textContent = 'Add your managed switches, routers, or unmanaged switches to build your network topology.';
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'btn-add-device';
+    button.style.margin = '0 auto';
+    button.textContent = '+ Add First Device';
+    button.addEventListener('click', openDeviceWizard);
+    cell.append(icon, title, description, button);
+    row.appendChild(cell);
+    tbody.appendChild(row);
     return;
   }
 
-  tbody.innerHTML = '';
+    tbody.replaceChildren();
   devicesData.forEach(dev => {
     const isManaged = (dev.management_type === 'managed');
     const isEnabled = (dev.enabled !== false);
@@ -2026,115 +2057,180 @@ function renderDevicesTable() {
     else if (role.includes('phone')) icon = '☎';
 
     // Management badge
-    let mgmtBadge = '<span class="badge-pill badge-unmanaged">Unmanaged</span>';
+    let mgmtBadge = {className: 'badge-pill badge-unmanaged', text: 'Unmanaged'};
     if (isManaged) {
       const proto = (dev.protocol || dev.model || 'http_hc').toLowerCase();
       if (proto.includes('snmp')) {
-        mgmtBadge = '<span class="badge-pill badge-managed-snmp">Managed • SNMP</span>';
+        mgmtBadge = {className: 'badge-pill badge-managed-snmp', text: 'Managed • SNMP'};
       } else if (proto.includes('fritz')) {
-        mgmtBadge = '<span class="badge-pill badge-managed-fritz">Managed • FRITZ!Box</span>';
+        mgmtBadge = {className: 'badge-pill badge-managed-fritz', text: 'Managed • FRITZ!Box'};
       } else if (proto.includes('ovs') || proto.includes('openvswitch')) {
-        mgmtBadge = '<span class="badge-pill badge-managed-ovs">Managed • OVS</span>';
+        mgmtBadge = {className: 'badge-pill badge-managed-ovs', text: 'Managed • OVS'};
       } else if (proto.includes('unifi') || proto.includes('usw') || proto.includes('uap')) {
-        mgmtBadge = '<span class="badge-pill badge-managed-unifi">Managed • UniFi SSH</span>';
+        mgmtBadge = {className: 'badge-pill badge-managed-unifi', text: 'Managed • UniFi SSH'};
       } else if (proto.includes('proxmox') || proto === 'pve') {
-        mgmtBadge = '<span class="badge-pill badge-managed-proxmox">Managed • Proxmox VE</span>';
+        mgmtBadge = {className: 'badge-pill badge-managed-proxmox', text: 'Managed • Proxmox VE'};
       } else if (proto.includes('ssh')) {
-        mgmtBadge = '<span class="badge-pill badge-managed-ssh">Managed • SSH</span>';
+        mgmtBadge = {className: 'badge-pill badge-managed-ssh', text: 'Managed • SSH'};
       } else {
-        mgmtBadge = '<span class="badge-pill badge-managed-http">Managed • HTTP</span>';
+        mgmtBadge = {className: 'badge-pill badge-managed-http', text: 'Managed • HTTP'};
       }
     }
 
     // Role badge
     let roleText = dev.role || dev.device_type || (isManaged ? 'Switch' : 'Unmanaged Switch');
-    let roleBadge = '';
+    let roleBadge = null;
     if (dev.device_type === 'ont' || dev.role === 'ont') {
       const downSpeed = dev.speed_down || dev.speed || '1000M';
       const upSpeed = dev.speed_up || dev.speed || '115M';
-      roleBadge = `<span class="badge-pill" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4);">ONT (${downSpeed} ↓ / ${upSpeed} ↑)</span>`;
+      roleBadge = {className: 'badge-pill', style: 'background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4);', text: `ONT (${downSpeed} ↓ / ${upSpeed} ↑)`};
     } else if (dev.device_type === 'phone' || dev.role === 'phone') {
       const miniSwitchNote = dev.is_mini_switch !== false ? ' (Passthrough)' : '';
-      roleBadge = `<span class="badge-pill" style="background: rgba(6, 182, 212, 0.15); color: #22d3ee; border: 1px solid rgba(6, 182, 212, 0.4);">Phone${miniSwitchNote}</span>`;
+      roleBadge = {className: 'badge-pill', style: 'background: rgba(6, 182, 212, 0.15); color: #22d3ee; border: 1px solid rgba(6, 182, 212, 0.4);', text: `Phone${miniSwitchNote}`};
     } else {
       if (['core_switch', 'dist_switch', 'access_switch', 'switch'].includes(roleText.toLowerCase())) {
         roleText = isManaged ? 'Switch' : 'Unmanaged Switch';
       } else {
         roleText = roleText.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
       }
-      roleBadge = `<span class="badge-pill badge-role">${roleText}</span>`;
+      roleBadge = {className: 'badge-pill badge-role', text: roleText};
     }
 
     // Upstream device attachment display
-    let upstreamDisplay = '<span style="color: #8b949e; font-size: 12px;">Auto-Detect (Transit)</span>';
+    let upstreamDisplay = [{text: 'Auto-Detect (Transit)', style: 'color: #8b949e; font-size: 12px;'}];
     if (dev.device_type === 'ont' || dev.role === 'ont') {
       if (dev.parent_ip) {
         const downstreamDev = devicesData.find(d => (d.ip === dev.parent_ip || d.id === dev.parent_ip));
         const downstreamName = downstreamDev ? downstreamDev.name : dev.parent_ip;
-        const portPart = dev.parent_port ? ` : Port ${dev.parent_port}` : '';
-        upstreamDisplay = `<span style="color: #34d399; font-weight: 500;">&rarr; ${downstreamName}${portPart}</span> <span style="font-size: 11px; color: #8b949e; margin-left: 4px;">(Downstream)</span>`;
+        const downstreamText = `→ ${downstreamName}${dev.parent_port ? ` : Port ${dev.parent_port}` : ''}`;
+        upstreamDisplay = [
+          {text: downstreamText, style: 'color: #34d399; font-weight: 500;'},
+          {text: '(Downstream)', style: 'font-size: 11px; color: #8b949e; margin-left: 4px;'}
+        ];
       } else {
-        upstreamDisplay = '<span style="color: #f85149; font-size: 12px;">Unconnected</span>';
+        upstreamDisplay = [{text: 'Unconnected', style: 'color: #f85149; font-size: 12px;'}];
       }
     } else if (dev.parent_ip) {
       const upstreamDev = devicesData.find(d => (d.ip === dev.parent_ip || d.id === dev.parent_ip));
       const upstreamName = upstreamDev ? upstreamDev.name : dev.parent_ip;
-      const portPart = dev.parent_port ? ` : Port ${dev.parent_port}` : '';
-      const uplinkPart = dev.uplink_port ? ` <span style="color:#8b949e;">[Uplink ${dev.uplink_port}]</span>` : '';
-      upstreamDisplay = `<span style="color: #58a6ff; font-weight: 500;">&rarr; ${upstreamName}${portPart}</span>${uplinkPart}`;
+      const upstreamText = `→ ${upstreamName}${dev.parent_port ? ` : Port ${dev.parent_port}` : ''}`;
+      upstreamDisplay = [{text: upstreamText, style: 'color: #58a6ff; font-weight: 500;'}];
+      if (dev.uplink_port) upstreamDisplay.push({text: `[Uplink ${dev.uplink_port}]`, style: 'color: #8b949e;'});
     } else if (!isManaged) {
-      upstreamDisplay = '<span style="color: #8b949e; font-size: 12px;">Root / Unattached</span>';
+      upstreamDisplay = [{text: 'Root / Unattached', style: 'color: #8b949e; font-size: 12px;'}];
     }
 
     // Network address display
-    let addrDisplay = '';
-    if (dev.ip) {
-      addrDisplay += `<div style="font-family: monospace; font-size: 12px; color: #f0f6fc;">${dev.ip}</div>`;
-    }
-    if (dev.mac) {
-      addrDisplay += `<div style="font-family: monospace; font-size: 11px; color: #8b949e;">${dev.mac}</div>`;
-    }
-    if (!addrDisplay) {
-      addrDisplay = '<span style="color: #484f58; font-size: 12px;">None</span>';
-    }
+    const addressValues = [];
+    if (dev.ip) addressValues.push({text: dev.ip, style: 'font-family: monospace; font-size: 12px; color: #f0f6fc;'});
+    if (dev.mac) addressValues.push({text: dev.mac, style: 'font-family: monospace; font-size: 11px; color: #8b949e;'});
+    if (!addressValues.length) addressValues.push({text: 'None', style: 'color: #484f58; font-size: 12px;'});
 
     // Ports count
-    const portsDisplay = dev.port_count ? `${dev.port_count}` : (isManaged ? '9' : '-');
+    const portsDisplay = dev.port_count ? String(dev.port_count) : (isManaged ? '9' : '-');
 
     // Reboot capability
     const canReboot = isManaged && (!dev.protocol || dev.protocol === 'http_hc');
 
     const tr = document.createElement('tr');
     tr.className = 'device-row';
-    tr.innerHTML = `
-      <td style="text-align: center;">
-        <span class="status-indicator-dot ${isEnabled ? 'status-dot-active' : 'status-dot-disabled'}" title="${isEnabled ? 'Device Enabled' : 'Device Disabled'}"></span>
-      </td>
-      <td>
-        <div class="device-identity">
-          <div class="device-icon-box">${icon}</div>
-          <div>
-            <div class="device-name-text">
-              ${dev.name}
-              ${roleBadge}
-            </div>
-            <div class="device-meta-sub">${formatDeviceModelDisplay(dev)}</div>
-          </div>
-        </div>
-      </td>
-      <td>${mgmtBadge}</td>
-      <td>${addrDisplay}</td>
-      <td>${upstreamDisplay}</td>
-      <td><span style="font-size: 12px; font-weight: 600; color: #c9d1d9;">${portsDisplay}</span></td>
-      <td>
-        <div class="device-row-actions">
-          ${isManaged ? `<button type="button" class="action-btn-sm test" onclick="testDeviceConnectionById('${dev.id}')" title="Test Driver Connection">Test</button>` : ''}
-          <button type="button" class="action-btn-sm edit" onclick="editDeviceById('${dev.id}')">Edit</button>
-          ${canReboot ? `<button type="button" class="action-btn-sm" style="color: #f0883e;" onclick="openRebootModal('${dev.ip}', '${dev.name}')">Reboot</button>` : ''}
-          <button type="button" class="action-btn-sm delete" onclick="deleteDeviceById('${dev.id}')">Delete</button>
-        </div>
-      </td>
-    `;
+    const statusCell = document.createElement('td');
+    statusCell.style.textAlign = 'center';
+    const statusDot = document.createElement('span');
+    statusDot.className = `status-indicator-dot ${isEnabled ? 'status-dot-active' : 'status-dot-disabled'}`;
+    statusDot.title = isEnabled ? 'Device Enabled' : 'Device Disabled';
+    statusCell.appendChild(statusDot);
+    tr.appendChild(statusCell);
+
+    const identityCell = document.createElement('td');
+    const identity = document.createElement('div');
+    identity.className = 'device-identity';
+    const iconBox = document.createElement('div');
+    iconBox.className = 'device-icon-box';
+    iconBox.textContent = icon;
+    const identityText = document.createElement('div');
+    const name = document.createElement('div');
+    name.className = 'device-name-text';
+    name.appendChild(document.createTextNode(dev.name || ''));
+    if (roleBadge) {
+      const badge = document.createElement('span');
+      badge.className = roleBadge.className;
+      if (roleBadge.style) badge.style.cssText = roleBadge.style;
+      badge.textContent = roleBadge.text;
+      name.appendChild(badge);
+    }
+    const model = document.createElement('div');
+    model.className = 'device-meta-sub';
+    model.textContent = formatDeviceModelDisplay(dev);
+    identityText.append(name, model);
+    identity.append(iconBox, identityText);
+    identityCell.appendChild(identity);
+    tr.appendChild(identityCell);
+
+    const managementCell = document.createElement('td');
+    const managementBadge = document.createElement('span');
+    managementBadge.className = mgmtBadge.className;
+    managementBadge.textContent = mgmtBadge.text;
+    managementCell.appendChild(managementBadge);
+    tr.appendChild(managementCell);
+
+    const addressCell = document.createElement('td');
+    addressValues.forEach(({text, style}) => {
+      const addressValue = document.createElement('div');
+      addressValue.style.cssText = style;
+      addressValue.textContent = text;
+      addressCell.appendChild(addressValue);
+    });
+    tr.appendChild(addressCell);
+
+    const upstreamCell = document.createElement('td');
+    upstreamDisplay.forEach(({text, style}) => {
+      const upstreamValue = document.createElement('span');
+      upstreamValue.style.cssText = style;
+      upstreamValue.textContent = text;
+      upstreamCell.appendChild(upstreamValue);
+    });
+    tr.appendChild(upstreamCell);
+
+    const portsCell = document.createElement('td');
+    const portsValue = document.createElement('span');
+    portsValue.style.fontSize = '12px';
+    portsValue.style.fontWeight = '600';
+    portsValue.style.color = '#c9d1d9';
+    portsValue.textContent = portsDisplay;
+    portsCell.appendChild(portsValue);
+    tr.appendChild(portsCell);
+
+    const actionsCell = document.createElement('td');
+    const actions = document.createElement('div');
+    actions.className = 'device-row-actions';
+    const addAction = (label, action, className, attrs = {}) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = className;
+      button.dataset.deviceAction = action;
+      Object.entries(attrs).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) button.dataset[key] = String(value);
+      });
+      button.textContent = label;
+      actions.appendChild(button);
+    };
+    if (isManaged) addAction('Test', 'test', 'action-btn-sm test', {deviceId: dev.id});
+    addAction('Edit', 'edit', 'action-btn-sm edit', {deviceId: dev.id});
+    if (canReboot) {
+      const reboot = document.createElement('button');
+      reboot.type = 'button';
+      reboot.className = 'action-btn-sm';
+      reboot.style.color = '#f0883e';
+      reboot.dataset.deviceAction = 'reboot';
+      reboot.dataset.deviceIp = dev.ip || '';
+      reboot.dataset.deviceName = dev.name || '';
+      reboot.textContent = 'Reboot';
+      actions.appendChild(reboot);
+    }
+    addAction('Delete', 'delete', 'action-btn-sm delete', {deviceId: dev.id});
+    actionsCell.appendChild(actions);
+    tr.appendChild(actionsCell);
     tbody.appendChild(tr);
   });
 }
@@ -2153,12 +2249,17 @@ function toggleUnmanagedRoleOptions() {
 
   if (role === 'ont') {
     if (attachTitle) attachTitle.textContent = '🔗 Downstream Connection (Router / Switch)';
-    if (attachHelp) attachHelp.innerHTML = '💡 Select which router or switch port this ONT feeds traffic into (e.g. Router WAN port or switch access port). The <strong>Internet (Cloud)</strong> node will automatically link into this ONT.';
+    if (attachHelp) {
+      attachHelp.replaceChildren(document.createTextNode('💡 Select which router or switch port this ONT feeds traffic into (e.g. Router WAN port or switch access port). The '));
+      const internetNode = document.createElement('strong');
+      internetNode.textContent = 'Internet (Cloud)';
+      attachHelp.append(internetNode, document.createTextNode(' node will automatically link into this ONT.'));
+    }
     if (parentIpLabel) parentIpLabel.textContent = 'Downstream Device';
     if (parentPortLabel) parentPortLabel.textContent = 'Downstream Port';
   } else {
     if (attachTitle) attachTitle.textContent = '🔗 Upstream Attachment';
-    if (attachHelp) attachHelp.innerHTML = '💡 Select what upstream device this hardware connects to and on which port. In the network map and topology views, all client devices detected off this port will be grouped under this unmanaged device.';
+    if (attachHelp) attachHelp.textContent = '💡 Select what upstream device this hardware connects to and on which port. In the network map and topology views, all client devices detected off this port will be grouped under this unmanaged device.';
     if (parentIpLabel) parentIpLabel.textContent = 'Attachment Device';
     if (parentPortLabel) parentPortLabel.textContent = 'Attachment Port';
   }
@@ -2388,23 +2489,32 @@ function renderDynamicDriverFields(protoName, currentValues = {}) {
 
   const proto = registeredProtocols.find(p => p.name === protoName);
   if (!proto || !proto.config_schema || proto.config_schema.length === 0) {
-    container.innerHTML = '<div style="font-size: 12px; color: #8b949e;">No additional driver parameters required.</div>';
+    const emptyState = document.createElement('div');
+    emptyState.style.fontSize = '12px';
+    emptyState.style.color = '#8b949e';
+    emptyState.textContent = 'No additional driver parameters required.';
+    container.replaceChildren(emptyState);
     return;
   }
 
-  container.innerHTML = '';
+  container.replaceChildren();
 
   const renderField = (param, parentEl) => {
     const val = currentValues[param.name] !== undefined ? currentValues[param.name] : (param.default !== null ? param.default : '');
     const isRequired = param.required;
-    const reqMark = isRequired ? '<span style="color:#f85149;">*</span>' : '';
 
     const row = document.createElement('div');
     row.className = 'form-row';
     row.style.marginBottom = '12px';
 
     const label = document.createElement('label');
-    label.innerHTML = `${param.title || param.name} ${reqMark}`;
+    label.textContent = param.title || param.name;
+    if (isRequired) {
+      const reqMark = document.createElement('span');
+      reqMark.style.color = '#f85149';
+      reqMark.textContent = ' *';
+      label.appendChild(reqMark);
+    }
     label.title = param.description || param.name;
     row.appendChild(label);
 
@@ -2423,10 +2533,18 @@ function renderDynamicDriverFields(protoName, currentValues = {}) {
     } else if (param.type === 'password') {
       const wrap = document.createElement('div');
       wrap.className = 'password-input-group';
-      wrap.innerHTML = `
-        <input type="password" id="driver_param_${param.name}" value="${val}" placeholder="${param.description || ''}" style="width: 100%;">
-        <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('driver_param_${param.name}', this)">Show</button>
-      `;
+      const input = document.createElement('input');
+      input.type = 'password';
+      input.id = `driver_param_${param.name}`;
+      input.value = val;
+      input.placeholder = param.description || '';
+      input.style.width = '100%';
+      const toggleButton = document.createElement('button');
+      toggleButton.type = 'button';
+      toggleButton.className = 'password-toggle-btn';
+      toggleButton.textContent = 'Show';
+      toggleButton.addEventListener('click', () => togglePasswordVisibility(input.id, toggleButton));
+      wrap.append(input, toggleButton);
       row.appendChild(wrap);
     } else if (param.type === 'number') {
       const input = document.createElement('input');
@@ -2488,12 +2606,14 @@ function renderDynamicDriverFields(protoName, currentValues = {}) {
 
     const toggleHeader = document.createElement('div');
     toggleHeader.style.cssText = 'padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; background: rgba(56, 139, 253, 0.08);';
-    toggleHeader.innerHTML = `
-      <span style="font-size: 12px; font-weight: 600; color: #58a6ff; display: flex; align-items: center; gap: 6px;">
-        ⚙️ Advanced OID Parameters (Optional)
-      </span>
-      <span id="wizard-oid-toggle-btn" style="font-size: 11px; color: #8b949e;">${hasCustomOid ? '[Click to Collapse]' : '[Click to Expand]'}</span>
-    `;
+    const oidTitle = document.createElement('span');
+    oidTitle.style.cssText = 'font-size: 12px; font-weight: 600; color: #58a6ff; display: flex; align-items: center; gap: 6px;';
+    oidTitle.textContent = '⚙️ Advanced OID Parameters (Optional)';
+    const oidToggleButton = document.createElement('span');
+    oidToggleButton.id = 'wizard-oid-toggle-btn';
+    oidToggleButton.style.cssText = 'font-size: 11px; color: #8b949e;';
+    oidToggleButton.textContent = hasCustomOid ? '[Click to Collapse]' : '[Click to Expand]';
+    toggleHeader.append(oidTitle, oidToggleButton);
 
     const oidBody = document.createElement('div');
     oidBody.id = 'wizard-oid-body';
@@ -2609,7 +2729,10 @@ async function checkUpstreamAutoDiscovery() {
       const banner = document.getElementById('wizard-test-status');
       const text = `ℹ Upstream Detected: Device is connected to ${data.upstream_name} on Port ${data.upstream_port_display || data.upstream_port}.`;
       if (banner.className.includes('success')) {
-        banner.innerHTML = banner.innerHTML + `<div style="margin-top: 4px; font-weight: 500;">${text}</div>`;
+        const detail = document.createElement('div');
+        detail.style.cssText = 'margin-top: 4px; font-weight: 500;';
+        detail.textContent = text;
+        banner.appendChild(detail);
       }
     }
   } catch (e) {
@@ -2887,7 +3010,13 @@ function loadTemplateList(selectFilename = null) {
   fetch('/api/templates')
     .then(res => res.json())
     .then(data => {
-      select.innerHTML = '<option value="" disabled selected>Select a Template...</option>';
+      select.replaceChildren();
+      const placeholder = document.createElement('option');
+      placeholder.value = '';
+      placeholder.disabled = true;
+      placeholder.selected = true;
+      placeholder.textContent = 'Select a Template...';
+      select.appendChild(placeholder);
       if (data.templates && data.templates.length > 0) {
         data.templates.forEach(tpl => {
           const opt = document.createElement('option');
@@ -2917,7 +3046,7 @@ function loadSelectedTemplate() {
   saveBtn.disabled = true;
   cmEditor.setValue('Loading template content...');
   
-  fetch(`/api/templates/${filename}`)
+  fetch(`/api/templates/${encodeURIComponent(filename)}`)
     .then(res => {
       if (!res.ok) {
         return res.json().then(data => { throw new Error(data.error || 'Server error'); });
@@ -3012,7 +3141,7 @@ function saveTemplate() {
   saveBtn.disabled = true;
   saveBtn.textContent = 'Saving...';
   
-  fetch(`/api/templates/${filename}`, {
+  fetch(`/api/templates/${encodeURIComponent(filename)}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'

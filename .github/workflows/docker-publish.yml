@@ -36,13 +36,12 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest pytest-cov
+          python -m pip install uv==0.11.16
+          uv sync --frozen
 
       - name: Run test suite
         run: |
-          pytest tests/
+          uv run pytest tests/
 
   build-and-push:
     name: Build & Push to GHCR

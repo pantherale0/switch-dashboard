@@ -300,7 +300,7 @@ graph TD
     B -- "Interactive Explorer" --> F["API Reference: /api-docs"]
 ```
 
-* **Backend**: Flask (Python 3.9+), single-worker polling thread to prevent session thrashing.
+* **Backend**: Flask (Python 3.14+), single-worker polling thread to prevent session thrashing.
 * **Frontend**: Vanilla ES6 JS, Custom CSS (Aesthetic glassmorphism), Chart.js (multi-tier canvas).
 * **Scraper**: Custom HTTP CookieJar scraper communicating with switch `/login.cgi`, `/info.cgi`, `/port.cgi?page=stats`, and `/transceiver.cgi`.
 
@@ -308,13 +308,32 @@ graph TD
 
 ## 📦 Requirements
 
-* **Python 3.9+**
+* **Python 3.14+**
 * **Operating System**: Linux with `systemd` (Debian, Ubuntu, CentOS, Arch) or standalone Windows/macOS.
 * **Network Access**: Port 80 access to HTTP-managed switches, TCP port 22 access to SSH/UniFi/OVS targets, and TCP port 8006 access to Proxmox VE as configured.
 
 ---
 
 ## 🚀 Installation & Deployment (Linux)
+
+### Security configuration
+
+Authentication is mandatory outside the test environment. Configure a provider-neutral OIDC client and a 32-byte data-encryption key before starting the service:
+
+```bash
+export DASHBOARD_ENCRYPTION_KEY="$(python -c 'import base64,secrets; print(base64.urlsafe_b64encode(secrets.token_bytes(32)).decode())')"
+export OIDC_ISSUER="https://id.example.com/application/o/switch-dashboard"
+export OIDC_CLIENT_ID="switch-dashboard"
+export OIDC_CLIENT_SECRET="replace-me"
+export OIDC_REDIRECT_URI="https://switches.example.com/auth/callback"
+export OIDC_ADMIN_GROUP="switch-dashboard-admin"
+export OIDC_OPERATOR_GROUP="switch-dashboard-operator"
+export OIDC_VIEWER_GROUP="switch-dashboard-viewer"
+```
+
+Keep `DASHBOARD_ENCRYPTION_KEY` outside the data directory and back it up securely. Losing it makes encrypted device credentials and backups unrecoverable. Production access should use HTTPS. Direct HTTP requires `ALLOW_INSECURE_HTTP=true`, weakens session protection, and is not recommended.
+
+For key rotation, set a new `DASHBOARD_ENCRYPTION_KEY` and key ID while retaining old keys as `DASHBOARD_PREVIOUS_ENCRYPTION_KEYS=old-id:old-base64-key`. Save the configuration and verify existing backups before retiring an old key.
 
 Our automated script handles the entire installation seamlessly, creating a dedicated Python virtual environment to avoid interfering with system packages.
 
@@ -335,11 +354,9 @@ The script will:
 3. Set up a secure virtual environment inside `/opt/switch-dashboard/venv`.
 4. Install all requirements (`Flask`, `BeautifulSoup4`).
 5. Generate and register a `switch-dashboard.service` with `systemd`.
-6. Start and enable the service on boot.
+6. Create `/etc/switch-dashboard.env`; add the OIDC values printed above before starting the service.
 
-Once completed, the dashboard is live at:
-* **Dashboard**: `http://<your-ip>:8080`
-* **API Documentation**: `http://<your-ip>:8080/api-docs`
+The native service binds to `127.0.0.1:8080` for use behind an HTTPS reverse proxy.
 ---
 
 ## 🐳 Docker Deployment
@@ -364,8 +381,8 @@ A pre-configured `docker-compose.yml` is provided in the repository.
    cd switch-dashboard
    ```
 
-2. **Configure your switches**:
-   You can either edit `config.json` before running the container, or simply let the container initialize the default `config.json` inside the mounted volume directory (`./data`), and then edit it there or via the dashboard's `/config` page.
+2. **Configure security**:
+   Export the encryption and OIDC variables shown above. Set `DASHBOARD_BIND_IP=0.0.0.0` only when direct network exposure is intentional. Compose uses the managed `switch-dashboard-data` volume; copy data from older `./data` bind mounts into that volume before removing the old directory.
 
 3. **Start the container**:
    ```bash
