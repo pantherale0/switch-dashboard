@@ -333,6 +333,18 @@ export OIDC_VIEWER_GROUP="switch-dashboard-viewer"
 
 Keep `DASHBOARD_ENCRYPTION_KEY` outside the data directory and back it up securely. Losing it makes encrypted device credentials and backups unrecoverable. Production access should use HTTPS. Direct HTTP requires `ALLOW_INSECURE_HTTP=true`, weakens session protection, and is not recommended.
 
+### Local development without a provider
+
+For a single-machine dev environment you can skip the OIDC provider entirely:
+
+```bash
+export AUTH_DISABLED=1
+export DASHBOARD_LOCAL_DEV=1
+python app.py
+```
+
+`DASHBOARD_LOCAL_DEV=1` opts out of the test-environment guard and opens every endpoint without authentication; a warning banner is shown on every page and the server logs a warning at startup. Only use this when the server is bound to `127.0.0.1` and not reachable by anyone else — never set it on a network-accessible host. Without `DASHBOARD_LOCAL_DEV`, `AUTH_DISABLED` only takes effect under `TESTING=1`.
+
 For key rotation, set a new `DASHBOARD_ENCRYPTION_KEY` and key ID while retaining old keys as `DASHBOARD_PREVIOUS_ENCRYPTION_KEYS=old-id:old-base64-key`. Save the configuration and verify existing backups before retiring an old key.
 
 Our automated script handles the entire installation seamlessly, creating a dedicated Python virtual environment to avoid interfering with system packages.

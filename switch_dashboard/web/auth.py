@@ -104,10 +104,15 @@ def _env_bool(name: str, default: bool = False) -> bool:
     return value.strip().lower() in {"1", "true", "yes", "on"}
 
 
+def _local_dev_enabled() -> bool:
+    return _env_bool("DASHBOARD_LOCAL_DEV")
+
+
 def auth_disabled() -> bool:
-    requested = _env_bool("AUTH_DISABLED")
+    if not _env_bool("AUTH_DISABLED"):
+        return False
     testing = bool(current_app.testing or os.environ.get("TESTING") == "1")
-    return requested and testing
+    return testing or _local_dev_enabled()
 
 
 def _hash(value: str) -> str:
@@ -445,6 +450,12 @@ def logout():
 
 
 def init_auth(app):
+    if not app.testing and _env_bool("AUTH_DISABLED") and _local_dev_enabled():
+        logger.warning(
+            "AUTH_DISABLED is active via DASHBOARD_LOCAL_DEV: all endpoints are "
+            "open without authentication. This must never be used on a network "
+            "reachable by untrusted hosts."
+        )
     trusted_proxy_count = int(os.environ.get("TRUSTED_PROXY_COUNT", "0"))
     if trusted_proxy_count:
         app.wsgi_app = ProxyFix(
@@ -465,6 +476,7 @@ def init_auth(app):
         return {
             "current_user": getattr(g, "current_user", None),
             "csrf_token": getattr(g, "csrf_token", ""),
+            "local_dev_mode": auth_disabled() and not app.testing,
         }
 
     @app.after_request

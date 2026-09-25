@@ -12,7 +12,9 @@
       "env": {
         "DASHBOARD_DATA_DIR": "${workspaceFolder}",
         "PYTHONPATH": "${workspaceFolder}",
-        "PYTHONUNBUFFERED": "1"
+        "PYTHONUNBUFFERED": "1",
+        "AUTH_DISABLED": "1",
+        "DASHBOARD_LOCAL_DEV": "1"
       }
     },
     {
@@ -35,7 +37,9 @@
         "DASHBOARD_DATA_DIR": "${workspaceFolder}",
         "PYTHONPATH": "${workspaceFolder}",
         "FLASK_ENV": "development",
-        "PYTHONUNBUFFERED": "1"
+        "PYTHONUNBUFFERED": "1",
+        "AUTH_DISABLED": "1",
+        "DASHBOARD_LOCAL_DEV": "1"
       }
     },
     {
@@ -51,7 +55,8 @@
       "justMyCode": true,
       "cwd": "${workspaceFolder}",
       "env": {
-        "PYTHONPATH": "${workspaceFolder}"
+        "PYTHONPATH": "${workspaceFolder}",
+        "TESTING": "1"
       }
     },
     {
@@ -67,7 +72,8 @@
       "justMyCode": true,
       "cwd": "${workspaceFolder}",
       "env": {
-        "PYTHONPATH": "${workspaceFolder}"
+        "PYTHONPATH": "${workspaceFolder}",
+        "TESTING": "1"
       }
     },
     {
@@ -83,7 +89,8 @@
       "cwd": "${workspaceFolder}",
       "env": {
         "DASHBOARD_DATA_DIR": "${workspaceFolder}",
-        "PYTHONPATH": "${workspaceFolder}"
+        "PYTHONPATH": "${workspaceFolder}",
+        "TESTING": "1"
       }
     },
     {

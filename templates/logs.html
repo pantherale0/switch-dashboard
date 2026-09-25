@@ -376,6 +376,7 @@
 </style>
 </head>
 <body>
+{% if local_dev_mode %}<div style="position: sticky; top: 0; z-index: 10000; padding: 8px 16px; text-align: center; background: #b45309; color: #fff; font: 600 13px/1.4 system-ui, sans-serif;">Local development mode — authentication is disabled. Never expose this server to untrusted networks.</div>{% endif %}
 
 <div class="header">
   <div class="header-left">

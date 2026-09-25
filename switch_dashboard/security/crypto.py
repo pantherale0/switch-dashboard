@@ -39,7 +39,7 @@ def _decode_key(value: str) -> bytes:
 
 def get_key() -> tuple[str, bytes]:
     encoded = os.environ.get("DASHBOARD_ENCRYPTION_KEY", "").strip()
-    if not encoded and os.environ.get("TESTING") == "1":
+    if not encoded and (os.environ.get("TESTING") == "1" or os.environ.get("DASHBOARD_LOCAL_DEV") == "1"):
         encoded = base64.urlsafe_b64encode(bytes(range(32))).decode("ascii")
     if not encoded:
         raise CryptoConfigurationError(

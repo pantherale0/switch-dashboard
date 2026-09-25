@@ -568,6 +568,7 @@
 </style>
 </head>
 <body data-font-size="md">
+{% if local_dev_mode %}<div style="position: sticky; top: 0; z-index: 10000; padding: 8px 16px; text-align: center; background: #b45309; color: #fff; font: 600 13px/1.4 system-ui, sans-serif;">Local development mode — authentication is disabled. Never expose this server to untrusted networks.</div>{% endif %}
 <div class="header">
   <div style="display: flex; align-items: center; gap: 14px;">
     <img src="/static/logo.png" alt="Horaco Logo" style="height: 38px; width: 38px; border-radius: 8px; object-fit: cover; border: 1px solid #30363d; box-shadow: 0 0 10px rgba(88, 166, 255, 0.15);">
@@ -2054,6 +2055,7 @@ function renderSwitch(sw) {
     `;
   }
 
+  const macState = getMacState(sw.ip);
   const macHeight = /^\d+(?:px)?$/.test(String(macState.height || '')) ? `${parseInt(macState.height, 10)}px` : '450px';
   const portBar = (portsForGraphic.length > 0) ? `
     <div style="background: rgba(13, 17, 23, 0.75); border: 1px solid #30363d; border-radius: 12px; padding: 8px 14px; display: inline-flex; flex-direction: column; gap: 6px; align-items: center; justify-content: center; box-shadow: inset 0 2px 4px rgba(0,0,0,0.4), 0 4px 10px rgba(0,0,0,0.3); margin: 4px 0; max-width: 100%; overflow-x: auto;">
@@ -2133,7 +2135,6 @@ function renderSwitch(sw) {
     jumboBadge = `<span><span class="label">Jumbo Frame:</span> <span class="value" style="color: ${isActive ? '#56d364' : '#8b949e'}">${isActive ? '🟢 Active (' + sizeVal + ')' : '⚪ Inactive'}</span></span>`;
   }
 
-  const macState = getMacState(sw.ip);
   const isExpanded = macState.expanded;
   const displayStyle = isExpanded ? 'block' : 'none';
   const arrowTransform = isExpanded ? 'rotate(90deg)' : 'rotate(0deg)';
