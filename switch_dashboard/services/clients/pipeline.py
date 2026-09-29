@@ -1,5 +1,6 @@
 import logging
 import time
+from time import perf_counter
 from collections import defaultdict
 from typing import Any, Dict, List, Optional, Set
 
@@ -49,6 +50,7 @@ class ClientHandler:
         now: Optional[float] = None,
     ):
         """Executes the post-poll ingestion pipeline on freshly scraped node telemetry."""
+        processing_started = perf_counter()
         ts = now or time.time()
         logger.debug(f"Starting client processing cycle for {len(results)} reported devices")
         self.mobility.warm_locations_if_needed()
@@ -182,6 +184,7 @@ class ClientHandler:
 
         discovered_batch: List[Dict[str, Any]] = []
         samples_batch: List[Dict[str, Any]] = []
+        ip_observations: List[Dict[str, Any]] = []
 
         for mac, sightings in sightings_by_mac.items():
             if not sightings:
@@ -236,7 +239,12 @@ class ClientHandler:
 
             # Record IP observation
             if best_ip:
-                self.device_repo.record_client_ip_observation(mac, best_ip, best_hostname, ts)
+                ip_observations.append({
+                    "mac": mac,
+                    "ip": best_ip,
+                    "hostname": best_hostname,
+                    "timestamp": ts,
+                })
 
             # Bandwidth & bitrates
             speed_tx, speed_rx, sample = self.metrics.compute_bandwidth(mac, sightings, is_child, ts)
@@ -266,6 +274,13 @@ class ClientHandler:
             })
 
         # Step 4: Batch database storage
+        if ip_observations:
+            try:
+                self.device_repo.record_client_ip_observations_batch(ip_observations)
+                logger.debug(f"Persisted batch of {len(ip_observations)} client IP observations to DB")
+            except Exception as e:
+                logger.error(f"Error persisting client IP observation batch: {e}")
+
         if discovered_batch:
             try:
                 self.device_repo.upsert_discovered_clients_batch(discovered_batch)
@@ -281,6 +296,6 @@ class ClientHandler:
                 logger.error(f"Error persisting client metric samples batch: {e}")
 
         logger.info(
-            f"Client processing cycle finished in {time.time() - ts:.3f}s: "
+            f"Client processing cycle finished in {perf_counter() - processing_started:.3f}s: "
             f"{len(discovered_batch)} clients updated, {len(samples_batch)} metric samples recorded."
         )

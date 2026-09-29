@@ -425,6 +425,11 @@ def config_page():
         cfg["title"] = request.form.get("title", cfg.get("title", ""))
         cfg["refresh_interval"] = int(request.form.get("refresh_interval", 30))
         cfg["mac_refresh_multiplier"] = int(request.form.get("mac_refresh_multiplier", 5))
+        if "settings" not in cfg:
+            cfg["settings"] = {}
+        cfg["settings"]["slow_refresh_interval"] = max(
+            30, min(3600, int(request.form.get("slow_refresh_interval", 300)))
+        )
         cfg["ports_wrap_threshold"] = int(request.form.get("ports_wrap_threshold", 0))
         cfg["max_request_retries"] = int(request.form.get("max_request_retries", 5))
         new_columns = request.form.getlist("columns[]")
@@ -475,6 +480,7 @@ def config_page():
         unmanaged_switches=cfg.get("unmanaged_switches", []),
         refresh=cfg.get("refresh_interval", 30),
         mac_multiplier=cfg.get("mac_refresh_multiplier", 5),
+        slow_refresh_interval=settings.get("slow_refresh_interval", 300),
         ports_wrap_threshold=cfg.get("ports_wrap_threshold", 0),
         max_request_retries=cfg.get("max_request_retries", 5),
         enabled_columns=cfg.get("enabled_columns", ["port", "status", "speed", "packets", "bytes", "info", "notes"]),

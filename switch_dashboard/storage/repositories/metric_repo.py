@@ -78,35 +78,50 @@ class MetricRepository:
         return counters
 
     def save_counters(self, counters: Dict[str, Dict[str, Any]]):
-        """Persists memory counters to the database in a single transaction."""
-        with self._get_session() as session:
-            for key, data in counters.items():
-                if ":" in key:
-                    parts = key.split(":", 1)
-                    device_ip, port = parts[0], str(normalize_port(parts[1]))
-                    tx_b = max(0, data.get("tx", 0))
-                    rx_b = max(0, data.get("rx", 0))
-                    cum_tx = max(0, data.get("cum_tx", 0))
-                    cum_rx = max(0, data.get("cum_rx", 0))
-                    ts = float(data.get("ts", time.time()))
+        """Upserts changed counters with one lookup and batched writes."""
+        if not counters:
+            return
 
-                    baseline = session.get(CounterBaseline, (device_ip, port))
-                    if baseline:
-                        baseline.tx_bytes = tx_b
-                        baseline.rx_bytes = rx_b
-                        baseline.cum_tx = cum_tx
-                        baseline.cum_rx = cum_rx
-                        baseline.timestamp = ts
-                    else:
-                        session.add(CounterBaseline(
-                            device_ip=device_ip,
-                            port=port,
-                            tx_bytes=tx_b,
-                            rx_bytes=rx_b,
-                            cum_tx=cum_tx,
-                            cum_rx=cum_rx,
-                            timestamp=ts,
-                        ))
+        updates = []
+        for key, data in counters.items():
+            if ":" not in key:
+                continue
+            device_ip, port = key.split(":", 1)
+            updates.append({
+                "device_ip": device_ip,
+                "port": str(normalize_port(port)),
+                "tx_bytes": max(0, data.get("tx", 0)),
+                "rx_bytes": max(0, data.get("rx", 0)),
+                "cum_tx": max(0, data.get("cum_tx", 0)),
+                "cum_rx": max(0, data.get("cum_rx", 0)),
+                "timestamp": float(data.get("ts", time.time())),
+            })
+
+        if not updates:
+            return
+
+        device_ips = {row["device_ip"] for row in updates}
+        with self._get_session() as session:
+            existing_keys = {
+                (device_ip, port)
+                for device_ip, port in session.execute(
+                    select(CounterBaseline.device_ip, CounterBaseline.port).where(
+                        CounterBaseline.device_ip.in_(device_ips)
+                    )
+                ).all()
+            }
+            existing_updates = [
+                row for row in updates
+                if (row["device_ip"], row["port"]) in existing_keys
+            ]
+            new_updates = [
+                row for row in updates
+                if (row["device_ip"], row["port"]) not in existing_keys
+            ]
+            if existing_updates:
+                session.bulk_update_mappings(CounterBaseline, existing_updates)
+            if new_updates:
+                session.add_all(CounterBaseline(**row) for row in new_updates)
 
     def record_samples_batch(self, samples: List[Dict[str, Any]]):
         """Append-only batch insert for raw metric samples into database."""
@@ -136,6 +151,17 @@ class MetricRepository:
         key = (ip, normalize_port(port))
         with self._lock:
             return list(self._history_live.get(key, []))
+
+    def get_last_live_samples(self, ip: str, port: Any) -> Tuple[Optional[Dict[str, Any]], Optional[Dict[str, Any]]]:
+        """Returns the latest two live samples without copying the full ring buffer."""
+        key = (ip, normalize_port(port))
+        with self._lock:
+            history = self._history_live.get(key)
+            if not history:
+                return None, None
+            if len(history) == 1:
+                return None, history[-1]
+            return history[-2], history[-1]
 
     # Hourly history (high-res speed points in bps)
     def append_hourly_sample(self, ip: str, port: Any, ts: float, tx_bps: int, rx_bps: int, max_points: int = 120):

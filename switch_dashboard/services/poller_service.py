@@ -2,6 +2,7 @@ import re
 import time
 import logging
 import threading
+from time import perf_counter
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Dict, Any, List, Optional, Tuple
@@ -80,10 +81,15 @@ class PollerService:
         self._cached_data: Dict[str, Dict[str, Any]] = {}
         self._cached_speeds: Dict[str, Dict[str, Any]] = {}
         self._cache_lock = threading.RLock()
+        self._poll_lock = threading.Lock()
         self._stop_event = threading.Event()
         self._thread: Optional[threading.Thread] = None
         self._mac_tables: Dict[str, List[Dict[str, Any]]] = {}
         self._last_mac_scrape_times: Dict[str, float] = {}
+        self._slow_device_data: Dict[str, Dict[str, Any]] = {}
+        self._last_slow_refresh_times: Dict[str, float] = {}
+        self._slow_refresh_interval = 300
+        self._counters: Optional[Dict[str, Dict[str, Any]]] = None
         self._max_poll_workers = 4
 
         # Warm up cached device state, speeds, and MAC tables from database repository on startup
@@ -197,6 +203,15 @@ class PollerService:
             }
             return (ip, data, {}, [], {})
 
+        # Cache slow-changing device details between fresh driver instances.
+        slow_refresh_due = (
+            now - self._last_slow_refresh_times.get(ip, 0)
+            >= self._slow_refresh_interval
+        )
+        sw = dict(sw)
+        sw["_dashboard_slow_data"] = self._slow_device_data.get(ip, {})
+        sw["_dashboard_refresh_slow_data"] = slow_refresh_due
+
         # Create protocol driver
         try:
             protocol = ProtocolRegistry.create(sw)
@@ -209,6 +224,10 @@ class PollerService:
         logger.debug(f"Polling switch {sw.get('name', ip)} ({ip}) via {sw.get('protocol', 'default')}...")
         try:
             data = protocol.scrape()
+            refreshed_slow_data = getattr(protocol, "_slow_data_cache", None)
+            if refreshed_slow_data is not None and slow_refresh_due:
+                self._slow_device_data[ip] = refreshed_slow_data
+                self._last_slow_refresh_times[ip] = now
             data.setdefault("role", sw.get("role", sw.get("device_type", "switch")))
             data.setdefault("device_type", sw.get("device_type", data.get("role", "switch")))
             data.setdefault("protocol", protocol.protocol_name)
@@ -337,12 +356,10 @@ class PollerService:
             self.metric_repo.append_live_sample(ip, port, now, cum_tx, cum_rx)
 
             # Compute current speed bps
-            live_h = self.metric_repo.get_live_history(ip, port)
+            p1, p2 = self.metric_repo.get_last_live_samples(ip, port)
             speed_tx_bps = 0
             speed_rx_bps = 0
-            if len(live_h) >= 2:
-                p1 = live_h[-2]
-                p2 = live_h[-1]
+            if p1 is not None and p2 is not None:
                 dt = p2["ts"] - p1["ts"]
                 if dt > 0:
                     speed_tx = (p2["tx"] - p1["tx"]) * 8 / dt
@@ -430,12 +447,10 @@ class PollerService:
             self.metric_repo.append_live_sample(ip, cid, now, cum_tx, cum_rx)
 
             # Compute current speed bps
-            live_h = self.metric_repo.get_live_history(ip, port_key)
+            p1, p2 = self.metric_repo.get_last_live_samples(ip, port_key)
             speed_tx_bps = 0
             speed_rx_bps = 0
-            if len(live_h) >= 2:
-                p1 = live_h[-2]
-                p2 = live_h[-1]
+            if p1 is not None and p2 is not None:
                 dt = p2["ts"] - p1["ts"]
                 if dt > 0:
                     speed_tx = (p2["tx"] - p1["tx"]) * 8 / dt
@@ -490,15 +505,32 @@ class PollerService:
         return (ip, data, sw_speeds, metric_samples, counter_updates)
 
     def poll_all_switches(self):
+        # A manual poll can coincide with the background cycle. Skip it instead
+        # of performing duplicate device requests and database writes.
+        if not self._poll_lock.acquire(blocking=False):
+            logger.debug("Skipping poll request because a polling cycle is already running.")
+            return
+
+        try:
+            self._poll_all_switches_locked()
+        finally:
+            self._poll_lock.release()
+
+    def _poll_all_switches_locked(self):
+        cycle_started = perf_counter()
         cfg = load_config()
         switch_configs = cfg.get("switches", [])
         settings = cfg.get("settings", {})
+        self._slow_refresh_interval = max(30, int(settings.get("slow_refresh_interval", 300)))
 
-        counters = self.metric_repo.load_counters()
+        if self._counters is None:
+            self._counters = self.metric_repo.load_counters()
+        counters = self._counters
         now = time.time()
         results: Dict[str, Dict[str, Any]] = {}
         speeds: Dict[str, Dict[str, Any]] = {}
         all_metric_samples: List[Dict[str, Any]] = []
+        all_counter_updates: Dict[str, Dict[str, Any]] = {}
 
         # Prune disabled switches from cache
         enabled_ips = {sw["ip"] for sw in switch_configs if sw.get("enabled", True)}
@@ -517,6 +549,7 @@ class PollerService:
             return
 
         max_workers = min(len(active_switches), self._max_poll_workers)
+        device_poll_started = perf_counter()
 
         with ThreadPoolExecutor(max_workers=max_workers, thread_name_prefix="Poller") as executor:
             futures = {
@@ -537,35 +570,61 @@ class PollerService:
                     results[r_ip] = data
                     speeds[r_ip] = sw_speeds
                     all_metric_samples.extend(samples)
-                    counters.update(counter_updates)
+                    all_counter_updates.update(counter_updates)
                 except Exception as e:
                     logger.error(f"Poll worker failed for {ip}: {e}", exc_info=True)
                     results[ip] = {"name": sw.get("name", ip), "ip": ip, "ports": [], "error": str(e)}
                     speeds[ip] = {}
 
+        device_poll_seconds = perf_counter() - device_poll_started
+
         # Save counters and raw metric samples into SQLite
+        metric_storage_started = perf_counter()
         try:
-            self.metric_repo.save_counters(counters)
+            self.metric_repo.save_counters(all_counter_updates)
+            counters.update(all_counter_updates)
             self.metric_repo.record_samples_batch(all_metric_samples)
         except Exception as e:
             logger.error(f"Error persisting metrics to database: {e}")
+        metric_storage_seconds = perf_counter() - metric_storage_started
 
         # Persist device snapshots and speeds into SQLite for instant warm boot
+        snapshot_storage_started = perf_counter()
         try:
             self.device_repo.save_all_cached_device_states(results, speeds)
         except Exception as e:
             logger.error(f"Error persisting device cache to database: {e}")
+        snapshot_storage_seconds = perf_counter() - snapshot_storage_started
 
         # Active Client Monitoring processing (mobility, roaming, IP history, client bandwidth)
+        client_processing_started = perf_counter()
         try:
             from switch_dashboard.services.clients import get_client_monitor_service
             get_client_monitor_service().process_polled_cycle(results, now)
         except Exception as e:
             logger.error(f"Error in client monitor service processing: {e}", exc_info=True)
+        client_processing_seconds = perf_counter() - client_processing_started
 
         with self._cache_lock:
             self._cached_data = results
             self._cached_speeds = speeds
+
+        logger.info(
+            "Poll cycle completed in %.3fs (device polling %.3fs, metric storage %.3fs, "
+            "snapshot storage %.3fs, client processing %.3fs) for %d devices",
+            perf_counter() - cycle_started,
+            device_poll_seconds,
+            metric_storage_seconds,
+            snapshot_storage_seconds,
+            client_processing_seconds,
+            len(active_switches),
+        )
+
+    def reset_all_counters(self):
+        """Reset stored histories and baselines without racing a poll cycle."""
+        with self._poll_lock:
+            self.metric_repo.reset_all_counters()
+            self._counters = {}
 
 
 _poller_service: Optional[PollerService] = None

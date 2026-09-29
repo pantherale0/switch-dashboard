@@ -72,6 +72,15 @@ class HCSwitchProtocol(BaseProtocol):
         self.base_url = f"http://{self.ip}"
         self._cj = None
         self._opener = None
+        self._refresh_slow_data = bool(config.get("_dashboard_refresh_slow_data", True))
+        self._slow_data_cache = dict(config.get("_dashboard_slow_data") or {})
+        self._scrape_response_cache = {}
+
+    def _slow_data(self, key, scraper, default):
+        """Refresh low-volatility configuration details only on scheduled cycles."""
+        if self._refresh_slow_data or key not in self._slow_data_cache:
+            self._slow_data_cache[key] = scraper()
+        return self._slow_data_cache.get(key, default)
 
     def _open_request_with_retry(self, req, timeout=45, max_retries=5, retry_delay=3):
         # Enforce spacing between sequential uIP HTTP requests
@@ -424,6 +433,8 @@ class HCSwitchProtocol(BaseProtocol):
         r.read()
 
     def _fetch(self, path):
+        if path in self._scrape_response_cache:
+            return self._scrape_response_cache[path]
         if not self._opener:
             self._login()
         logger.debug(f"[_fetch] Fetching path: {path}")
@@ -434,6 +445,7 @@ class HCSwitchProtocol(BaseProtocol):
         try:
             r = self._open_request_with_retry(req, timeout=45, max_retries=5)
             res = r.read().decode("utf-8", errors="replace")
+            self._scrape_response_cache[path] = res
             logger.debug(f"[_fetch] Path {path} successfully fetched (size: {len(res)} characters)")
             return res
         except Exception as e:
@@ -474,6 +486,7 @@ class HCSwitchProtocol(BaseProtocol):
 
     def scrape(self):
         with get_switch_lock(self.ip):
+            self._scrape_response_cache.clear()
             logger.debug(f"Running full telemetry scrape for switch {self.name} ({self.ip})...")
             template = self._load_template()
             if template:
@@ -716,42 +729,40 @@ class HCSwitchProtocol(BaseProtocol):
                     
                     logger.debug(f"Dynamic stats column mapping: tx_pkt_idx={tx_pkt_idx}, rx_pkt_idx={rx_pkt_idx}, tx_bytes_idx={tx_bytes_idx}, rx_bytes_idx={rx_bytes_idx}")
                     
+                    ports_by_name = {p["port"]: p for p in ports}
                     for row in rows[1:]:
                         cells = row.find_all("td")
                         if len(cells) > max(tx_pkt_idx, rx_pkt_idx):
                             port_name = cells[0].get_text(strip=True)
-                            match = re.match(r"Port\s*(\d+)", port_name)
-                            port_num = match.group(1) if match else (
-                                port_name if "trunk" in port_name.lower() else port_name
-                            )
-                            for p in ports:
-                                if p["port"] == port_name.replace("Port ", ""):
-                                    tx_pkts = self._parse_counter(cells[tx_pkt_idx].get_text(strip=True))
-                                    rx_pkts = self._parse_counter(cells[rx_pkt_idx].get_text(strip=True))
-                                    
-                                    p["tx_packets"] = tx_pkts
-                                    p["rx_packets"] = rx_pkts
-                                    
-                                    if tx_bytes_idx != -1 and len(cells) > tx_bytes_idx:
-                                        p["tx_bytes"] = self._parse_counter(cells[tx_bytes_idx].get_text(strip=True))
-                                    else:
-                                        p["tx_bytes"] = tx_pkts * 800
-                                        
-                                    if rx_bytes_idx != -1 and len(cells) > rx_bytes_idx:
-                                        p["rx_bytes"] = self._parse_counter(cells[rx_bytes_idx].get_text(strip=True))
-                                    else:
-                                        p["rx_bytes"] = rx_pkts * 800
-                                    break
+                            p = ports_by_name.get(port_name.replace("Port ", ""))
+                            if p is not None:
+                                tx_pkts = self._parse_counter(cells[tx_pkt_idx].get_text(strip=True))
+                                rx_pkts = self._parse_counter(cells[rx_pkt_idx].get_text(strip=True))
+
+                                p["tx_packets"] = tx_pkts
+                                p["rx_packets"] = rx_pkts
+
+                                if tx_bytes_idx != -1 and len(cells) > tx_bytes_idx:
+                                    p["tx_bytes"] = self._parse_counter(cells[tx_bytes_idx].get_text(strip=True))
+                                else:
+                                    p["tx_bytes"] = tx_pkts * 800
+
+                                if rx_bytes_idx != -1 and len(cells) > rx_bytes_idx:
+                                    p["rx_bytes"] = self._parse_counter(cells[rx_bytes_idx].get_text(strip=True))
+                                else:
+                                    p["rx_bytes"] = rx_pkts * 800
                 logger.debug(f"Parsed port statistical counter bytes: {ports}")
 
-        # Scrape DHCP Snooping
-        dhcp_snooping = self.scrape_dhcp_snooping()
-
-        # Scrape IGMP snooping
-        igmp = self.scrape_igmp()
-
-        # Scrape Jumbo Frame
-        jumbo_frame = self.scrape_jumbo_frame()
+        # These settings rarely change; reuse the latest values between scheduled refreshes.
+        dhcp_snooping = self._slow_data(
+            "dhcp_snooping", self.scrape_dhcp_snooping, {"enabled": False, "ports": {}}
+        )
+        igmp = self._slow_data(
+            "igmp", self.scrape_igmp, {"enabled": False, "entries": []}
+        )
+        jumbo_frame = self._slow_data(
+            "jumbo_frame", self.scrape_jumbo_frame, {"enabled": False, "size": "Disabled"}
+        )
 
         return {
             "name": self.name,
@@ -1661,32 +1672,34 @@ class HCSwitchProtocol(BaseProtocol):
                         if tx_pkt_idx == -1: tx_pkt_idx = 3
                         if rx_pkt_idx == -1: rx_pkt_idx = 5 if "rxgoodpkt" in headers else 4
                         
+                        ports_by_name = {p["port"]: p for p in ports}
                         for row in rows[1:]:
                             cells = row.find_all("td")
                             if len(cells) > max(tx_pkt_idx, rx_pkt_idx):
                                 port_name = cells[0].get_text(strip=True)
-                                for p in ports:
-                                    if p["port"] == port_name.replace("Port ", ""):
-                                        tx_pkts = self._parse_counter(cells[tx_pkt_idx].get_text(strip=True))
-                                        rx_pkts = self._parse_counter(cells[rx_pkt_idx].get_text(strip=True))
-                                        p["tx_packets"] = tx_pkts
-                                        p["rx_packets"] = rx_pkts
-                                        
-                                        if tx_bytes_idx != -1 and len(cells) > tx_bytes_idx:
-                                            p["tx_bytes"] = self._parse_counter(cells[tx_bytes_idx].get_text(strip=True))
-                                        else:
-                                            p["tx_bytes"] = tx_pkts * 800
-                                            
-                                        if rx_bytes_idx != -1 and len(cells) > rx_bytes_idx:
-                                            p["rx_bytes"] = self._parse_counter(cells[rx_bytes_idx].get_text(strip=True))
-                                        else:
-                                            p["rx_bytes"] = rx_pkts * 800
-                                        break
+                                p = ports_by_name.get(port_name.replace("Port ", ""))
+                                if p is not None:
+                                    tx_pkts = self._parse_counter(cells[tx_pkt_idx].get_text(strip=True))
+                                    rx_pkts = self._parse_counter(cells[rx_pkt_idx].get_text(strip=True))
+                                    p["tx_packets"] = tx_pkts
+                                    p["rx_packets"] = rx_pkts
+
+                                    if tx_bytes_idx != -1 and len(cells) > tx_bytes_idx:
+                                        p["tx_bytes"] = self._parse_counter(cells[tx_bytes_idx].get_text(strip=True))
+                                    else:
+                                        p["tx_bytes"] = tx_pkts * 800
+
+                                    if rx_bytes_idx != -1 and len(cells) > rx_bytes_idx:
+                                        p["rx_bytes"] = self._parse_counter(cells[rx_bytes_idx].get_text(strip=True))
+                                    else:
+                                        p["rx_bytes"] = rx_pkts * 800
 
         # 4. Scraping DHCP Snooping
-        dhcp_snooping = {"enabled": False, "ports": {}}
-        dhcp_cfg = template.get("dhcp_snooping", {})
-        if dhcp_cfg:
+        def scrape_dhcp_snooping():
+            dhcp_snooping = {"enabled": False, "ports": {}}
+            dhcp_cfg = template.get("dhcp_snooping", {})
+            if not dhcp_cfg:
+                return dhcp_snooping
             url = dhcp_cfg.get("url", "/dhcp_snooping.cgi?page=dump")
             html = self._fetch(url)
             if html:
@@ -1713,11 +1726,18 @@ class HCSwitchProtocol(BaseProtocol):
                                 is_trusted = inp.has_attr("checked")
                                 ports_trust[port_name] = "Trusted" if is_trusted else "Untrusted"
                 dhcp_snooping["ports"] = ports_trust
+            return dhcp_snooping
+
+        dhcp_snooping = self._slow_data(
+            "dhcp_snooping", scrape_dhcp_snooping, {"enabled": False, "ports": {}}
+        )
 
         # 5. Scraping IGMP Snooping
-        igmp = {"enabled": False, "entries": []}
-        igmp_cfg = template.get("igmp", {})
-        if igmp_cfg:
+        def scrape_igmp():
+            igmp = {"enabled": False, "entries": []}
+            igmp_cfg = template.get("igmp", {})
+            if not igmp_cfg:
+                return igmp
             url = igmp_cfg.get("url", "/igmp.cgi?page=dump")
             html = self._fetch(url)
             if html:
@@ -1751,11 +1771,16 @@ class HCSwitchProtocol(BaseProtocol):
                                 "ports": ports_text
                             })
                 igmp["entries"] = entries
+            return igmp
+
+        igmp = self._slow_data("igmp", scrape_igmp, {"enabled": False, "entries": []})
 
         # 6. Scraping Jumbo Frame
-        jumbo_frame = {"enabled": False, "size": "Disabled"}
-        jumbo_cfg = template.get("jumbo_frame", {})
-        if jumbo_cfg:
+        def scrape_jumbo_frame():
+            jumbo_frame = {"enabled": False, "size": "Disabled"}
+            jumbo_cfg = template.get("jumbo_frame", {})
+            if not jumbo_cfg:
+                return jumbo_frame
             url = jumbo_cfg.get("url", "/fwd.cgi?page=jumboframe")
             html = self._fetch(url)
             if html:
@@ -1819,6 +1844,11 @@ class HCSwitchProtocol(BaseProtocol):
                                 text_node = options[0].find(string=True, recursive=False)
                                 size_val = text_node.strip() if text_node else options[0].get_text(strip=True)
                     jumbo_frame = {"enabled": enabled, "size": size_val}
+            return jumbo_frame
+
+        jumbo_frame = self._slow_data(
+            "jumbo_frame", scrape_jumbo_frame, {"enabled": False, "size": "Disabled"}
+        )
 
         return {
             "name": self.name,

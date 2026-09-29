@@ -33,8 +33,8 @@ def api_history():
 
 @metrics_bp.route("/api/reset", methods=["POST"])
 def api_reset():
-    metric_repo = get_metric_repo()
-    metric_repo.reset_all_counters()
+    poller = get_poller_service()
+    poller.reset_all_counters()
     logger.info("Reset all counters and history via API.")
     return jsonify({"status": "ok"})
 
@@ -62,4 +62,3 @@ def api_notes():
         notes.pop(str(key), None)
     config_repo.save_notes(notes)
     return jsonify({"status": "ok"})
-

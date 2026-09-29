@@ -115,6 +115,7 @@ def get_default_config() -> Dict[str, Any]:
         "settings": {
             "refresh_interval": 30,
             "mac_refresh_multiplier": 5,
+            "slow_refresh_interval": 300,
             "max_request_retries": 5,
             "log_level": "INFO",
             "history_retention_days": 7,

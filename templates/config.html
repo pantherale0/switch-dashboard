@@ -1126,6 +1126,11 @@
           <span class="note" style="display:block; margin-top:2px;">e.g., if set to 5, the MAC table is fetched every 5 dashboard refreshes to reduce switch load.</span>
         </div>
         <div class="global-row">
+          <label>Slow Device Details Refresh (seconds)</label>
+          <input type="number" name="slow_refresh_interval" value="{{ slow_refresh_interval }}" min="30" max="3600" style="max-width:120px">
+          <span class="note" style="display:block; margin-top:2px;">Refresh DHCP snooping, IGMP, and jumbo-frame details at this interval; port status and traffic counters keep the normal polling speed.</span>
+        </div>
+        <div class="global-row">
           <label>Nodes Per Row</label>
           <select name="grid_columns" style="background: #0d1117; border: 1px solid rgba(48, 54, 61, 0.8); border-radius: 6px; padding: 8px 12px; color: #e1e4e8; font-size: 13px; max-width: 180px; outline: none; cursor: pointer; transition: border-color 0.2s;">
             <option value="auto" {% if grid_columns == 'auto' or not grid_columns %}selected{% endif %}>Auto (Responsive)</option>

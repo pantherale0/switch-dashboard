@@ -262,66 +262,82 @@ class DeviceRepository:
         if not clients:
             return
         now = time.time()
-        with self._get_session() as session:
-            for c in clients:
-                mac = str(c.get("mac") or c.get("id") or "").replace("-", ":").upper()
-                if not mac or mac in ("00:00:00:00:00:00", "FF:FF:FF:FF:FF:FF"):
-                    continue
-                ip = str(c.get("ip") or "")
-                hostname = str(c.get("host") or c.get("hostname") or c.get("name") or "")
-                vendor = str(c.get("vendor") or "")
-                dev_type = str(c.get("device_type") or c.get("type") or "client")
-                switch_ip = str(c.get("switch_ip") or c.get("last_seen_ip") or c.get("parent_ap") or "")
-                port = str(c.get("port") or c.get("last_seen_port") or "")
-                vlan = str(c.get("vlan") or "1")
-                status = str(c.get("status") or "online")
-                first_seen = float(c.get("first_seen") or now)
-                last_seen = float(c.get("last_seen_time") or c.get("last_seen") or now)
-                ssid = str(c.get("ssid") or "")
-                raw_sig = c.get("signal_dbm") if c.get("signal_dbm") is not None else c.get("signal")
-                signal_dbm = None
-                if raw_sig not in (None, ""):
-                    try:
-                        signal_dbm = int(float(raw_sig))
-                    except (ValueError, TypeError):
-                        signal_dbm = None
+        normalized_clients = {}
+        for c in clients:
+            mac = str(c.get("mac") or c.get("id") or "").replace("-", ":").upper()
+            if not mac or mac in ("00:00:00:00:00:00", "FF:FF:FF:FF:FF:FF"):
+                continue
+            raw_sig = c.get("signal_dbm") if c.get("signal_dbm") is not None else c.get("signal")
+            signal_dbm = None
+            if raw_sig not in (None, ""):
+                try:
+                    signal_dbm = int(float(raw_sig))
+                except (ValueError, TypeError):
+                    pass
+            normalized_clients[mac] = {
+                "mac": mac,
+                "ip": str(c.get("ip") or ""),
+                "hostname": str(c.get("host") or c.get("hostname") or c.get("name") or ""),
+                "vendor": str(c.get("vendor") or ""),
+                "device_type": str(c.get("device_type") or c.get("type") or "client"),
+                "switch_ip": str(c.get("switch_ip") or c.get("last_seen_ip") or c.get("parent_ap") or ""),
+                "port": str(c.get("port") or c.get("last_seen_port") or ""),
+                "vlan": str(c.get("vlan") or "1"),
+                "status": str(c.get("status") or "online"),
+                "first_seen": float(c.get("first_seen") or now),
+                "last_seen": float(c.get("last_seen_time") or c.get("last_seen") or now),
+                "ssid": str(c.get("ssid") or ""),
+                "signal_dbm": signal_dbm,
+            }
 
-                client = session.get(DiscoveredClient, mac)
+        if not normalized_clients:
+            return
+
+        with self._get_session() as session:
+            rows = session.execute(
+                select(DiscoveredClient).where(
+                    DiscoveredClient.mac.in_(normalized_clients.keys())
+                )
+            ).scalars().all()
+            existing = {row.mac: row for row in rows}
+
+            for mac, c in normalized_clients.items():
+                client = existing.get(mac)
                 if client:
-                    if ip != "":
-                        client.ip = ip
-                    if hostname != "" and not hostname.startswith("Client "):
-                        client.hostname = hostname
-                    if vendor != "":
-                        client.vendor = vendor
-                    if dev_type != "client":
-                        client.device_type = dev_type
-                    if switch_ip != "":
-                        client.switch_ip = switch_ip
-                    if port != "":
-                        client.port = port
-                    if ssid != "":
-                        client.ssid = ssid
-                    if signal_dbm is not None:
-                        client.signal_dbm = signal_dbm
-                    client.vlan = vlan
-                    client.last_seen = last_seen
-                    client.status = status
+                    if c["ip"]:
+                        client.ip = c["ip"]
+                    if c["hostname"] and not c["hostname"].startswith("Client "):
+                        client.hostname = c["hostname"]
+                    if c["vendor"]:
+                        client.vendor = c["vendor"]
+                    if c["device_type"] != "client":
+                        client.device_type = c["device_type"]
+                    if c["switch_ip"]:
+                        client.switch_ip = c["switch_ip"]
+                    if c["port"]:
+                        client.port = c["port"]
+                    if c["ssid"]:
+                        client.ssid = c["ssid"]
+                    if c["signal_dbm"] is not None:
+                        client.signal_dbm = c["signal_dbm"]
+                    client.vlan = c["vlan"]
+                    client.last_seen = c["last_seen"]
+                    client.status = c["status"]
                 else:
                     session.add(DiscoveredClient(
                         mac=mac,
-                        ip=ip,
-                        hostname=hostname,
-                        vendor=vendor,
-                        device_type=dev_type,
-                        switch_ip=switch_ip,
-                        port=port,
-                        vlan=vlan,
-                        first_seen=first_seen,
-                        last_seen=last_seen,
-                        status=status,
-                        ssid=ssid,
-                        signal_dbm=signal_dbm,
+                        ip=c["ip"],
+                        hostname=c["hostname"],
+                        vendor=c["vendor"],
+                        device_type=c["device_type"],
+                        switch_ip=c["switch_ip"],
+                        port=c["port"],
+                        vlan=c["vlan"],
+                        first_seen=c["first_seen"],
+                        last_seen=c["last_seen"],
+                        status=c["status"],
+                        ssid=c["ssid"],
+                        signal_dbm=c["signal_dbm"],
                     ))
 
     def get_all_discovered_clients(self) -> Dict[str, Dict[str, Any]]:
@@ -450,6 +466,70 @@ class DeviceRepository:
                     last_seen=now,
                     is_active=1
                 ))
+
+    def record_client_ip_observations_batch(self, observations: List[Dict[str, Any]]):
+        """Upserts the latest client IP observations in one database transaction."""
+        if not observations:
+            return
+
+        normalized = {}
+        for observation in observations:
+            mac = str(observation.get("mac") or "").replace("-", ":").upper()
+            if len(mac) == 12 and ":" not in mac:
+                mac = ":".join(mac[i:i + 2] for i in range(0, 12, 2))
+            ip = str(observation.get("ip") or "")
+            if not mac or not ip:
+                continue
+            normalized[(mac, ip)] = {
+                "mac": mac,
+                "ip": ip,
+                "hostname": str(observation.get("hostname") or ""),
+                "timestamp": observation.get("timestamp") or time.time(),
+            }
+
+        if not normalized:
+            return
+
+        macs = {mac for mac, _ in normalized}
+        with self._get_session() as session:
+            rows = session.execute(
+                select(ClientIpHistory).where(ClientIpHistory.mac.in_(macs))
+            ).scalars().all()
+            existing = {(row.mac, row.ip): row for row in rows}
+            observations_by_mac = {}
+            for (mac, ip), observation in normalized.items():
+                observations_by_mac.setdefault(mac, []).append((ip, observation))
+
+            for mac, client_observations in observations_by_mac.items():
+                client_observations.sort(key=lambda item: item[1]["timestamp"])
+                latest_ip = client_observations[-1][0]
+                has_new_ip = any((mac, ip) not in existing for ip, _ in client_observations)
+                if has_new_ip:
+                    session.execute(
+                        update(ClientIpHistory)
+                        .where(ClientIpHistory.mac == mac, ClientIpHistory.is_active == 1)
+                        .values(is_active=0)
+                    )
+
+                for ip, observation in client_observations:
+                    row = existing.get((mac, ip))
+                    if row:
+                        row.last_seen = observation["timestamp"]
+                        row.is_active = int(ip == latest_ip)
+                        if observation["hostname"] and not row.hostname:
+                            row.hostname = observation["hostname"]
+                        continue
+
+                    row = ClientIpHistory(
+                        mac=mac,
+                        ip=ip,
+                        hostname=observation["hostname"],
+                        first_seen=observation["timestamp"],
+                        last_seen=observation["timestamp"],
+                        is_active=int(ip == latest_ip),
+                    )
+                    session.add(row)
+                    existing[(mac, ip)] = row
 
     def record_client_connection_event(
         self,
@@ -758,4 +838,3 @@ class DeviceRepository:
                 delete(ClientConnectionHistory).where(ClientConnectionHistory.connected_at < cutoff)
             )
             return result.rowcount or 0
-

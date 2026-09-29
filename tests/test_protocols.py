@@ -6,6 +6,34 @@ from switch_dashboard.protocols import scrape_switch
 
 
 class TestProtocols(unittest.TestCase):
+    def test_http_slow_detail_data_is_reused_between_cycles(self):
+        from switch_dashboard.protocols.drivers.http_hc.driver import HCSwitchProtocol
+
+        driver = HCSwitchProtocol({
+            "ip": "10.0.0.20",
+            "model": "Unknown Test Model",
+            "_dashboard_refresh_slow_data": False,
+            "_dashboard_slow_data": {
+                "dhcp_snooping": {"enabled": True, "ports": {"1": "Trusted"}},
+                "igmp": {"enabled": True, "entries": [{"ip": "239.1.1.1"}]},
+                "jumbo_frame": {"enabled": True, "size": "9000"},
+            },
+        })
+        driver._login = lambda: None
+        driver._fetch = lambda path: "<html></html>"
+
+        def unexpected_fetch():
+            raise AssertionError("slow configuration details should use cached results")
+
+        driver.scrape_dhcp_snooping = unexpected_fetch
+        driver.scrape_igmp = unexpected_fetch
+        driver.scrape_jumbo_frame = unexpected_fetch
+        data = driver._scrape_builtin()
+
+        self.assertTrue(data["dhcp_snooping"]["enabled"])
+        self.assertTrue(data["igmp"]["enabled"])
+        self.assertEqual(data["jumbo_frame"]["size"], "9000")
+
     def test_builtin_protocols_registered(self):
         protocols = ProtocolRegistry.list_protocols()
         names = [p["name"] for p in protocols]

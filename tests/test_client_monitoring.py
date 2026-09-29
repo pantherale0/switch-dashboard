@@ -49,6 +49,20 @@ class TestClientMonitoring(unittest.TestCase):
         self.assertEqual(len(inactive_ips), 1)
         self.assertEqual(inactive_ips[0]["ip"], "192.168.1.100")
 
+    def test_batched_ip_observations_keep_one_active_address(self):
+        now = time.time()
+        mac = "AA:BB:CC:DD:EE:11"
+        self.repo.record_client_ip_observations_batch([
+            {"mac": mac, "ip": "192.168.1.110", "hostname": "test-host", "timestamp": now},
+            {"mac": mac, "ip": "192.168.1.111", "hostname": "test-host", "timestamp": now + 1},
+        ])
+
+        history = self.repo.get_client_ip_history(mac)
+        self.assertEqual(len(history), 2)
+        active = [entry for entry in history if entry["is_active"]]
+        self.assertEqual(len(active), 1)
+        self.assertEqual(active[0]["ip"], "192.168.1.111")
+
     def test_connection_and_roaming_events(self):
         mac = "AA:BB:CC:DD:EE:02"
         now = time.time()
@@ -659,5 +673,4 @@ class TestClientMonitoring(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
 

@@ -74,6 +74,19 @@ class TestStorage(unittest.TestCase):
         self.assertIn("192.168.1.50:1", loaded)
         self.assertEqual(loaded["192.168.1.50:1"]["cum_tx"], 5000)
 
+    def test_metric_repository_counter_upsert_updates_and_inserts(self):
+        self.metric_repo.save_counters({
+            "192.168.1.50:1": {"tx": 100, "rx": 200, "cum_tx": 300, "cum_rx": 400, "ts": 1.0},
+        })
+        self.metric_repo.save_counters({
+            "192.168.1.50:1": {"tx": 150, "rx": 250, "cum_tx": 350, "cum_rx": 450, "ts": 2.0},
+            "192.168.1.50:2": {"tx": 10, "rx": 20, "cum_tx": 30, "cum_rx": 40, "ts": 2.0},
+        })
+
+        loaded = self.metric_repo.load_counters()
+        self.assertEqual(loaded["192.168.1.50:1"]["cum_tx"], 350)
+        self.assertEqual(loaded["192.168.1.50:2"]["cum_rx"], 40)
+
     def test_repair_negative_counters(self):
         with self.db.transaction() as cur:
             cur.execute("""
@@ -273,6 +286,19 @@ class TestStorage(unittest.TestCase):
         hlive = self.metric_repo.get_history_range("192.168.1.50", "1", "live")
         self.assertGreaterEqual(len(hlive["tx"]), 1)
 
+    def test_metric_repository_get_last_live_samples(self):
+        self.assertEqual(self.metric_repo.get_last_live_samples("192.168.1.50", "1"), (None, None))
+        self.metric_repo.append_live_sample("192.168.1.50", "1", 1.0, 100, 200)
+        self.assertEqual(
+            self.metric_repo.get_last_live_samples("192.168.1.50", "1"),
+            (None, {"ts": 1.0, "tx": 100, "rx": 200}),
+        )
+        self.metric_repo.append_live_sample("192.168.1.50", "1", 2.0, 300, 400)
+        self.assertEqual(
+            self.metric_repo.get_last_live_samples("192.168.1.50", "1"),
+            ({"ts": 1.0, "tx": 100, "rx": 200}, {"ts": 2.0, "tx": 300, "rx": 400}),
+        )
+
     def test_database_url_and_engine_config(self):
         import os
         from switch_dashboard.storage.engine import get_database_url
@@ -414,5 +440,3 @@ class TestStorage(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
-
