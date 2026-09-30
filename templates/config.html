@@ -1033,6 +1033,27 @@
     background: rgba(88, 166, 255, 0.05);
   }
 </style>
+<link rel="stylesheet" href="/static/mobile.css">
+<script src="/static/mobile-nav.js" defer></script>
+<style>
+  @media (max-width: 760px) {
+    body { padding: 12px; }
+    .devices-header { flex-direction: column; align-items: stretch; }
+    .devices-title-area { flex-wrap: wrap; }
+    .btn-add-device { width: 100%; min-height: 44px; justify-content: center; }
+    .device-roster { min-width: 900px; }
+    .layout-container { gap: 12px; }
+    .form-row { align-items: stretch; }
+    .form-row label { min-width: 100%; }
+    .form-row input:not([type="checkbox"]):not([type="radio"]),
+    .form-row select, .global-row input, .global-row select,
+    .template-select-row select { width: 100%; max-width: none !important; min-height: 44px; }
+    .btn-row input[type="submit"], .btn-row a, .yaml-save-btn { min-height: 44px; justify-content: center; }
+    .btn-row > * { flex: 1 1 140px; }
+    .CodeMirror { height: 55dvh; min-height: 280px; font-size: 12px !important; }
+    .wizard-card { width: calc(100vw - 24px); max-height: calc(100dvh - 24px); }
+  }
+</style>
 </head>
 <body>
 {% if local_dev_mode %}<div style="position: sticky; top: 0; z-index: 10000; padding: 8px 16px; text-align: center; background: #b45309; color: #fff; font: 600 13px/1.4 system-ui, sans-serif;">Local development mode — authentication is disabled. Never expose this server to untrusted networks.</div>{% endif %}

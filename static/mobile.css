@@ -1,0 +1,233 @@
+/* Shared responsive behavior for the independently styled page templates. */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+button, a, input, select, textarea {
+  touch-action: manipulation;
+}
+
+button, input, select, textarea {
+  max-width: 100%;
+}
+
+.mobile-nav-toggle {
+  display: none;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 10px;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  background: #21262d;
+  color: #c9d1d9;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mobile-nav-toggle span {
+  width: 18px;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+}
+
+@media (max-width: 900px) {
+  body {
+    padding: 12px;
+    min-width: 0;
+  }
+
+  .header {
+    position: relative;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 12px;
+    margin-bottom: 16px;
+    border-radius: 12px;
+  }
+
+  .header > div:first-child,
+  .header-left {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .header h1 {
+    font-size: clamp(16px, 4.5vw, 20px);
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+  }
+
+  .mobile-nav-toggle {
+    display: inline-flex;
+    flex: 0 0 44px;
+  }
+
+  .header .nav-links {
+    display: none;
+    order: 3;
+    flex: 1 0 100%;
+    width: 100%;
+    max-width: none;
+    max-height: min(60vh, 420px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 8px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(48, 54, 61, 0.7);
+  }
+
+  .header .nav-links.mobile-open {
+    display: flex;
+  }
+
+  .header .nav-links a,
+  .header .nav-links button {
+    min-height: 44px;
+    flex: 1 1 145px;
+    justify-content: center;
+    white-space: nowrap;
+  }
+
+  .header .nav-links .status,
+  .header .nav-links .live-indicator {
+    flex: 1 0 100%;
+    min-height: 32px;
+  }
+
+  .container,
+  .layout-container,
+  .fing-container,
+  .dashboard-wrapper,
+  .devices-section {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .card,
+  .devices-card {
+    padding: 16px;
+    border-radius: 12px;
+  }
+
+  .controls-bar,
+  .filter-panel,
+  .directory-toolbar,
+  .devices-header {
+    align-items: stretch;
+  }
+
+  .control-group {
+    flex-wrap: wrap;
+    min-width: 0;
+  }
+
+  .table-container,
+  .table-wrapper,
+  .table-responsive,
+  #devices-roster-container {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table-container table,
+  .table-wrapper table,
+  .table-responsive table,
+  #devices-roster-container table {
+    min-width: 680px;
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+
+  .footer {
+    line-height: 1.7;
+    overflow-wrap: anywhere;
+  }
+
+  .toast {
+    left: 12px;
+    right: 12px;
+    bottom: max(12px, env(safe-area-inset-bottom));
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  body {
+    padding: 8px;
+  }
+
+  .header {
+    padding: 10px;
+  }
+
+  .header-left img,
+  .header > div:first-child img {
+    width: 30px !important;
+    height: 30px !important;
+  }
+
+  .card,
+  .devices-card {
+    padding: 12px;
+  }
+
+  .modal-card,
+  .wizard-card,
+  .graph-box,
+  .transceiver-box,
+  .confirm-box {
+    width: calc(100vw - 16px);
+    max-width: none;
+    max-height: calc(100dvh - 16px);
+    overflow-y: auto;
+    padding: 16px;
+    border-radius: 12px;
+  }
+
+  .wizard-stepper {
+    gap: 8px;
+    padding: 10px 12px;
+    overflow-x: auto;
+  }
+
+  .wizard-step-item {
+    white-space: nowrap;
+  }
+
+  .wizard-body {
+    padding: 16px;
+  }
+
+  .wizard-footer,
+  .wizard-footer-right,
+  .modal-footer,
+  .btn-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .wizard-footer button,
+  .wizard-footer-right button,
+  .modal-footer button,
+  .btn-row > * {
+    min-height: 44px;
+  }
+}

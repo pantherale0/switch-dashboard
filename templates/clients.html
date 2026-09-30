@@ -309,6 +309,40 @@
     .fing-container { grid-template-columns: 1fr; }
   }
 </style>
+<link rel="stylesheet" href="/static/mobile.css">
+<script src="/static/mobile-nav.js" defer></script>
+<style>
+  @media (max-width: 760px) {
+    .fing-container { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+    .subnets-sidebar { min-width: 0; padding: 12px; }
+    #subnets-list { flex-direction: row !important; overflow-x: auto; padding-bottom: 4px; }
+    .subnet-card { min-width: 210px; }
+    .fing-summary-banner { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    .summary-card { padding: 12px; min-width: 0; }
+    .summary-metric-val { font-size: 21px; overflow-wrap: anywhere; }
+    .directory-toolbar { border-radius: 10px 10px 0 0; }
+    .search-box { width: 100%; min-height: 44px; }
+    .filter-pills { flex-wrap: nowrap; overflow-x: auto; width: 100%; padding: 4px 0; }
+    .filter-pill { flex: 0 0 auto; min-height: 36px; display: inline-flex; align-items: center; }
+    table.client-table { min-width: 900px; }
+    .table-footer { align-items: flex-start; flex-direction: column; gap: 6px; }
+    .drawer { width: 100%; max-width: 100%; height: 100dvh; right: -100%; }
+    .drawer-body { padding: 14px; }
+    .drawer-tabs { padding: 0 8px; }
+    .drawer-tab { padding: 12px 10px; }
+    .fing-kv-row { gap: 10px; align-items: flex-start; }
+    .fing-kv-val { min-width: 0; text-align: right; overflow-wrap: anywhere; }
+    #drawer-tab-ip_history .fing-card { overflow-x: auto; }
+    #drawer-tab-ip_history table { min-width: 460px; }
+  }
+  @media (max-width: 420px) {
+    .fing-summary-banner { grid-template-columns: 1fr 1fr; }
+    .summary-metric-val { font-size: 18px; }
+    .device-cell { gap: 8px; }
+    .drawer-gauges { gap: 8px; }
+    .gauge-val { font-size: 15px; }
+  }
+</style>
 </head>
 <body>
 {% if local_dev_mode %}<div style="position: sticky; top: 0; z-index: 10000; padding: 8px 16px; text-align: center; background: #b45309; color: #fff; font: 600 13px/1.4 system-ui, sans-serif;">Local development mode — authentication is disabled. Never expose this server to untrusted networks.</div>{% endif %}

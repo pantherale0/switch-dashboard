@@ -565,7 +565,49 @@
     --grid-columns: repeat(auto-fit, minmax(600px, 1fr));
     {% endif %}
   }
+
+  .port-table-wrap { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  [class*="mac-content-"] { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  @media (max-width: 760px) {
+    body { padding: 10px; }
+    .header { flex-wrap: wrap; gap: 10px; padding: 12px; }
+    .header > div:first-child { min-width: 0; flex: 1 1 auto; }
+    .header h1 { font-size: clamp(16px, 4.5vw, 21px); }
+    .header .nav-links { max-width: none; }
+    .header .nav-links a, .header .nav-links button { white-space: nowrap; }
+    .switches { grid-template-columns: 1fr !important; gap: 12px; }
+    .switch-card { min-width: 0; overflow: hidden; }
+    .switch-header { padding: 12px; gap: 8px; }
+    .switch-header .meta { text-align: left; }
+    .device-bar { gap: 8px 12px; padding: 10px 12px; }
+    .port-table-wrap { border-bottom: 1px solid #30363d; }
+    .port-table { min-width: 650px; }
+    [class*="mac-content-"] > table { min-width: 600px; }
+    .dashboard-toolbar { align-items: stretch !important; }
+    .dashboard-toolbar > div { width: 100%; }
+    #device-filter-input { width: 100% !important; min-height: 44px; }
+    .dashboard-toolbar button, .dashboard-toolbar select { min-height: 44px; }
+    .legend-bar { justify-content: flex-start !important; gap: 8px 12px !important; }
+    .graph-box.maximized { padding: 12px; }
+    .graph-tabs { overflow-x: auto; }
+    .graph-tab-btn { white-space: nowrap; }
+    .graph-stats, .graph-cumulative-stats { gap: 8px; }
+  }
+
+  @media (max-width: 480px) {
+    body { padding: 8px; }
+    .switch-header { align-items: flex-start; }
+    .switch-header h2 { font-size: 15px; }
+    .device-bar { font-size: 10px; }
+    .port-table th, .port-table td { padding: 7px 6px; font-size: 11px; }
+    .status-badge { min-height: 32px; }
+    .note-input { min-height: 36px; }
+    .legend-bar { font-size: 10px !important; }
+  }
 </style>
+<link rel="stylesheet" href="/static/mobile.css">
+<script src="/static/mobile-nav.js" defer></script>
 </head>
 <body data-font-size="md">
 {% if local_dev_mode %}<div style="position: sticky; top: 0; z-index: 10000; padding: 8px 16px; text-align: center; background: #b45309; color: #fff; font: 600 13px/1.4 system-ui, sans-serif;">Local development mode — authentication is disabled. Never expose this server to untrusted networks.</div>{% endif %}
@@ -2340,12 +2382,12 @@ function renderSwitch(sw) {
         ${igmpBadge}
         ${jumboBadge}
       </div>
-      <table class="port-table">
+      <div class="port-table-wrap"><table class="port-table">
         <thead><tr>
           ${theadCols}
         </tr></thead>
         <tbody>${portRows || `<tr><td colspan="${activeColumnOrder.length}" style="padding:20px;text-align:center;color:#b1bac4">No data</td></tr>`}</tbody>
-      </table>
+      </table></div>
       ${wirelessSectionHtml}
       ${errorBlock}
       ${macSectionHtml}

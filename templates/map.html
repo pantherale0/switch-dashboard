@@ -931,6 +931,10 @@
       gap: 6px;
       max-width: 60vw;
     }
+    .header .nav-links.mobile-open {
+      max-width: none;
+      overflow-x: hidden;
+    }
     .header .nav-links a {
       padding: 5px 9px;
       font-size: 12px;
@@ -975,8 +979,20 @@
     }
   }
 </style>
+<link rel="stylesheet" href="/static/mobile.css">
+<script src="/static/mobile-nav.js" defer></script>
+<style>
+  @media (max-width: 760px) {
+    body.network-map { height: 100dvh; min-height: 100dvh; padding: 0; overflow: hidden; }
+    .network-map .header { flex: 0 0 auto; }
+    .network-map .main-container { min-height: 0; }
+    .network-map .sidebar { max-height: 100dvh; overflow-y: auto; }
+    .network-map .mobile-nav-toggle { color: #c9d1d9; }
+    .network-map .header .nav-links { max-height: min(55dvh, 360px); }
+  }
+</style>
 </head>
-<body>
+<body class="network-map">
 {% if local_dev_mode %}<div style="position: sticky; top: 0; z-index: 10000; padding: 8px 16px; text-align: center; background: #b45309; color: #fff; font: 600 13px/1.4 system-ui, sans-serif;">Local development mode — authentication is disabled. Never expose this server to untrusted networks.</div>{% endif %}
 
 <div class="header">

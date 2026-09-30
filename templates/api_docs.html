@@ -360,6 +360,23 @@
       color: #f0f6fc;
     }
   </style>
+  <link rel="stylesheet" href="/static/mobile.css">
+  <script src="/static/mobile-nav.js" defer></script>
+  <style>
+    @media (max-width: 760px) {
+      .header { padding: 10px 12px; }
+      .layout-container { display: block; padding: 0 12px; }
+      .sidebar { display: block; position: static; width: 100%; height: auto; max-height: 34vh; padding: 10px 0; border-right: 0; border-bottom: 1px solid rgba(48, 54, 61, 0.4); }
+      .sidebar-list { display: flex; gap: 8px; width: max-content; }
+      .sidebar-item { flex: 0 0 auto; }
+      .sidebar-link { min-height: 40px; }
+      .content-area { width: 100%; min-width: 0; max-width: none; padding: 18px 0 40px; }
+      .api-card { padding: 16px; margin-bottom: 18px; }
+      .code-container { max-width: 100%; overflow-x: auto; }
+      .code-container pre { min-width: max-content; }
+      .doc-intro h2 { font-size: 22px; }
+    }
+  </style>
 </head>
 <body>
 {% if local_dev_mode %}<div style="position: sticky; top: 0; z-index: 10000; padding: 8px 16px; text-align: center; background: #b45309; color: #fff; font: 600 13px/1.4 system-ui, sans-serif;">Local development mode — authentication is disabled. Never expose this server to untrusted networks.</div>{% endif %}

@@ -562,6 +562,18 @@
     font-weight: 600;
   }
 </style>
+<link rel="stylesheet" href="/static/mobile.css">
+<script src="/static/mobile-nav.js" defer></script>
+<style>
+  @media (max-width: 760px) {
+    body { padding: 12px; }
+    .filter-panel { flex-direction: column; align-items: stretch; gap: 10px; padding: 12px; }
+    .filter-panel > * { max-width: 100%; }
+    .filter-panel input, .filter-panel select { width: 100%; min-height: 44px; }
+    .table-container { max-height: 65dvh; }
+    #history-table { min-width: 850px; }
+  }
+</style>
 </head>
 <body data-font-size="md">
 {% if local_dev_mode %}<div style="position: sticky; top: 0; z-index: 10000; padding: 8px 16px; text-align: center; background: #b45309; color: #fff; font: 600 13px/1.4 system-ui, sans-serif;">Local development mode — authentication is disabled. Never expose this server to untrusted networks.</div>{% endif %}

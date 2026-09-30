@@ -634,6 +634,23 @@
     font-weight: 600;
   }
 </style>
+<link rel="stylesheet" href="/static/mobile.css">
+<script src="/static/mobile-nav.js" defer></script>
+<style>
+  @media (max-width: 760px) {
+    body { padding: 12px; }
+    .scanner-info-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    .info-tile { padding: 12px; min-width: 0; }
+    .tile-value { overflow-wrap: anywhere; font-size: 14px !important; }
+    .controls-bar { align-items: stretch; }
+    .controls-bar .control-group { width: 100%; justify-content: space-between; }
+    .controls-bar .btn { width: 100%; min-height: 44px; justify-content: center; }
+    .column-toggle-fieldset { padding: 12px; }
+    .column-toggle-list { gap: 10px; }
+    .table-container { max-height: 65dvh; }
+    #hosts-table { min-width: 900px; }
+  }
+</style>
 </head>
 <body data-font-size="md">
 {% if local_dev_mode %}<div style="position: sticky; top: 0; z-index: 10000; padding: 8px 16px; text-align: center; background: #b45309; color: #fff; font: 600 13px/1.4 system-ui, sans-serif;">Local development mode — authentication is disabled. Never expose this server to untrusted networks.</div>{% endif %}

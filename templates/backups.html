@@ -416,6 +416,21 @@
     font-weight: 600;
   }
 </style>
+<link rel="stylesheet" href="/static/mobile.css">
+<script src="/static/mobile-nav.js" defer></script>
+<style>
+  @media (max-width: 760px) {
+    body { padding: 12px; }
+    .card { padding: 16px; }
+    .container { max-width: 100%; }
+    #table-wrapper { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .table-container table { min-width: 650px; }
+    .btn-action { min-height: 40px; }
+    .modal-box { width: calc(100vw - 24px); max-width: none; max-height: calc(100dvh - 24px); overflow-y: auto; padding: 16px; }
+    .modal-buttons { flex-wrap: wrap; }
+    .modal-buttons button { flex: 1 1 140px; min-height: 44px; }
+  }
+</style>
 </head>
 <body>
 {% if local_dev_mode %}<div style="position: sticky; top: 0; z-index: 10000; padding: 8px 16px; text-align: center; background: #b45309; color: #fff; font: 600 13px/1.4 system-ui, sans-serif;">Local development mode — authentication is disabled. Never expose this server to untrusted networks.</div>{% endif %}
