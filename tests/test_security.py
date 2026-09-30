@@ -4,14 +4,19 @@ import os
 import secrets
 import tempfile
 import time
+from types import SimpleNamespace
+
+from joserfc.jwk import generate_key
+from joserfc.jwt import encode
 
 from switch_dashboard.config import get_default_config, load_config, save_config, set_data_dir
 from switch_dashboard.security.crypto import decrypt_bytes, encrypt_bytes
 from switch_dashboard.services.backup_service import BackupService
 from switch_dashboard.storage.engine import get_db_session
-from switch_dashboard.storage.models.auth import AuthSession
+from switch_dashboard.storage.models.auth import AuthSession, OidcLoginTransaction
 from switch_dashboard.storage.models.config import DeviceConfig, DeviceSecret
 from switch_dashboard.web import create_app
+from switch_dashboard.web import auth as auth_module
 
 
 def _add_session(client, role):
@@ -73,6 +78,83 @@ def test_role_and_csrf_enforcement(monkeypatch):
         ).status_code == 200
     finally:
         temp_dir.cleanup()
+
+
+def test_oidc_callback_uses_valid_jwks_key_and_ignores_unusable_entries(monkeypatch):
+    temp_dir, app = _secured_app(monkeypatch)
+    try:
+        client = app.test_client()
+        state = "oidc-state"
+        browser_token = "oidc-browser-token"
+        nonce = "oidc-nonce"
+        now = time.time()
+        with get_db_session() as session:
+            session.add(OidcLoginTransaction(
+                state_hash=hashlib.sha256(state.encode()).hexdigest(),
+                browser_token_hash=hashlib.sha256(browser_token.encode()).hexdigest(),
+                nonce=nonce,
+                code_verifier="code-verifier",
+                return_to="/",
+                expires_at=now + 600,
+            ))
+
+        private_key = generate_key("RSA", 2048, parameters={"kid": "signing-key"})
+        id_token = encode(
+            {"alg": "RS256", "kid": "signing-key"},
+            {
+                "iss": "https://id.example.test",
+                "sub": "oidc-user",
+                "aud": "switch-dashboard",
+                "nonce": nonce,
+                "iat": now,
+                "exp": now + 300,
+                "groups": ["switch-dashboard-admin"],
+            },
+            private_key,
+            algorithms={"RS256"},
+        )
+        jwks = {
+            "keys": [
+                {"kty": "UNKNOWN", "kid": "future-key"},
+                private_key.as_dict(),
+            ]
+        }
+        monkeypatch.setattr(auth_module, "_discovery", lambda: {
+            "issuer": "https://id.example.test",
+            "token_endpoint": "https://id.example.test/token",
+            "jwks_uri": "https://id.example.test/jwks",
+        })
+        monkeypatch.setattr(auth_module.requests, "post", lambda *args, **kwargs: SimpleNamespace(
+            raise_for_status=lambda: None,
+            json=lambda: {"id_token": id_token},
+        ))
+        monkeypatch.setattr(auth_module.requests, "get", lambda *args, **kwargs: SimpleNamespace(
+            url="https://id.example.test/jwks",
+            raise_for_status=lambda: None,
+            json=lambda: jwks,
+        ))
+        client.set_cookie("sd_oidc_txn", browser_token)
+
+        response = client.get(f"/auth/callback?state={state}&code=authorization-code")
+
+        assert response.status_code == 302
+        assert response.headers["Location"] == "/"
+        assert any(
+            "switch_dashboard_session" in cookie
+            for cookie in response.headers.getlist("Set-Cookie")
+        )
+    finally:
+        temp_dir.cleanup()
+
+
+def test_oidc_jwks_rejects_empty_or_invalid_key_sets():
+    for jwks in ({}, {"keys": []}, {"keys": [{"kty": "UNKNOWN"}]}):
+        try:
+            auth_module._oidc_key_set(jwks)
+        except RuntimeError as exc:
+            assert "usable signing keys" in str(exc) or "keys array" in str(exc)
+        else:
+            raise AssertionError("Invalid JWKS unexpectedly produced a key set")
 
 
 def test_device_secrets_are_encrypted_and_redacted(monkeypatch):

@@ -26,6 +26,11 @@ logger = logging.getLogger("switch_dashboard.web.auth")
 auth_bp = Blueprint("auth", __name__)
 
 ROLE_LEVEL = {"viewer": 10, "operator": 20, "admin": 30}
+OIDC_SIGNING_ALGORITHMS = frozenset({
+    "RS256", "RS384", "RS512",
+    "ES256", "ES384", "ES512",
+    "PS256", "PS384", "PS512",
+})
 PUBLIC_ENDPOINTS = {"auth.login", "auth.callback", "auth.health", "static"}
 ADMIN_ENDPOINTS = {
     "config_bp.config_page",
@@ -158,6 +163,80 @@ def _role_from_claims(claims: dict) -> str | None:
         if group and group in values:
             return role
     return None
+
+
+def _oidc_key_set(document: dict, source_uri: str = "") -> KeySet:
+    """Import usable signing keys from an OIDC provider's JWKS document.
+
+    Providers may publish keys for encryption or algorithms this application
+    deliberately does not accept alongside their ID-token signing keys. Skip
+    those entries, as well as malformed/unsupported individual keys, without
+    discarding otherwise usable keys from the set.
+    """
+    entries = document.get("keys") if isinstance(document, dict) else None
+    if not isinstance(entries, list):
+        raise RuntimeError("OIDC JWKS response did not contain a keys array")
+
+    keys = []
+    unusable_count = 0
+    for index, entry in enumerate(entries):
+        if not isinstance(entry, dict) or not entry:
+            unusable_count += 1
+            continue
+        if entry.get("use") not in (None, "sig"):
+            unusable_count += 1
+            continue
+        key_ops = entry.get("key_ops")
+        if key_ops is not None and (not isinstance(key_ops, list) or "verify" not in key_ops):
+            unusable_count += 1
+            continue
+        if entry.get("alg") and entry["alg"] not in OIDC_SIGNING_ALGORITHMS:
+            unusable_count += 1
+            continue
+        if entry.get("kty") == "oct":
+            # HMAC ID tokens are intentionally not in the allowed algorithm set.
+            unusable_count += 1
+            continue
+        try:
+            keys.append(import_key(entry))
+        except Exception as exc:
+            unusable_count += 1
+            logger.warning(
+                "Ignoring unusable OIDC JWKS key at index %d (kty=%r, kid=%r): %s",
+                index,
+                entry.get("kty"),
+                entry.get("kid"),
+                type(exc).__name__,
+            )
+
+    if not keys:
+        key_summaries = [
+            {
+                "index": index,
+                "type": type(entry).__name__,
+                **(
+                    {
+                        name: entry.get(name)
+                        for name in ("kty", "use", "alg", "key_ops")
+                        if name in entry
+                    }
+                    if isinstance(entry, dict)
+                    else {}
+                ),
+            }
+            for index, entry in enumerate(entries[:20])
+        ]
+        logger.error(
+            "OIDC JWKS contained no usable signing keys "
+            "(uri=%r, document_fields=%s, published=%d, unusable=%d, key_metadata=%s)",
+            source_uri,
+            sorted(document.keys()) if isinstance(document, dict) else type(document).__name__,
+            len(entries),
+            unusable_count,
+            key_summaries,
+        )
+        raise RuntimeError("OIDC JWKS contained no usable signing keys")
+    return KeySet(keys)
 
 
 def _required_role() -> str:
@@ -374,19 +453,10 @@ def callback():
             raise RuntimeError("OIDC response did not include an ID token")
         jwks_response = requests.get(discovery["jwks_uri"], timeout=10)
         jwks_response.raise_for_status()
-        jwks_keys = [
-            import_key(entry)
-            for entry in jwks_response.json().get("keys", [])
-            if isinstance(entry, dict) and entry
-        ]
-        if not jwks_keys:
-            raise RuntimeError("OIDC JWKS contained no usable keys")
-        allowed_algs = {
-            "RS256", "RS384", "RS512",
-            "ES256", "ES384", "ES512",
-            "PS256", "PS384", "PS512",
-        }
-        token = jwt_decode(id_token, KeySet(jwks_keys), algorithms=allowed_algs)
+        jwks_key_set = _oidc_key_set(
+            jwks_response.json(), getattr(jwks_response, "url", discovery["jwks_uri"])
+        )
+        token = jwt_decode(id_token, jwks_key_set, algorithms=OIDC_SIGNING_ALGORITHMS)
         claims = token.claims
         now = time.time()
         leeway = 60
@@ -394,6 +464,11 @@ def callback():
             raise RuntimeError("OIDC issuer claim mismatch")
         if claims.get("nonce") != nonce:
             raise RuntimeError("OIDC nonce claim mismatch")
+        audiences = claims.get("aud", [])
+        if isinstance(audiences, str):
+            audiences = [audiences]
+        elif not isinstance(audiences, list):
+            audiences = []
         if os.environ["OIDC_CLIENT_ID"] not in audiences:
             raise RuntimeError("OIDC audience claim mismatch")
         for claim in ("exp", "nbf", "iat"):
